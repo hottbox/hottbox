@@ -8,6 +8,8 @@ regression and non-linear classification of multi-dimensional data.
    :maxdepth: 2
    :caption: Contents:
 
+   installation
+   api/modules
    development_guide/index
    authors
 

@@ -1,4 +1,8 @@
 """
 This module combines classes and corresponding methods for:
-- Tensor decompositions (e.g. CPD, HOSVD, TT_SVD)
+
+1.  Tensor decompositions (e.g. CPD, HOSVD, TTSVD)
+2.  Tensor based classification (Work in progress)
+3.  ...
+4.  ...
 """
