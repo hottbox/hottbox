@@ -7,8 +7,7 @@ from .operations import unfold, fold, mode_n_product
 
 
 class Tensor(object):
-    """
-    This class describes multidimensional data.
+    """ This class describes multidimensional data.
 
     All its methods implement all common operation on a tensor alone
 
@@ -22,7 +21,6 @@ class Tensor(object):
     """
     # TODO: add description for the tensor and the factor matrices/modes etc. (Through pandas integration???)
     # TODO: implement unfolding and folding to tensors of an arbitrary order
-    # TODO: not sure whether need reconstruct method for this class
 
     def __init__(self, array) -> None:
         """
@@ -217,6 +215,7 @@ class TensorCPD(BaseTensorTD):
         Array of coefficients on the super-diagonal of a core for the CP representation of a tensor
     """
     def __init__(self, fmat, core_values):
+        super(TensorCPD, self).__init__()
         self.fmat = fmat
         self.core_values = core_values
 
@@ -283,6 +282,7 @@ class TensorTKD(BaseTensorTD):
         Core of the Tucker representation of a tensor
     """
     def __init__(self, fmat, core):
+        super(TensorTKD, self).__init__()
         self.fmat = fmat
         self.core = core
 
@@ -337,6 +337,7 @@ class TensorTT(BaseTensorTD):
         Shape of the full tensor (``TensorTT.reconstruct.shape``). Makes the reconstruction process easier.
     """
     def __init__(self, cores, full_shape):
+        super(TensorTT, self).__init__()
         self.cores = cores
         self.full_shape = full_shape
 
@@ -406,3 +407,24 @@ def super_diag_tensor(order, values=None):
     core[np.diag_indices(rank, ndim=order)] = values
     tensor = Tensor(core)
     return tensor
+
+
+def residual_tensor(tensor_A, tensor_B):
+    """ Residual tensor
+
+    Parameters
+    ----------
+    tensor_A : Tensor
+    tensor_B : {Tensor, TensorCPD, TensorTKD}
+
+    Returns
+    -------
+    residual : Tensor
+    """
+    if isinstance(tensor_B, TensorCPD) or isinstance(tensor_B, TensorTKD):
+        residual = Tensor(tensor_A.data - tensor_B.reconstruct.data)
+    elif isinstance(tensor_B, Tensor):
+        residual = Tensor(tensor_A.data - tensor_B.data)
+    else:
+        raise TypeError('Unknown data type of the approximation')
+    return residual
