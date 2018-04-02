@@ -5,13 +5,14 @@ __version__ = None
 exec(open('hottbox/version.py').read())
 
 def readme():
-    with open('README.md') as f:
+    with open('README.rst') as f:
         return f.read()
 
 config = dict(
     name='hottbox',
     version=__version__,
     packages=find_packages(exclude=['docs']),
+    url='https://github.com/hottbox/hottbox',
     license='Apache License 2.0',
     author='Ilya Kisil',
     author_email='ilyakisil@gmail.com',
@@ -27,7 +28,7 @@ config = dict(
         'Programming Language :: Python :: 3'
     ],
     keywords=['tensor decompositions', 'machine learning'],
-    install_requires=['numpy'],
+    install_requires=['numpy', 'scipy'],
     include_package_data=True,
     zip_safe=False
 )

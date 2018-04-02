@@ -1,7 +1,7 @@
 .. -*- mode: rst -*-
 
-Team
-----
+Our Team
+--------
 
 - Ilya Kisil,
     ilyakisil@gmail.com
