@@ -1,0 +1,173 @@
+"""
+Functions and operations for tensor algebra
+"""
+
+import numpy as np
+import functools
+
+
+# TODO: I think it will be better if the following three operations would have the same signature
+def khatri_rao(matrices, skip_matrix=None, reverse=False):
+    """ Khatri-Rao product of a list of matrices.
+
+    Parameters
+    ----------
+    matrices : list[np.ndarray]
+        List of matrices. Each matrix should have the same number of columns
+    skip_matrix : int
+        Index of a matrix (from the `matrices`) to be skipped. By default none are skipped
+    reverse : bool
+        If True, perform khatri-rao product on the list of matrices in the reversed order
+
+    Returns
+    -------
+    result : np.ndarray
+        The result of the Khatri-Rao product is a matrix of shape `()`
+    """
+    if len(matrices) < 2:
+        raise ValueError('khatri_roa product requires a list of at least 2 matrices, '
+                         'but {} given.'.format(len(matrices)))
+    if skip_matrix is not None:
+        matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
+    if reverse:
+        matrices = matrices[::-1]
+    n_rows, n_cols = matrices[0].shape
+    for matrix in matrices[1:]:
+        if matrix.shape[1] != n_cols:
+            raise ValueError('All matrices must have the same number of columns.')
+        n_rows *= matrix.shape[0]
+    result = np.zeros((n_rows, n_cols))
+    for i in range(n_cols):
+        temp = matrices[0][:, i]  # Accumulates the khatri-rao product of the i-th columns
+        for matrix in matrices[1:]:
+            temp = np.einsum('i,j->ij', temp, matrix[:, i]).ravel()
+        result[:, i] = temp  # the i-t column is the kronecker product of all the i-th columns of all matrices:
+    return result
+
+
+def hadamard(matrices, skip_matrix=None, reverse=False):
+    """ Hadamard product of a list of matrices.
+
+    Parameters
+    ----------
+    matrices : list[np.ndarray]
+       List of matrices. All matrices should be of the same shape.
+    skip_matrix : int
+       Index of a matrix (from the `matrices`) to be skipped. By default none are skipped
+    reverse : bool
+       If True, perform hadamard product on the list of matrices in the reversed order
+
+    Returns
+    -------
+    result : np.ndarray
+        The result of the Hadamard product is a matrix of the same shape as every matrix in `matrices`
+    """
+    if skip_matrix is not None:
+        matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
+    if reverse:
+        matrices = matrices[::-1]
+    return functools.reduce(np.multiply, matrices)
+
+
+def kronecker(matrices, skip_matrix=None, reverse=False):
+    """ Kronecker product of a list of matrices.
+
+    Parameters
+    ----------
+    matrices : list[np.ndarray]
+        List of matrices.
+    skip_matrix : int
+        Index of a matrix (from the `matrices`) to be skipped. By default none are skipped
+    reverse : bool
+        If True, perform Kronecker product on the list of matrices in the reversed order
+
+    Returns
+    -------
+    result : np.ndarray
+        The result of the Kronecker product is a matrix of shape `(prod(n_rows), prod(n_columns)`
+        where `prod(n_rows) = prod([m.shape[0] for m in matrices])`
+        and `prod(n_columns) = prod([m.shape[1] for m in matrices])`
+    """
+    if skip_matrix is not None:
+        matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
+    if reverse:
+        matrices = matrices[::-1]
+
+    result = matrices[0]
+    for matrix in matrices[1:]:
+        result = np.kron(result, matrix)
+    return result
+
+
+def unfold(tensor, mode):
+    """ Unfolds N-dimensional array into a 2D array.
+
+    Parameters
+    ----------
+    tensor : np.ndarray
+        N-dimensional array to be unfolded
+    mode : int
+        Specifies a mode along which a `tensor` will be unfolded
+
+    Returns
+    -------
+    tensor_unfolded : np.ndarray
+        Unfolded version of a `tensor` with a shape ``(tensor.shape[mode], -1)``
+    """
+    tensor_unfolded = np.reshape(np.moveaxis(tensor, mode, 0), (tensor.shape[mode], -1))
+    return tensor_unfolded
+
+
+def fold(matrix, mode, shape):
+    """ Fold a 2D array into a N-dimensional array.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        Unfolded version of a tensor
+    mode : int
+        A mode along which original tensor was unfolded into a `matrix`
+    shape : tuple
+        Shape of the original tensor before it was unfolded
+
+    Returns
+    -------
+    original_tensor : np.ndarray
+        N-dimensional array of the original shape
+
+    Notes
+    -----
+    At the moment it reverts unfolding operation (`unfold`). Will be generalised in a future
+    """
+    full_shape = list(shape)
+    mode_dim = full_shape.pop(mode)
+    full_shape.insert(0, mode_dim)
+    original_tensor = np.moveaxis(np.reshape(matrix, full_shape), 0, mode)
+    return original_tensor
+
+
+def mode_n_product(tensor, matrix, mode):
+    """ Mode-n product of a N-dimensional array with a matrix.
+
+    Parameters
+    ----------
+    tensor : np.ndarray
+        N-dimensional array
+    matrix : np.ndarray
+        2D array
+    mode : int
+        Specifies mode along which a `tensor` is multiplied by a `matrix`. The size of a `tensor` along this `mode`
+        should be equal to the number of columns of the `matrix`. That is: ``tensor.shape[mode] = matrix.shape[1]``
+
+    Returns
+    -------
+    result : np.ndarray
+        The result of the mode-n product of a `tensor` with a `matrix` along specified `mode`.
+    """
+    # TODO: Implement mode-n product with a vector
+    # TODO: Add dimensionality check
+    orig_shape = list(tensor.shape)
+    new_shape = orig_shape
+    new_shape[mode] = matrix.shape[0]
+    result = fold(np.dot(matrix, unfold(tensor, mode)), mode, tuple(new_shape))
+    return result
