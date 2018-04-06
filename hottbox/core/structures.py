@@ -20,7 +20,6 @@ class Tensor(object):
         Can potentially cause a lot of problems in a future.
     """
     # TODO: add description for the tensor and the factor matrices/modes etc. (Through pandas integration???)
-    # TODO: implement unfolding and folding to tensors of an arbitrary order
 
     def __init__(self, array) -> None:
         """
@@ -320,7 +319,7 @@ class TensorTKD(BaseTensorTD):
         -------
         tensor : Tensor
         """
-        tensor = self.core
+        tensor = self.core.copy()
         for mode, fmat in enumerate(self.fmat):
             tensor.mode_n_product(fmat, mode=mode, inplace=True)
         return tensor
@@ -373,7 +372,7 @@ class TensorTT(BaseTensorTD):
         tensor : Tensor
         """
         rank = self.rank + (1,)
-        data = self.cores[0]
+        data = self.cores[0].data
         for i, core in enumerate(self.cores[1:]):
             shape_2d = [rank[i],rank[i+1]*self.full_shape[i+1]]
             core_flat = np.reshape(core.data, shape_2d, order='F')
