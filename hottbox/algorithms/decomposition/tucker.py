@@ -73,7 +73,7 @@ class HOSVD(BaseTucker):
             U, _, _, = svd(tensor_unfolded, rank[mode])
             fmat[mode] = U
             core.mode_n_product(U.T, mode=mode)
-        tensor_tkd = TensorTKD(fmat=fmat, core=core)
+        tensor_tkd = TensorTKD(fmat=fmat, core_values=core.data)
         if self.verbose:
             residual = residual_tensor(tensor, tensor_tkd)
             print('Relative error of approximation = {}'.format(abs(residual.frob_norm / tensor.frob_norm)))
@@ -172,7 +172,7 @@ class HOOI(BaseTucker):
                 core.mode_n_product(fmat.T, mode=mode)
 
             # Update cost
-            tensor_tkd = TensorTKD(fmat=fmat_hooi, core=core)
+            tensor_tkd = TensorTKD(fmat=fmat_hooi, core_values=core.data)
             residual = residual_tensor(tensor, tensor_tkd)
             self.cost.append(abs(residual.frob_norm / norm))
             if self.verbose:

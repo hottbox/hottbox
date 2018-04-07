@@ -215,8 +215,8 @@ class TensorCPD(BaseTensorTD):
     """
     def __init__(self, fmat, core_values):
         super(TensorCPD, self).__init__()
-        self.fmat = fmat
-        self.core_values = core_values
+        self.fmat = fmat.copy()
+        self.core_values = core_values.copy()
 
     @property
     def order(self):
@@ -277,13 +277,13 @@ class TensorTKD(BaseTensorTD):
     ----------
     fmat : list[np.ndarray]
         List of factor matrices for the Tucker representation of a tensor
-    core : Tensor
+    core_values : np.ndarray
         Core of the Tucker representation of a tensor
     """
-    def __init__(self, fmat, core):
+    def __init__(self, fmat, core_values):
         super(TensorTKD, self).__init__()
-        self.fmat = fmat
-        self.core = core
+        self.fmat = fmat.copy()
+        self.core_values = core_values.copy()
 
     @property
     def order(self):
@@ -312,6 +312,17 @@ class TensorTKD(BaseTensorTD):
         return rank
 
     @property
+    def core(self):
+        """ Core tensor of the CP representation of a tensor
+
+        Returns
+        -------
+        core_tensor : Tensor
+        """
+        core_tensor = Tensor(self.core_values)
+        return core_tensor
+
+    @property
     def reconstruct(self):
         """ Converts the Tucker representation of a tensor into a full tensor
 
@@ -319,7 +330,7 @@ class TensorTKD(BaseTensorTD):
         -------
         tensor : Tensor
         """
-        tensor = self.core.copy()
+        tensor = self.core
         for mode, fmat in enumerate(self.fmat):
             tensor.mode_n_product(fmat, mode=mode, inplace=True)
         return tensor
@@ -330,14 +341,14 @@ class TensorTT(BaseTensorTD):
 
     Parameters
     ----------
-    cores : list[Tensor]
+    cores : list[np.ndarray]
         List of core Tensors for the Tensor Train representation of a tensor.
     full_shape : tuple
         Shape of the full tensor (``TensorTT.reconstruct.shape``). Makes the reconstruction process easier.
     """
     def __init__(self, cores, full_shape):
         super(TensorTT, self).__init__()
-        self.cores = cores
+        self.cores = [Tensor(core) for core in cores]
         self.full_shape = full_shape
 
     @property
@@ -414,13 +425,13 @@ def residual_tensor(tensor_A, tensor_B):
     Parameters
     ----------
     tensor_A : Tensor
-    tensor_B : {Tensor, TensorCPD, TensorTKD}
+    tensor_B : {Tensor, TensorCPD, TensorTKD, TensorTT}
 
     Returns
     -------
     residual : Tensor
     """
-    if isinstance(tensor_B, TensorCPD) or isinstance(tensor_B, TensorTKD):
+    if isinstance(tensor_B, TensorCPD) or isinstance(tensor_B, TensorTKD) or isinstance(tensor_B, TensorTT):
         residual = Tensor(tensor_A.data - tensor_B.reconstruct.data)
     elif isinstance(tensor_B, Tensor):
         residual = Tensor(tensor_A.data - tensor_B.data)

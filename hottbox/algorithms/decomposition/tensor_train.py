@@ -76,10 +76,10 @@ class TTSVD(BaseTensorTrain):
                 new_core = np.reshape(U, [sizes[k], rank[k+1]], order='F')
             else:
                 new_core = np.reshape(U, [rank[k], sizes[k], rank[k+1]], order='F')
-            cores.append(Tensor(new_core))
+            cores.append(new_core)
             C = np.dot(V, np.diag(S)).T
         new_core = C
-        cores.append(Tensor(new_core))
+        cores.append(new_core)
         tensor_tt = TensorTT(cores=cores, full_shape=tensor.shape)
         return tensor_tt
 
