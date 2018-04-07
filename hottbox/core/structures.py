@@ -375,6 +375,7 @@ class TensorTT(BaseTensorTD):
         """
         return tuple([core.shape[-1] for core in self.cores[:-1]])
 
+    @property
     def reconstruct(self):
         """ Converts the TT representation of a tensor into a full tensor
 
