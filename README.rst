@@ -26,3 +26,10 @@ There are two options available:
         pip install -e .
 
     This will allow you to modify the source code in the way it will suite your needs
+
+
+HOTTBOX tutorials
+-----------------
+
+Please check out `our repository <https://github.com/hottbox/hottbox-tutorials>`_ with tutorials on ``hottbox`` api
+and theoretical background on multi-linear algebra and tensor decompositions.
