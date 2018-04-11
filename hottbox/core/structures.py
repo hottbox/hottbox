@@ -216,7 +216,7 @@ class TensorCPD(BaseTensorTD):
     def __init__(self, fmat, core_values):
         super(TensorCPD, self).__init__()
         self.fmat = fmat.copy()
-        self.core_values = core_values.copy()
+        self._core_values = core_values.copy()
 
     @property
     def order(self):
@@ -253,7 +253,7 @@ class TensorCPD(BaseTensorTD):
         -------
         core_tensor : Tensor
         """
-        core_tensor = super_diag_tensor(self.order, values=self.core_values)
+        core_tensor = super_diag_tensor(self.order, values=self._core_values)
         return core_tensor
 
     @property
@@ -283,7 +283,7 @@ class TensorTKD(BaseTensorTD):
     def __init__(self, fmat, core_values):
         super(TensorTKD, self).__init__()
         self.fmat = fmat.copy()
-        self.core_values = core_values.copy()
+        self._core_values = core_values.copy()
 
     @property
     def order(self):
@@ -319,7 +319,7 @@ class TensorTKD(BaseTensorTD):
         -------
         core_tensor : Tensor
         """
-        core_tensor = Tensor(self.core_values)
+        core_tensor = Tensor(self._core_values)
         return core_tensor
 
     @property
@@ -341,15 +341,41 @@ class TensorTT(BaseTensorTD):
 
     Parameters
     ----------
-    cores : list[np.ndarray]
-        List of core Tensors for the Tensor Train representation of a tensor.
+    core_values : list[np.ndarray]
+        List of cores for the Tensor Train representation of a tensor.
     full_shape : tuple
         Shape of the full tensor (``TensorTT.reconstruct.shape``). Makes the reconstruction process easier.
     """
-    def __init__(self, cores, full_shape):
+    def __init__(self, core_values, full_shape):
         super(TensorTT, self).__init__()
-        self.cores = [Tensor(core) for core in cores]
+        self._core_values = core_values.copy()
         self.full_shape = full_shape
+
+    def core(self, i):
+        """ Specific core of the TensorTT representation
+
+        Parameters
+        ----------
+        i : int
+            Should not exceed the order of ``TensorTT.order - 1`` representation
+
+        Returns
+        -------
+        core_tensor : Tensor
+        """
+        core_tensor = Tensor(self._core_values[i])
+        return  core_tensor
+
+    @property
+    def cores(self):
+        """ All cores of the TensorTT representation
+
+        Returns
+        -------
+        core_list : list[Tensor]
+        """
+        core_list = [self.core(i) for i in range(len(self._core_values))]
+        return core_list
 
     @property
     def order(self):
@@ -359,7 +385,7 @@ class TensorTT(BaseTensorTD):
         -------
         order : int
         """
-        return len(self.cores)
+        return len(self._core_values)
 
     @property
     def rank(self):
@@ -373,7 +399,7 @@ class TensorTT(BaseTensorTD):
         -----
         Most often referred to as the TT rank
         """
-        return tuple([core.shape[-1] for core in self.cores[:-1]])
+        return tuple([core_values.shape[-1] for core_values in self._core_values[:-1]])
 
     @property
     def reconstruct(self):
@@ -384,9 +410,10 @@ class TensorTT(BaseTensorTD):
         tensor : Tensor
         """
         rank = self.rank + (1,)
-        data = self.cores[0].data
+        core = self.cores[0]
+        data = core.data
         for i, core in enumerate(self.cores[1:]):
-            shape_2d = [rank[i],rank[i+1]*self.full_shape[i+1]]
+            shape_2d = [rank[i], rank[i+1]*self.full_shape[i+1]]
             core_flat = np.reshape(core.data, shape_2d, order='F')
             data = np.reshape(data, [-1, rank[i]], order='F')
             data = np.dot(data, core_flat)
