@@ -8,10 +8,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Added `copy` for the core tensor structures
 
 
 ### Changed
 
+- For all tensor representation all their data values can (should) only be accessed through corresponding properties.
+- Objects of `Tensor` class can only be created from numpy arrays
 
 
 ### Removed

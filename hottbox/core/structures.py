@@ -11,9 +11,9 @@ class Tensor(object):
 
     All its methods implement all common operation on a tensor alone
 
-    Parameters
+    Attributes
     ----------
-    data : np.ndarray
+    _data : np.ndarray
         N-dimensional array
     _orig_shape : tuple
         Original shape of a tensor. Defined at the object creation for convenience during unfolding and folding.
@@ -22,28 +22,40 @@ class Tensor(object):
     # TODO: add description for the tensor and the factor matrices/modes etc. (Through pandas integration???)
 
     def __init__(self, array) -> None:
-        """
+        """ Create object of ``Tensor`` class
 
         Parameters
         ----------
-        array : {np.ndarray, Tensor}
+        array : np.ndarray
         """
         # TODO: covert data to a specific data type (int, float etc)
-        if isinstance(array, Tensor):
-            self.data = array.data
-            self._orig_shape = array._orig_shape
-        else:
-            self.data = array
-            self._orig_shape = array.shape
+        if not isinstance(array, np.ndarray):
+            raise TypeError('Input data should be a numpy array')
+        self._data = array.copy()
+        self._orig_shape = array.shape
 
     def copy(self):
-        """ Produces a copy of itself
+        """ Produces a copy of itself as a new object
 
         Returns
         -------
-        Tensor
+        new_object : Tensor
         """
-        return Tensor(self)
+        cls = self.__class__
+        new_object = cls.__new__(cls)
+        new_object.__dict__.update(self.__dict__)
+        return new_object
+
+    @property
+    def data(self):
+        """ N-dimensional array with data values 
+        
+        Returns
+        -------
+        array : np.ndarray
+        """
+        array = self._data
+        return array
 
     @property
     def frob_norm(self):
@@ -106,7 +118,7 @@ class Tensor(object):
             tensor = self
         else:
             tensor = self.copy()
-        tensor.data = unfold(self.data, mode)
+        tensor._data = unfold(self.data, mode)
         return tensor
 
     def fold(self, inplace=True):
@@ -128,7 +140,7 @@ class Tensor(object):
         else:
             tensor = self.copy()
         mode = tensor._orig_shape.index(tensor.shape[0])
-        tensor.data = fold(self.data, mode, self._orig_shape)
+        tensor._data = fold(self.data, mode, self._orig_shape)
         return tensor
 
     def mode_n_product(self, matrix, mode, inplace=True):
@@ -161,7 +173,7 @@ class Tensor(object):
             tensor = self
         else:
             tensor = self.copy()
-        tensor.data = mode_n_product(tensor=tensor.data, matrix=matrix.data, mode=mode)
+        tensor._data = mode_n_product(tensor=tensor.data, matrix=matrix.data, mode=mode)
         tensor._orig_shape = tensor.shape
         return tensor
 
@@ -172,6 +184,18 @@ class BaseTensorTD(object):
     """
     def __init__(self):
         pass
+
+    def copy(self):
+        """ Produces a copy of itself as a new object
+
+        Returns
+        -------
+        new_object : BaseTensorTD
+        """
+        cls = self.__class__
+        new_object = cls.__new__(cls)
+        new_object.__dict__.update(self.__dict__)
+        return new_object
 
     @property
     def order(self):
@@ -206,17 +230,58 @@ class BaseTensorTD(object):
 class TensorCPD(BaseTensorTD):
     """ Representation of a tensor in the CPD form.
 
-    Parameters
+    Attributes
     ----------
-    fmat : list[np.ndarray]
-        List of factor matrices for the CP representation of a tensor
-    core_values : np.ndarray
-        Array of coefficients on the super-diagonal of a core for the CP representation of a tensor
+    _fmat : list[np.ndarray]
+        Placeholder for a list of factor matrices for the CP representation of a tensor
+    _core_values : np.ndarray
+        Placeholder for an array of coefficients on the super-diagonal of a core for the CP representation of a tensor
     """
     def __init__(self, fmat, core_values):
+        """
+        
+        Parameters
+        ----------
+        fmat : list[np.ndarray]
+            List of factor matrices for the CP representation of a tensor
+        core_values : np.ndarray
+            Array of coefficients on the super-diagonal of a core for the CP representation of a tensor
+        """
         super(TensorCPD, self).__init__()
-        self.fmat = fmat.copy()
+        self._fmat = fmat.copy()
         self._core_values = core_values.copy()
+
+    def copy(self):
+        """ Produces a copy of itself as a new object
+
+        Returns
+        -------
+        new_object : TensorCPD
+        """
+        new_object = super(TensorCPD, self).copy()
+        return new_object
+
+    @property
+    def core(self):
+        """ Core tensor of the CP representation of a tensor
+
+        Returns
+        -------
+        core_tensor : Tensor
+        """
+        core_tensor = super_diag_tensor(self.order, values=self._core_values)
+        return core_tensor
+
+    @property
+    def fmat(self):
+        """ List of factor matrices for the CP representation of a tensor
+        
+        Returns
+        -------
+        factor_matrices : list[np.ndarray]
+        """
+        factor_matrices = self._fmat
+        return factor_matrices
 
     @property
     def order(self):
@@ -246,17 +311,6 @@ class TensorCPD(BaseTensorTD):
         return rank
 
     @property
-    def core(self):
-        """ Core tensor of the CP representation of a tensor
-
-        Returns
-        -------
-        core_tensor : Tensor
-        """
-        core_tensor = super_diag_tensor(self.order, values=self._core_values)
-        return core_tensor
-
-    @property
     def reconstruct(self):
         """ Converts the CP representation of a tensor into a full tensor
 
@@ -275,15 +329,56 @@ class TensorTKD(BaseTensorTD):
 
     Parameters
     ----------
-    fmat : list[np.ndarray]
-        List of factor matrices for the Tucker representation of a tensor
-    core_values : np.ndarray
-        Core of the Tucker representation of a tensor
+    _fmat : list[np.ndarray]
+        Placeholder for a list of factor matrices for the Tucker representation of a tensor
+    _core_values : np.ndarray
+        Placeholder for a core of the Tucker representation of a tensor
     """
     def __init__(self, fmat, core_values):
+        """
+        
+        Parameters
+        ----------
+        fmat : list[np.ndarray]
+            List of factor matrices for the Tucker representation of a tensor
+        core_values : np.ndarray
+            Core of the Tucker representation of a tensor
+        """
         super(TensorTKD, self).__init__()
-        self.fmat = fmat.copy()
+        self._fmat = fmat.copy()
         self._core_values = core_values.copy()
+
+    def copy(self):
+        """ Produces a copy of itself as a new object
+
+        Returns
+        -------
+        new_object : TensorTKD
+        """
+        new_object = super(TensorTKD, self).copy()
+        return new_object
+
+    @property
+    def core(self):
+        """ Core tensor of the CP representation of a tensor
+
+        Returns
+        -------
+        core_tensor : Tensor
+        """
+        core_tensor = Tensor(self._core_values)
+        return core_tensor
+
+    @property
+    def fmat(self):
+        """ List of factor matrices for the Tucker representation of a tensor
+        
+        Returns
+        -------
+        factor_matrices : list[np.ndarray]
+        """
+        factor_matrices = self._fmat
+        return factor_matrices
 
     @property
     def order(self):
@@ -312,17 +407,6 @@ class TensorTKD(BaseTensorTD):
         return rank
 
     @property
-    def core(self):
-        """ Core tensor of the CP representation of a tensor
-
-        Returns
-        -------
-        core_tensor : Tensor
-        """
-        core_tensor = Tensor(self._core_values)
-        return core_tensor
-
-    @property
     def reconstruct(self):
         """ Converts the Tucker representation of a tensor into a full tensor
 
@@ -342,14 +426,33 @@ class TensorTT(BaseTensorTD):
     Parameters
     ----------
     core_values : list[np.ndarray]
-        List of cores for the Tensor Train representation of a tensor.
+        Placeholder for a list of cores for the Tensor Train representation of a tensor.
     full_shape : tuple
-        Shape of the full tensor (``TensorTT.reconstruct.shape``). Makes the reconstruction process easier.
+        Placeholder for a shape of the full tensor (``TensorTT.reconstruct.shape``). Makes the reconstruction process easier.
     """
     def __init__(self, core_values, full_shape):
+        """
+        
+        Parameters
+        ----------
+        core_values : list[np.ndarray]
+            List of cores for the Tensor Train representation of a tensor.
+        full_shape : tuple
+            Shape of the full tensor (``TensorTT.reconstruct.shape``). Makes the reconstruction process easier.
+        """
         super(TensorTT, self).__init__()
         self._core_values = core_values.copy()
         self.full_shape = full_shape
+
+    def copy(self):
+        """ Produces a copy of itself as a new object
+
+        Returns
+        -------
+        new_object : TensorTT
+        """
+        new_object = super(TensorTT, self).copy()
+        return new_object
 
     def core(self, i):
         """ Specific core of the TensorTT representation
