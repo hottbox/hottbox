@@ -18,21 +18,54 @@ class Tensor(object):
     _orig_shape : tuple
         Original shape of a tensor. Defined at the object creation for convenience during unfolding and folding.
         Can potentially cause a lot of problems in a future.
+    _mode_names : list[str]
+        Description of the tensor modes
     """
-    # TODO: add description for the tensor and the factor matrices/modes etc. (Through pandas integration???)
 
-    def __init__(self, array) -> None:
+    def __init__(self, array, mode_names=None) -> None:
         """ Create object of ``Tensor`` class
 
         Parameters
         ----------
         array : np.ndarray
+            N-dimensional array
+        mode_names : list[str]
+            Description of the tensor modes.
+            If nothing is specified then all modes of the created ``Tensor`` get generic names ['mode-0', 'mode-1', ...]
         """
         # TODO: covert data to a specific data type (int, float etc)
         if not isinstance(array, np.ndarray):
             raise TypeError('Input data should be a numpy array')
         self._data = array.copy()
         self._orig_shape = array.shape
+        self._mode_names = self._assign_names(array=array, mode_names=mode_names)
+
+    def _assign_names(self, array, mode_names):
+        """ Generate list of names for the modes of a tensor
+        
+        Parameters
+        ----------
+        array : np.ndarray
+            N-dimensional array
+        mode_names : list[str]
+            Description of the tensor modes.
+
+        Returns
+        -------
+        names : list[str]
+        """
+        if mode_names is None:
+            names = ["mode-{}".format(mode) for mode in range(array.ndim)]
+        else:
+            if array.ndim != len(mode_names):
+                raise ValueError("Incorrect number of names for the modes of a tensor: {0} != {1} "
+                                 "('array.ndim != len(mode_names)')\n".format(array.ndim, len(mode_names)))
+            # TODO: find a better way to do this check. Don't like the current implementation
+            for name in mode_names:
+                if not isinstance(name, str):
+                    raise TypeError('The list of names for the modes should only contain strings!')
+            names = mode_names
+        return names
 
     def copy(self):
         """ Produces a copy of itself as a new object
@@ -97,6 +130,41 @@ class Tensor(object):
         int
         """
         return self.data.size
+
+    @property
+    def mode_names(self):
+        """ Description of the tensor modes
+
+        Returns
+        -------
+        names : list[str]
+        """
+        names = self._mode_names
+        return names
+
+    def rename_modes(self, new_names):
+        """ Rename modes of a tensor
+        
+        Parameters
+        ----------        
+        new_name : dict
+            New names for the tensor modes.
+            The name of the mode defined by the Value of the dict will be renamed to the corresponding Key            
+        """
+        for mode in new_names.values():
+            if not isinstance(mode, int):
+                raise TypeError("All values of the dictionary should be integers")
+            if mode > self.order:
+                raise ValueError("One of the specified modes exceeds order of the tensor")
+        for name, mode in new_names.items():
+            self._mode_names[mode] = name
+
+    def describe(self):
+        """ Provides general information about this instance.        
+        """
+        print("This tensor is of order {}, consists of {} elements and its Frobenious norm = {:.2f}.\n"
+              "Sizes and names of its modes are {} and {} respectively.".format(self.order, self.size, self.frob_norm,
+                                                                                self.shape, self.mode_names))
 
     def unfold(self, mode, inplace=True):
         """ Perform mode-n unfolding to a matrix

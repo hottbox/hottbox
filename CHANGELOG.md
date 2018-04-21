@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Added `copy` for the core tensor structures
+- Added function that describes an instance of `Tensor` class
+- Added string descriptions for the modes of `Tensor`. Modes can also
+be renamed
+
 
 
 ### Changed
