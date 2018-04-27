@@ -60,10 +60,8 @@ class Tensor(object):
             if array.ndim != len(mode_names):
                 raise ValueError("Incorrect number of names for the modes of a tensor: {0} != {1} "
                                  "('array.ndim != len(mode_names)')\n".format(array.ndim, len(mode_names)))
-            # TODO: find a better way to do this check. Don't like the current implementation
-            for name in mode_names:
-                if not isinstance(name, str):
-                    raise TypeError('The list of names for the modes should only contain strings!')
+            if not all(isinstance(name, str) for name in mode_names):
+                raise TypeError('The list of names for the modes should only contain strings!')
             names = mode_names
         return names
 
@@ -153,9 +151,11 @@ class Tensor(object):
         """
         for mode in new_names.values():
             if not isinstance(mode, int):
-                raise TypeError("All values of the dictionary should be integers")
+                raise TypeError("All values of the dictionary should be integers.")
             if mode > self.order:
-                raise ValueError("One of the specified modes exceeds order of the tensor")
+                raise ValueError("All specified modes should not exceed the order of the tensor.")
+            if mode < 0:
+                raise ValueError("All specified modes should be non-negative.")
         for name, mode in new_names.items():
             self._mode_names[mode] = name
 
@@ -187,6 +187,15 @@ class Tensor(object):
         else:
             tensor = self.copy()
         tensor._data = unfold(self.data, mode)
+
+
+        # TODO: think of a better implementation for changing mode names. And also make use of rename_mode function
+        old_mode_names = tensor.mode_names.copy()
+        new_mode_names = [old_mode_names[mode]]
+        old_mode_names.pop(mode)
+        new_mode_names.append(old_mode_names)
+        tensor._mode_names = new_mode_names
+
         return tensor
 
     def fold(self, inplace=True):
@@ -207,8 +216,15 @@ class Tensor(object):
             tensor = self
         else:
             tensor = self.copy()
+        # TODO: fix bug when original shape has mode size equal along different modes
+        # Probably this will require to specify the mode explicitly instead of inferring it
         mode = tensor._orig_shape.index(tensor.shape[0])
         tensor._data = fold(self.data, mode, self._orig_shape)
+
+        # TODO: think of a better implementation for changing mode names. And also make use of rename_mode function
+        new_mode_names = tensor.mode_names[-1].copy()
+        new_mode_names.insert(mode, tensor.mode_names[0])
+        tensor._mode_names = new_mode_names
         return tensor
 
     def mode_n_product(self, matrix, mode, inplace=True):
