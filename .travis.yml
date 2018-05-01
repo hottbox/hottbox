@@ -12,7 +12,6 @@ branches:
   only:
   - master
   - develop
-  - cont-integration
 
 install:
   - source ci_scripts/travis_install.sh
