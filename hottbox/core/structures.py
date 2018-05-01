@@ -29,9 +29,10 @@ class Tensor(object):
         ----------
         array : np.ndarray
             N-dimensional array
-        mode_names : list[str]
+        mode_names : dict
             Description of the tensor modes.
-            If nothing is specified then all modes of the created ``Tensor`` get generic names ['mode-0', 'mode-1', ...]
+            If nothing is specified then all modes of the created ``Tensor``
+            get generic names {0:'mode-0', 1:'mode-1', ...}
         """
         # TODO: covert data to a specific data type (int, float etc)
         if not isinstance(array, np.ndarray):
@@ -47,21 +48,30 @@ class Tensor(object):
         ----------
         array : np.ndarray
             N-dimensional array
-        mode_names : list[str]
-            Description of the tensor modes.
+        mode_names : dict
+            Description of the tensor modes in form of a dictionary where Keys and Values
+            correspond to mode number and description respectively
 
         Returns
         -------
-        names : list[str]
+        names : dict
         """
         if mode_names is None:
-            names = ["mode-{}".format(mode) for mode in range(array.ndim)]
+            names = {mode:"mode-{}".format(mode) for mode in range(array.ndim)}
         else:
-            if array.ndim != len(mode_names):
+            if array.ndim != len(mode_names.keys()):
                 raise ValueError("Incorrect number of names for the modes of a tensor: {0} != {1} "
-                                 "('array.ndim != len(mode_names)')\n".format(array.ndim, len(mode_names)))
-            if not all(isinstance(name, str) for name in mode_names):
-                raise TypeError('The list of names for the modes should only contain strings!')
+                                 "('array.ndim != len(mode_names.keys())')!\n".format(array.ndim,
+                                                                                      len(mode_names.keys())
+                                                                                      )
+                                 )
+            if not all(isinstance(mode, int) for mode in mode_names.keys()):
+                raise TypeError("The dict of mode names should contain only integer keys!")
+            if not all(mode < array.ndim for mode in mode_names.keys()):
+                raise ValueError("All specified modes should not exceed the order of the tensor!")
+            if not all(mode >= 0 for mode in mode_names.keys()):
+                raise ValueError("All specified values for modes should be non-negative!")
+
             names = mode_names
         return names
 
@@ -135,33 +145,34 @@ class Tensor(object):
 
         Returns
         -------
-        names : list[str]
+        names : dict
         """
         names = self._mode_names
         return names
 
-    def rename_modes(self, new_names):
+    def rename_modes(self, new_mode_names):
         """ Rename modes of a tensor
         
         Parameters
         ----------        
         new_name : dict
-            New names for the tensor modes.
-            The name of the mode defined by the Value of the dict will be renamed to the corresponding Key            
+            New names for the tensor modes in form of a dictionary
+            The name of the mode defined by the Key of the dict will be renamed to the corresponding Value
         """
-        for mode in new_names.values():
-            if not isinstance(mode, int):
-                raise TypeError("All values of the dictionary should be integers.")
-            if mode > self.order:
-                raise ValueError("All specified modes should not exceed the order of the tensor.")
-            if mode < 0:
-                raise ValueError("All specified modes should be non-negative.")
-        for name, mode in new_names.items():
-            self._mode_names[mode] = name
+        if (len(new_mode_names.keys()) > self.order):
+            raise ValueError("Too many mode names have been specified")
+        if not all(isinstance(mode, int) for mode in new_mode_names.keys()):
+            raise TypeError("The dict of `new_mode_names` should contain only integer keys!")
+        if not all(mode < self.order for mode in new_mode_names.keys()):
+            raise ValueError("All specified mode values should not exceed the order of the tensor!")
+        if not all(mode >= 0 for mode in new_mode_names.keys()):
+            raise ValueError("All specified mode keys should be non-negative!")
+
+        self._mode_names.update(new_mode_names)
+
 
     def describe(self):
-        """ Provides general information about this instance.        
-        """
+        """ Provides general information about this instance."""
         print("This tensor is of order {}, consists of {} elements and its Frobenious norm = {:.2f}.\n"
               "Sizes and names of its modes are {} and {} respectively.".format(self.order, self.size, self.frob_norm,
                                                                                 self.shape, self.mode_names))

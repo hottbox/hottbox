@@ -5,9 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-![Travis branch](https://img.shields.io/travis/hottbox/hottbox/develop.svg)
-![Coveralls github branch](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)
-
+[![Travis branch](https://img.shields.io/travis/hottbox/hottbox/develop.svg)](https://img.shields.io/travis/hottbox/hottbox/develop.svg)
+[![Coveralls github branch](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)
 
 
 ### Added
@@ -16,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added function that describes an instance of `Tensor` class
 - Added string descriptions for the modes of `Tensor`. Modes can also
 be renamed
+- Setup CI using Travis and Coveralls (tested on Ubuntu)
 
 
 
