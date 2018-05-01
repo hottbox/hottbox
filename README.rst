@@ -1,3 +1,12 @@
+|Travis|_ |Codecov|_
+
+.. |Travis| image:: https://img.shields.io/travis/hottbox/hottbox/master.svg?label=TravisCI
+.. _Travis: https://travis-ci.org/hottbox/hottbox/
+
+
+.. |Codecov| image:: https://img.shields.io/coveralls/github/hottbox/hottbox/master.svg
+.. _Codecov: https://codecov.io/gh/hottbox/hottbox
+
 Higher Order Tensors ToolBOX (hottbox)
 ======================================
 
