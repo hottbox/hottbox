@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 [![Travis branch](https://img.shields.io/travis/hottbox/hottbox/develop.svg)](https://img.shields.io/travis/hottbox/hottbox/develop.svg)
 [![Coveralls github branch](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)
+[![Build status](https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/develop?svg=true)](https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a/branch/develop)
 
 
 ### Added
