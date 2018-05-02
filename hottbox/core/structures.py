@@ -3,6 +3,7 @@ Classes for different tensor representations
 """
 
 import numpy as np
+from collections import OrderedDict
 from .operations import unfold, fold, mode_n_product
 
 
@@ -48,7 +49,7 @@ class Tensor(object):
         ----------
         array : np.ndarray
             N-dimensional array
-        mode_names : dict
+        mode_names : OrderedDict
             Description of the tensor modes in form of a dictionary where Keys and Values
             correspond to mode number and description respectively
 
@@ -57,8 +58,10 @@ class Tensor(object):
         names : dict
         """
         if mode_names is None:
-            names = {mode:"mode-{}".format(mode) for mode in range(array.ndim)}
+            names = OrderedDict([(mode,"mode-{}".format(mode)) for mode in range(array.ndim)])
         else:
+            if not isinstance(mode_names, OrderedDict):
+                raise TypeError("You should use OrderDict for mode_names!")
             if array.ndim != len(mode_names.keys()):
                 raise ValueError("Incorrect number of names for the modes of a tensor: {0} != {1} "
                                  "('array.ndim != len(mode_names.keys())')!\n".format(array.ndim,
@@ -145,7 +148,7 @@ class Tensor(object):
 
         Returns
         -------
-        names : dict
+        names : OrderedDict
         """
         names = self._mode_names
         return names
@@ -155,9 +158,14 @@ class Tensor(object):
         
         Parameters
         ----------        
-        new_name : dict
+        new_mode_names : dict
             New names for the tensor modes in form of a dictionary
             The name of the mode defined by the Key of the dict will be renamed to the corresponding Value
+
+        Notes
+        -----
+            `new_mode_name` does not have be OrderedDict since `mode_names` attribute is created at the
+            Tensor object creation
         """
         if (len(new_mode_names.keys()) > self.order):
             raise ValueError("Too many mode names have been specified")
@@ -167,15 +175,14 @@ class Tensor(object):
             raise ValueError("All specified mode values should not exceed the order of the tensor!")
         if not all(mode >= 0 for mode in new_mode_names.keys()):
             raise ValueError("All specified mode keys should be non-negative!")
-
         self._mode_names.update(new_mode_names)
-
 
     def describe(self):
         """ Provides general information about this instance."""
+        mode_names = {key:value for key, value in self.mode_names.items()}
         print("This tensor is of order {}, consists of {} elements and its Frobenious norm = {:.2f}.\n"
               "Sizes and names of its modes are {} and {} respectively.".format(self.order, self.size, self.frob_norm,
-                                                                                self.shape, self.mode_names))
+                                                                                self.shape, mode_names))
 
     def unfold(self, mode, inplace=True):
         """ Perform mode-n unfolding to a matrix
@@ -199,14 +206,14 @@ class Tensor(object):
             tensor = self.copy()
         tensor._data = unfold(self.data, mode)
 
+        new_mode_names = {0 : OrderedDict([(mode , tensor.mode_names[mode])]),
+                          1 : OrderedDict([(orig_mode,tensor.mode_names[orig_mode]) for orig_mode in tensor.mode_names.keys() if orig_mode != mode])
+                          }
+        # remove mode names due to collapsed dimensions
+        for mode_to_remove in range(2,len(tensor.mode_names.keys())):
+            del tensor._mode_names[mode_to_remove]
 
-        # TODO: think of a better implementation for changing mode names. And also make use of rename_mode function
-        old_mode_names = tensor.mode_names.copy()
-        new_mode_names = [old_mode_names[mode]]
-        old_mode_names.pop(mode)
-        new_mode_names.append(old_mode_names)
-        tensor._mode_names = new_mode_names
-
+        tensor.rename_modes(new_mode_names=new_mode_names)
         return tensor
 
     def fold(self, inplace=True):
@@ -227,15 +234,20 @@ class Tensor(object):
             tensor = self
         else:
             tensor = self.copy()
+
+        first_mode = tensor.mode_names[0]
+        first_mode = list(first_mode)
+        mode = first_mode[0]
+
         # TODO: fix bug when original shape has mode size equal along different modes
         # Probably this will require to specify the mode explicitly instead of inferring it
-        mode = tensor._orig_shape.index(tensor.shape[0])
+        # mode = tensor._orig_shape.index(tensor.shape[0])
         tensor._data = fold(self.data, mode, self._orig_shape)
 
         # TODO: think of a better implementation for changing mode names. And also make use of rename_mode function
-        new_mode_names = tensor.mode_names[-1].copy()
-        new_mode_names.insert(mode, tensor.mode_names[0])
-        tensor._mode_names = new_mode_names
+        # new_mode_names = tensor.mode_names[-1].copy()
+        # new_mode_names.insert(mode, tensor.mode_names[0])
+        # tensor._mode_names = new_mode_names
         return tensor
 
     def mode_n_product(self, matrix, mode, inplace=True):

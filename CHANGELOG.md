@@ -4,19 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-[![Travis branch](https://img.shields.io/travis/hottbox/hottbox/develop.svg)](https://img.shields.io/travis/hottbox/hottbox/develop.svg)
-[![Coveralls github branch](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)
-[![Build status](https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/develop?svg=true)](https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a/branch/develop)
+## [Unreleased: develop branch]
+[![Travis status](https://img.shields.io/travis/hottbox/hottbox/develop.svg?label=TravisCI)](https://img.shields.io/travis/hottbox/hottbox/develop.svg)
+[![Appveyor status](https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/develop?svg=true)](https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a/branch/develop)
+[![Coveralls status](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)
+
 
 
 ### Added
 
 - Added `copy` for the core tensor structures
 - Added function that describes an instance of `Tensor` class
-- Added string descriptions for the modes of `Tensor`. Modes can also
-be renamed
-- Setup CI using Travis and Coveralls (tested on Ubuntu)
+- Added string descriptions for the modes of `Tensor` through the use of OrderedDict.
+ Modes can also be renamed
+- Setup CI using Travis, AppVeyor and Coveralls
 
 
 
