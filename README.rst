@@ -1,8 +1,10 @@
-|Travis|_ |Codecov|_
+|Travis|_ |Codecov|_ |Appveyor|_
 
 .. |Travis| image:: https://img.shields.io/travis/hottbox/hottbox/master.svg?label=TravisCI
 .. _Travis: https://travis-ci.org/hottbox/hottbox/
 
+.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/sh2rk41gpn26h7a7/branch/master?svg=true
+.. _Appveyor: https://ci.appveyor.com/api/projects/status/sh2rk41gpn26h7a7/branch/master?svg=true
 
 .. |Codecov| image:: https://img.shields.io/coveralls/github/hottbox/hottbox/master.svg
 .. _Codecov: https://codecov.io/gh/hottbox/hottbox

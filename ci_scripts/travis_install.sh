@@ -2,7 +2,15 @@
 
 set -e
 
-if [[ "$DISTRIB" == "ubuntu" ]]; then
+echo 'List files from cached directories'
+echo 'pip:'
+ls $HOME/.cache/pip
+echo 'ccache:'
+ls $HOME/.ccache
+
+if [[ "$DISTRIB" == "conda" ]]; then
+    echo $DISTRIB
+    echo 'Setting up a conda-based virtual environment'
     # Deactivate the travis-provided virtual environment and setup a
     # conda-based environment instead
     deactivate
