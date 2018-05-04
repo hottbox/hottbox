@@ -3,6 +3,7 @@ Classes for different tensor representations
 """
 
 import numpy as np
+from functools import reduce
 from collections import OrderedDict
 from .operations import unfold, fold, mode_n_product
 
@@ -23,7 +24,7 @@ class Tensor(object):
         Description of the tensor modes
     """
 
-    def __init__(self, array, mode_names=None) -> None:
+    def __init__(self, array, mode_names=None, ft_shape=None) -> None:
         """ Create object of ``Tensor`` class
 
         Parameters
@@ -34,13 +35,19 @@ class Tensor(object):
             Description of the tensor modes.
             If nothing is specified then all modes of the created ``Tensor``
             get generic names {0:'mode-0', 1:'mode-1', ...}
+        ft_shape : tuple
+            Shape of the a tensor in normal format (without being in unfolded or folded state)
+
+        Notes
+        -----
+            In most cases use the default settings for `ft_shape`, because it affects folding, unfolding etc.
         """
         # TODO: covert data to a specific data type (int, float etc)
         if not isinstance(array, np.ndarray):
             raise TypeError('Input data should be a numpy array')
         self._data = array.copy()
-        self._ft_shape = array.shape
         self._mode_names = self._assign_names(array=array, mode_names=mode_names)
+        self._ft_shape = self._assign_ft_shape(array=array, ft_shape=ft_shape)
 
     def _assign_names(self, array, mode_names):
         """ Generate list of names for the modes of a tensor
@@ -78,6 +85,34 @@ class Tensor(object):
             names = mode_names.copy()
         return names
 
+    def _assign_ft_shape(self, array, ft_shape):
+        """ Generate shape for a normal format of a tensor (without being in unfolded or folded state)
+
+        Parameters
+        ----------
+        array : np.ndarray
+            N-dimensional array
+        ft_shape : tuple
+            Shape for a normal format of a tensor
+        Returns
+        -------
+        shape : tuple
+        """
+        if ft_shape is None:
+            shape = tuple([i for i in array.shape])
+        else:
+            if not isinstance(ft_shape, tuple):
+                raise TypeError("Incorrect type of the parameter `ft_shape`!\n"
+                                "It should be tuple")
+
+            size = reduce(lambda x, y: x * y, ft_shape)
+            if array.size != size:
+                raise ValueError("Values of `ft_shape` are inconsistent with the provided data array ({} != {})!\n"
+                                 "reduce(lambda x, y: x * y, ft_shape) != array.size".format(size, array.size))
+
+            shape = tuple([i for i in ft_shape])
+        return shape
+
     def copy(self):
         """ Produces a copy of itself as a new object
 
@@ -93,8 +128,8 @@ class Tensor(object):
         """
         array = self.data
         mode_names = self.mode_names
-        new_object = Tensor(array=array, mode_names=mode_names)
-        new_object._ft_shape = tuple([i for i in self._ft_shape])
+        ft_shape = self.ft_shape
+        new_object = Tensor(array=array, mode_names=mode_names, ft_shape=ft_shape)
         return new_object
 
     @property
@@ -107,6 +142,17 @@ class Tensor(object):
         """
         array = self._data
         return array
+
+    @property
+    def ft_shape(self):
+        """ Shape of the a tensor in normal format (without being in unfolded or folded state)
+
+        Returns
+        -------
+        shape : tuple
+        """
+        shape = self._ft_shape
+        return shape
 
     @property
     def frob_norm(self):

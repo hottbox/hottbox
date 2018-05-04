@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
-from collections import OrderedDict
 from functools import reduce
+from collections import OrderedDict
 from ..structures import *
 
 
@@ -30,11 +30,11 @@ class TestTensor:
         np.testing.assert_array_equal(tensor.data, true_data)
         assert (tensor.frob_norm == 8.0)
         assert (tensor.shape == true_shape)
+        assert (tensor.ft_shape == true_shape)
         assert (tensor.order == true_order)
         assert (tensor.size == true_size)
         assert (tensor.mode_names == true_default_mode_names)
-        assert (tensor._data is not true_data)  #  check that the data of a tensor has its own data and not a reference
-        assert (tensor.data is not true_data)   #  check that the data of a tensor has its own data and not a reference
+        assert (tensor._data is not true_data)          # check that is not a reference
 
         # ------ tests for creating a Tensor object with custom mode names
         true_custom_mode_names = OrderedDict([(0, 'time'),
@@ -77,6 +77,42 @@ class TestTensor:
             incorrect_mode_names = OrderedDict([(mode, "{}-mode".format(mode)) for mode in range(-1, true_order - 1)])
             Tensor(array=true_data, mode_names=incorrect_mode_names)
 
+        # ------ tests for creating a Tensor object with custom ft_shape
+        I, J, K = 2, 4, 8
+        true_data = np.ones(I * J * K).reshape(I, J, K)
+        true_ft_shape = (I, J, K)
+        tensor = Tensor(array=true_data, ft_shape=true_ft_shape)
+        assert (tensor.ft_shape == true_ft_shape)       # check that values are the same
+        assert (tensor._ft_shape is not true_ft_shape)  # check that not a reference
+
+        # check when ft_shape is correct but do not correspond to the shape of data array
+        I, J, K = 2, 4, 8
+        true_data = np.ones(I * J * K).reshape(I, J*K)
+        true_ft_shape = (I, J, K)
+        tensor = Tensor(array=true_data, ft_shape=true_ft_shape)
+        assert (tensor.ft_shape == true_ft_shape)  # check that values are the same
+        assert (tensor._ft_shape is not true_ft_shape)  # check that not a reference
+
+        # ------ tests that should FAIL for custom ft_shape being incorrectly defined
+        with pytest.raises(TypeError):
+            # should of of tuple type
+            incorrect_ft_shape = list(true_shape)
+            Tensor(array=true_data, ft_shape=incorrect_ft_shape)
+
+        with pytest.raises(ValueError):
+            # shape does not match the number of elements
+            I, J, K = 2, 4, 8
+            true_data = np.ones(I*J*K).reshape(I, J, K)
+            incorrect_ft_shape = (I+1, J, K)
+            Tensor(array=true_data, ft_shape=incorrect_ft_shape)
+
+        with pytest.raises(ValueError):
+            # shape does not match the number of elements
+            I, J, K = 2, 4, 8
+            true_data = np.ones(I*J*K).reshape(I, J*K)
+            incorrect_ft_shape = (I+1, J, K)
+            Tensor(array=true_data, ft_shape=incorrect_ft_shape)
+
     def test_copy(self):
         """ Tests for creation a copy of a Tensor object """
         data = np.arange(24).reshape(2,3,4)
@@ -87,6 +123,7 @@ class TestTensor:
         assert (tensor_copy._ft_shape is not tensor._ft_shape)
         assert (tensor_copy._mode_names is not tensor._mode_names)
         np.testing.assert_array_equal(tensor_copy.data, tensor.data)
+        assert (tensor_copy.ft_shape == tensor.ft_shape)
         assert (tensor_copy.frob_norm == tensor.frob_norm)
         assert (tensor_copy.shape == tensor.shape)
         assert (tensor_copy.order == tensor.order)
@@ -172,22 +209,24 @@ class TestTensor:
 
         # --------- tests for folding INPLACE=TRUE
         for mode in range(len(true_folded_shape)):
-            tensor = Tensor(array=orig_unfolded_data[mode], mode_names=orig_unfolded_mode_names[mode])
-            tensor._ft_shape = true_folded_shape  # Don't have control over this parameter therefore need to redefine
+            tensor = Tensor(array=orig_unfolded_data[mode],
+                            mode_names=orig_unfolded_mode_names[mode],
+                            ft_shape=true_folded_shape)
             tensor.fold(inplace=True)
             np.testing.assert_array_equal(tensor.data, true_result_data)
             assert (tensor.mode_names == true_result_mode_names)
 
         # --------- tests for unfolding INPLACE=FALSE
         for mode in range(len(true_folded_shape)):
-            tensor = Tensor(array=orig_unfolded_data[mode], mode_names=orig_unfolded_mode_names[mode])
-            tensor._ft_shape = true_folded_shape  # Don't have control over this parameter therefore need to redefine
+            tensor = Tensor(array=orig_unfolded_data[mode],
+                            mode_names=orig_unfolded_mode_names[mode],
+                            ft_shape=true_folded_shape)
             tensor_folded = tensor.fold(inplace=False)
 
             # check that a new object was returned, but values `_ft_shape` were preserved
             assert (tensor_folded is not tensor)
             assert (tensor_folded._ft_shape is not tensor._ft_shape)
-            assert (tensor_folded._ft_shape == tensor._ft_shape)
+            assert (tensor_folded.ft_shape == tensor.ft_shape)
 
             # check that the original tensor object has not been modified
             # (no internal references with the unfolded version)
