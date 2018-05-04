@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added string descriptions for the modes of `Tensor` through the use of OrderedDict.
  Modes can also be renamed
 - Setup CI using Travis, AppVeyor and Coveralls
+- Unit tests using pytest for the `Tensor`
 
 
 
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - For all tensor representation all their data values can (should) only be accessed through corresponding properties.
 - Objects of `Tensor` class can only be created from numpy arrays
+- The original shape of the tensor can be defined during object creation of `Tensor` class
 
 
 ### Removed

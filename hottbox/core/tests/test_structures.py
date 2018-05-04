@@ -284,3 +284,40 @@ class TestTensor:
             np.testing.assert_array_equal(tensor_unfolded.data, true_result_data[mode])
             assert (tensor_unfolded.mode_names == true_result_mode_names[mode])
 
+    def test_mode_n_product(self):
+        """ Tests for mode-n product on an object of Tensor class """
+        I, J, K = 5, 6, 7
+        I_new, J_new, K_new = 2, 3, 4
+        array_3d = np.arange(I * J * K).reshape((I, J, K))
+        A = np.arange(I_new * I).reshape(I_new, I)
+        B = np.arange(J_new * J).reshape(J_new, J)
+        C = np.arange(K_new * K).reshape(K_new, K)
+        res_0 = mode_n_product(tensor=array_3d, matrix=A, mode=0)
+        res_1 = mode_n_product(tensor=res_0, matrix=B, mode=1)
+        res_1 = mode_n_product(tensor=res_1, matrix=C, mode=2)
+
+        tensor = Tensor(array=array_3d)
+        tensor.mode_n_product(A, 0)
+        np.testing.assert_array_equal(tensor.data, res_0)
+
+        # test for chaining methods
+        tensor = Tensor(array=array_3d)
+        tensor.mode_n_product(A, 0).mode_n_product(B, 1).mode_n_product(C, 2)
+        np.testing.assert_array_equal(tensor.data, res_1)
+
+        # test that chaining order doesn't matter
+        tensor = Tensor(array=array_3d)
+        tensor.mode_n_product(C, 2).mode_n_product(B, 1).mode_n_product(A, 0)
+        np.testing.assert_array_equal(tensor.data, res_1)
+
+        # test for changing mode_names correctly
+
+        # test for inplace=False
+
+def test_super_diag_tensor():
+    """ Tests for creating super-diagonal tensor"""
+    pass
+
+def test_residual_tensor():
+    """ Tests for computing/creating a residual tensor """
+    pass

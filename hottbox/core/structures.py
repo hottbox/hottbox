@@ -328,7 +328,7 @@ class Tensor(object):
         tensor.rename_modes(new_mode_names=new_mode_names)
         return tensor
 
-    def mode_n_product(self, matrix, mode, inplace=True):
+    def mode_n_product(self, matrix, mode, inplace=True, new_name=None):
         """ Mode-n product of a tensor with a matrix
 
         Parameters
@@ -340,6 +340,9 @@ class Tensor(object):
         inplace : bool
             If True, then modifies itself.
             If False, then creates new object (copy)
+        new_name : str
+            New name for the corresponding `mode` after computing this product.
+            See Notes-3 for more info
 
         Returns
         -------
@@ -349,18 +352,31 @@ class Tensor(object):
         Notes
         -------
             1. Mode-n product operation changes the `_ft_shape` attribute
-            2. Remember that mode_n product changes the shape of the tensor. Presumably, it also changes the interpretation
-               of that mode
+            2. Remember that mode-n product changes the shape of the tensor. Presumably, it also changes
+               the interpretation of that mode depending on the matrix
+            3. If `matrix` is an object of `Tensor` class then you shouldn't specify `new_name`, since
+               it will be changed to `matrix.mode_names[0]`
+            4. If `matrix.mode_names[0] == "mode-0"` then no changes to `tensor.mode_names` will be made
         """
-        # TODO: Think about the way to change mode_description
+        if isinstance(matrix, Tensor) and new_name is not None:
+            raise ValueError("Oops... Don't know which name for the mode description to use!\n"
+                             "Either use the default value for `new_name=None` or pass numpy array for `matrix.`")
         if isinstance(matrix, np.ndarray):
             matrix = Tensor(matrix)
+        if new_name is None:
+            new_name = matrix.mode_names[0]
         if inplace:
             tensor = self
         else:
             tensor = self.copy()
         tensor._data = mode_n_product(tensor=tensor.data, matrix=matrix.data, mode=mode)
         tensor._ft_shape = tensor.shape
+
+        # The only one case when mode name won't be changed
+        if new_name != "mode-0":            
+            new_mode_names = {mode: new_name}
+            tensor.rename_modes(new_mode_names=new_mode_names)
+
         return tensor
 
 
