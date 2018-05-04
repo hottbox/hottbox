@@ -16,10 +16,10 @@ class Tensor(object):
     ----------
     _data : np.ndarray
         N-dimensional array
-    _orig_shape : tuple
-        Original shape of a tensor. Defined at the object creation for convenience during unfolding and folding.
+    _ft_shape : tuple
+        Shape of a tensor object in normal format (without being in unfolded or folded state)
         Can potentially cause a lot of problems in a future.
-    _mode_names : list[str]
+    _mode_names : OrderedDict
         Description of the tensor modes
     """
 
@@ -30,7 +30,7 @@ class Tensor(object):
         ----------
         array : np.ndarray
             N-dimensional array
-        mode_names : dict
+        mode_names : OrderedDict
             Description of the tensor modes.
             If nothing is specified then all modes of the created ``Tensor``
             get generic names {0:'mode-0', 1:'mode-1', ...}
@@ -39,7 +39,7 @@ class Tensor(object):
         if not isinstance(array, np.ndarray):
             raise TypeError('Input data should be a numpy array')
         self._data = array.copy()
-        self._orig_shape = array.shape
+        self._ft_shape = array.shape
         self._mode_names = self._assign_names(array=array, mode_names=mode_names)
 
     def _assign_names(self, array, mode_names):
@@ -55,7 +55,7 @@ class Tensor(object):
 
         Returns
         -------
-        names : dict
+        names : OrderedDict
         """
         if mode_names is None:
             names = OrderedDict([(mode,"mode-{}".format(mode)) for mode in range(array.ndim)])
@@ -75,7 +75,7 @@ class Tensor(object):
             if not all(mode >= 0 for mode in mode_names.keys()):
                 raise ValueError("All specified values for modes should be non-negative!")
 
-            names = mode_names
+            names = mode_names.copy()
         return names
 
     def copy(self):
@@ -84,10 +84,17 @@ class Tensor(object):
         Returns
         -------
         new_object : Tensor
+            New object of Tensor class with attributes having the same values, but no memory space is shared
+
+        Notes
+        -----
+            Attribute `_ft_shape` is assigned during object creation based on the shape of data array.
+            In order to preserve the original values without sharing memory space, need to redefine them manually.
         """
-        cls = self.__class__
-        new_object = cls.__new__(cls)
-        new_object.__dict__.update(self.__dict__)
+        array = self.data
+        mode_names = self.mode_names
+        new_object = Tensor(array=array, mode_names=mode_names)
+        new_object._ft_shape = tuple([i for i in self._ft_shape])
         return new_object
 
     @property
@@ -199,6 +206,10 @@ class Tensor(object):
         ----------
         tensor : Tensor
             Unfolded version of a tensor
+
+        Notes
+        -----
+            Unfolding operation does not change `_ft_shape` attribute
         """
         if inplace:
             tensor = self
@@ -228,26 +239,47 @@ class Tensor(object):
         Returns
         ----------
         tensor : Tensor
-            Tensor of original shape (self._orig_shape)
+            Tensor of original shape (self._ft_shape)
+
+        Notes
+        -----
+            Folding operation does not change `_ft_shape` attribute
         """
         if inplace:
             tensor = self
         else:
             tensor = self.copy()
 
-        first_mode = tensor.mode_names[0]
-        first_mode = list(first_mode)
-        mode = first_mode[0]
+        # Do not do anything if the tensor is in the normal form (hadn't been unfolded before)
+        if tensor.shape == tensor._ft_shape:
+            return tensor
 
-        # TODO: fix bug when original shape has mode size equal along different modes
-        # Probably this will require to specify the mode explicitly instead of inferring it
-        # mode = tensor._orig_shape.index(tensor.shape[0])
-        tensor._data = fold(self.data, mode, self._orig_shape)
+        # --------------- UNFOLD DATA
+        # Infer along which mode this instance has been previously unfolded
+        mode_0 = list(tensor.mode_names[0].keys())
+        mode_1 = list(tensor.mode_names[1].keys())
+        folding_mode = mode_0[0]
 
-        # TODO: think of a better implementation for changing mode names. And also make use of rename_mode function
-        # new_mode_names = tensor.mode_names[-1].copy()
-        # new_mode_names.insert(mode, tensor.mode_names[0])
-        # tensor._mode_names = new_mode_names
+        # Infer shape of the folded version
+        new_shape = [None] * (len(mode_0) + len(mode_1))
+        for i in (mode_0 + mode_1):
+            new_shape[i] = tensor._ft_shape[i]
+
+        # Update data
+        tensor._data = fold(matrix=self.data, mode=folding_mode, shape=new_shape)
+
+        # --------------- UNFOLD DESCRIPTION
+        # Create dict with new names
+        new_mode_names = {**tensor.mode_names[0], **tensor.mode_names[1]}
+
+        # Sequentially add default description for missing modes in order to accommodate new info
+        start = len(tensor.mode_names.keys())
+        stop = len(new_mode_names.keys())
+        for i in range(start, stop):
+            tensor._mode_names[i] = 'mode-{}'.format(i)
+
+        # Update description
+        tensor.rename_modes(new_mode_names=new_mode_names)
         return tensor
 
     def mode_n_product(self, matrix, mode, inplace=True):
@@ -270,8 +302,9 @@ class Tensor(object):
 
         Notes
         -------
-        Remember that mode_n product changes the shape of the tensor. Presumably, it also changes the interpretation
-        of that mode
+            1. Mode-n product operation changes the `_ft_shape` attribute
+            2. Remember that mode_n product changes the shape of the tensor. Presumably, it also changes the interpretation
+               of that mode
         """
         # TODO: Think about the way to change mode_description
         if isinstance(matrix, np.ndarray):
@@ -281,7 +314,7 @@ class Tensor(object):
         else:
             tensor = self.copy()
         tensor._data = mode_n_product(tensor=tensor.data, matrix=matrix.data, mode=mode)
-        tensor._orig_shape = tensor.shape
+        tensor._ft_shape = tensor.shape
         return tensor
 
 
