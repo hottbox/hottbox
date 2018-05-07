@@ -215,6 +215,11 @@ class Tensor(object):
             New names for the tensor modes in form of a dictionary
             The name of the mode defined by the Key of the dict will be renamed to the corresponding Value
 
+        Returns
+        -------
+        self : Tensor
+            Return self so that methods could be chained (Especially for reconstruction in TensorCPD etc.)
+
         Notes
         -----
             `new_mode_name` does not have be OrderedDict since `mode_names` attribute is created at the
@@ -229,6 +234,8 @@ class Tensor(object):
         if not all(mode >= 0 for mode in new_mode_names.keys()):
             raise ValueError("All specified mode keys should be non-negative!")
         self._mode_names.update(new_mode_names)
+
+        return self
 
     def describe(self):
         """ Provides general information about this instance."""
@@ -395,27 +402,22 @@ class BaseTensorTD(object):
         pass
 
     def copy(self):
-        """ Produces a copy of itself as a new object
-
-        Returns
-        -------
-        new_object : BaseTensorTD
-        """
-        cls = self.__class__
-        new_object = cls.__new__(cls)
-        new_object.__dict__.update(self.__dict__)
-        return new_object
+        """ Produces a copy of itself as a new object """
+        raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
     @property
     def order(self):
+        """ Order of a tensor in full form """
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
     @property
     def rank(self):
+        """ Rank of an efficient representation """
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
     @property
     def size(self):
+        """ Number of elements for efficient representation """
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
     @property
@@ -433,6 +435,7 @@ class BaseTensorTD(object):
 
     @property
     def reconstruct(self):
+        """ Convert to the full tensor as an object of Tensor class """
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
 
@@ -457,8 +460,34 @@ class TensorCPD(BaseTensorTD):
             Array of coefficients on the super-diagonal of a core for the CP representation of a tensor
         """
         super(TensorCPD, self).__init__()
-        self._fmat = fmat.copy()
+        self._validate_init_data(fmat=fmat, core_values=core_values)
+        self._fmat = [mat.copy() for mat in fmat]
         self._core_values = core_values.copy()
+
+    def _validate_init_data(self, fmat, core_values):
+        """ Validate data for the TensorCPD constructor
+
+        Parameters
+        ----------
+        fmat : list[np.ndarray]
+            List of factor matrices for the CP representation of a tensor
+        core_values : np.ndarray
+            Array of coefficients on the super-diagonal of a core for the CP representation of a tensor
+        """
+        if not isinstance(core_values, np.ndarray):
+            raise TypeError("Core values (`core_values`) should be a numpy array")
+        if not isinstance(fmat, list):
+            raise TypeError("All factor matrices (`fmat`) should be passed as a list!")
+        for mat in fmat:
+            if not isinstance(mat, np.ndarray):
+                raise TypeError("Each of the factor matrices should be a numpy array!")
+            if mat.ndim != 2:
+                raise ValueError("Each of the factor matrices should a 2-dimensional numpy array!")
+
+        kryskal_rank = len(core_values)
+        if not all([mat.shape[1] == kryskal_rank for mat in fmat]):
+            raise ValueError("Dimension mismatch!\n"
+                             "Number of columns of all factor matrices should be the same and equal to len(core_values)!")
 
     def copy(self):
         """ Produces a copy of itself as a new object
@@ -467,7 +496,9 @@ class TensorCPD(BaseTensorTD):
         -------
         new_object : TensorCPD
         """
-        new_object = super(TensorCPD, self).copy()
+        fmat = self._fmat
+        core_values = self._core_values
+        new_object = TensorCPD(fmat=fmat, core_values=core_values)
         return new_object
 
     @property
@@ -554,8 +585,41 @@ class TensorTKD(BaseTensorTD):
             Core of the Tucker representation of a tensor
         """
         super(TensorTKD, self).__init__()
-        self._fmat = fmat.copy()
+        self._validate_init_data(fmat=fmat, core_values=core_values)
+        self._fmat = [mat.copy() for mat in fmat]
         self._core_values = core_values.copy()
+
+    def _validate_init_data(self, fmat, core_values):
+        """ Validate data for the TensorTKD constructor
+
+        Parameters
+        ----------
+        fmat : list[np.ndarray]
+            List of factor matrices for the Tucker representation of a tensor
+        core_values : np.ndarray
+            Core of the Tucker representation of a tensor
+        """
+        if not isinstance(core_values, np.ndarray):
+            raise TypeError("Core values (`core_values`) should be a numpy array")
+        if not isinstance(fmat, list):
+            raise TypeError("All factor matrices (`fmat`) should be passed as a list!")
+        for mat in fmat:
+            if not isinstance(mat, np.ndarray):
+                raise TypeError("Each of the factor matrices should be a numpy array!")
+            if mat.ndim != 2:
+                raise ValueError("Each of the factor matrices should a 2-dimensional numpy array!")
+
+        ml_rank = core_values.shape
+        order = core_values.ndim
+        if len(fmat) != order:
+            raise ValueError("Not enough or too many factor matrices for the specified core tensor!\n"
+                             "{}!={} (`len(fmat) != core_values.ndim`)".format(len(fmat), order))
+        mat_shapes = tuple([mat.shape[1] for mat in fmat])
+        if not all([mat_shapes[i] == ml_rank[i] for i in range(order)]):
+            raise ValueError("Dimension mismatch between the factor matrices and the core tensor!\n"
+                             "The number of columns of a factor matrix should match the corresponding "
+                             "dimension size of the core tensor:\n"
+                             "{} != {} (fmat[i].shape[1] != core_values.shape)".format(mat_shapes, ml_rank))
 
     def copy(self):
         """ Produces a copy of itself as a new object
@@ -564,7 +628,9 @@ class TensorTKD(BaseTensorTD):
         -------
         new_object : TensorTKD
         """
-        new_object = super(TensorTKD, self).copy()
+        fmat = self._fmat
+        core_values = self._core_values
+        new_object = TensorTKD(fmat=fmat, core_values=core_values)
         return new_object
 
     @property
