@@ -358,13 +358,20 @@ class Tensor(object):
                it will be changed to `matrix.mode_names[0]`
             4. If `matrix.mode_names[0] == "mode-0"` then no changes to `tensor.mode_names` will be made
         """
+        # TODO: need to rethink this if statements so it would be easier to follow
         if isinstance(matrix, Tensor) and new_name is not None:
             raise ValueError("Oops... Don't know which name for the mode description to use!\n"
                              "Either use the default value for `new_name=None` or pass numpy array for `matrix.`")
+        if new_name is not None and not isinstance(new_name, str):
+            raise TypeError("The parameter `new_name` should be of sting type!")
+
+        # Convert to Tensor class, in order to have consistent interface
         if isinstance(matrix, np.ndarray):
             matrix = Tensor(matrix)
+
         if new_name is None:
             new_name = matrix.mode_names[0]
+
         if inplace:
             tensor = self
         else:

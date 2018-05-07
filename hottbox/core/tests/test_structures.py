@@ -1,4 +1,6 @@
 import pytest
+import sys
+import io
 import numpy as np
 from functools import reduce
 from collections import OrderedDict
@@ -115,7 +117,7 @@ class TestTensor:
 
     def test_copy(self):
         """ Tests for creation a copy of a Tensor object """
-        data = np.arange(24).reshape(2,3,4)
+        data = np.arange(24).reshape(2, 3, 4)
         tensor = Tensor(data)
         tensor_copy = tensor.copy()
         assert (tensor_copy is not tensor)
@@ -180,6 +182,33 @@ class TestTensor:
             incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(-1, true_order - 1)}
             tensor.rename_modes(new_mode_names=incorrect_new_mode_names)
 
+    def test_describe(self):
+        """ Tests for describe function of a Tensor object """
+        # TODO: find a better way to test the method that only prints
+        captured_output = io.StringIO()  # Create StringIO object
+        sys.stdout = captured_output     # and redirect stdout.
+
+        true_shape = (2, 4, 8)
+        true_order = len(true_shape)
+        true_size = reduce(lambda x, y: x * y, true_shape)
+        true_data = np.ones(true_size).reshape(true_shape)
+        true_mode_names = OrderedDict([(0, 'time'),
+                                       (1, 'frequency'),
+                                       (2, 'channel')
+                                       ])
+        tensor = Tensor(array=true_data, mode_names=true_mode_names)
+        tensor.describe()
+        assert captured_output.getvalue() != ''  # to check that something was actually printed
+
+        # check that this function does not change anything in the object
+        np.testing.assert_array_equal(tensor.data, true_data)
+        assert (tensor.frob_norm == 8.0)
+        assert (tensor.shape == true_shape)
+        assert (tensor.ft_shape == true_shape)
+        assert (tensor.order == true_order)
+        assert (tensor.size == true_size)
+        assert (tensor.mode_names == true_mode_names)
+
     def test_fold(self):
         """ Tests for folding a Tensor object """
         true_folded_shape = (2, 2, 2)
@@ -198,7 +227,7 @@ class TestTensor:
         orig_unfolded_2_mode_names = OrderedDict([(0, OrderedDict([(2, 'person')])),
                                                   (1, OrderedDict([(0, 'time'), (1, 'frequency')]))
                                                   ])
-        orig_unfolded_mode_names =  [orig_unfolded_0_mode_names, orig_unfolded_1_mode_names, orig_unfolded_2_mode_names]
+        orig_unfolded_mode_names = [orig_unfolded_0_mode_names, orig_unfolded_1_mode_names, orig_unfolded_2_mode_names]
         orig_unfolded_data = [unfold(tensor=true_result_data, mode=mode) for mode in range(len(true_folded_shape))]
 
         # check that there would be no changes if tensor hasn't been unfolded previously
@@ -265,7 +294,6 @@ class TestTensor:
             np.testing.assert_array_equal(tensor.data, true_result_data[mode])
             assert (tensor.mode_names == true_result_mode_names[mode])
 
-
         # --------- tests for unfolding INPLACE=FALSE
         for mode in range(orig_folded_data.ndim):
             tensor = Tensor(array=orig_folded_data, mode_names=orig_folded_mode_names)
@@ -300,23 +328,99 @@ class TestTensor:
         tensor.mode_n_product(A, 0)
         np.testing.assert_array_equal(tensor.data, res_0)
 
-        # test for chaining methods
+        # ------  test for chaining methods
         tensor = Tensor(array=array_3d)
         tensor.mode_n_product(A, 0).mode_n_product(B, 1).mode_n_product(C, 2)
         np.testing.assert_array_equal(tensor.data, res_1)
 
-        # test that chaining order doesn't matter
+        # ------  test that chaining order doesn't matter
         tensor = Tensor(array=array_3d)
         tensor.mode_n_product(C, 2).mode_n_product(B, 1).mode_n_product(A, 0)
         np.testing.assert_array_equal(tensor.data, res_1)
 
-        # test for changing mode_names correctly
+        # ------ test for inplace=False
+        orig_dim = (5, 6, 7)
+        new_dim = [2, 3, 4]
+        size = reduce(lambda x, y: x * y, orig_dim)
+        array_3d = np.arange(size).reshape(orig_dim)
+        tensor = Tensor(array_3d)
+        matrix_list = [np.arange(new_dim[i] * orig_dim[i]).reshape(new_dim[i], orig_dim[i]) for i in range(len(new_dim))]
+        for mode in range(tensor.order):
+            true_res = mode_n_product(tensor=array_3d, matrix=matrix_list[mode], mode=mode)
+            tensor_res = tensor.mode_n_product(matrix_list[mode], mode, inplace=False)
 
-        # test for inplace=False
+            assert (tensor_res is not tensor)
+            assert (tensor_res._ft_shape is not tensor._ft_shape)
+            np.testing.assert_array_equal(tensor_res.data, true_res)
+            # check that the original tensor object has not been modified
+            np.testing.assert_array_equal(tensor.data, array_3d)
+
+        # ------  test for changing mode_names correctly
+        orig_dim = (5, 6, 7)
+        new_dim = [2, 3, 4]
+        size = reduce(lambda x, y: x * y, orig_dim)
+        array_3d = np.arange(size).reshape(orig_dim)
+        orig_names = OrderedDict([(0, 'country'),
+                                  (1, 'model'),
+                                  (2, 'year')
+                                  ])
+
+        # check that names have not been changed when multiply with numpy array
+        for mode in range(len(new_dim)):
+            tensor = Tensor(array=array_3d, mode_names=orig_names)
+            matrix = np.arange(new_dim[mode] * orig_dim[mode]).reshape(new_dim[mode], orig_dim[mode])
+            tensor.mode_n_product(matrix, mode=mode)
+            assert (tensor.mode_names == orig_names)
+
+        # check that names have not been changed when multiply with matrix as a Tensor object with default names
+        for mode in range(len(new_dim)):
+            tensor = Tensor(array=array_3d, mode_names=orig_names)
+            matrix = Tensor(np.arange(new_dim[mode] * orig_dim[mode]).reshape(new_dim[mode], orig_dim[mode]))
+            tensor.mode_n_product(matrix, mode=mode)
+            assert (tensor.mode_names == orig_names)
+
+        # check that name of the correct mode has been changed when multiplied with numpy array and specifying new_name
+        new_name = 'age'
+        for mode in range(len(new_dim)):
+            tensor = Tensor(array=array_3d, mode_names=orig_names)
+            matrix = np.arange(new_dim[mode] * orig_dim[mode]).reshape(new_dim[mode], orig_dim[mode])
+            tensor.mode_n_product(matrix, mode=mode, new_name=new_name)
+            new_true_names = orig_names.copy()
+            new_true_names[mode] = new_name
+            assert (tensor.mode_names == new_true_names)
+
+        # check that name of the correct mode has been changed when multiplied with a matrix as a Tensor object
+        new_matrix_name = {0 : 'age'}
+        for mode in range(len(new_dim)):
+            tensor = Tensor(array=array_3d, mode_names=orig_names)
+            matrix = Tensor(np.arange(new_dim[mode] * orig_dim[mode]).reshape(new_dim[mode], orig_dim[mode]))
+            matrix.rename_modes(new_mode_names=new_matrix_name)
+            tensor.mode_n_product(matrix, mode=mode)
+            new_true_names = orig_names.copy()
+            new_true_names[mode] = new_matrix_name[0]
+            assert (tensor.mode_names == new_true_names)
+
+        # check that you cannot use matrix of Tensor class and specify new name at the same time
+        with pytest.raises(ValueError):
+            mode = 1
+            tensor = Tensor(array=array_3d, mode_names=orig_names)
+            matrix = Tensor(np.arange(new_dim[mode] * orig_dim[mode]).reshape(new_dim[mode], orig_dim[mode]))
+            new_name = 'age'
+            tensor.mode_n_product(matrix, mode=mode, new_name=new_name)
+
+        # check that new_name should be of string type
+        with pytest.raises(TypeError):
+            mode = 1
+            tensor = Tensor(array=array_3d, mode_names=orig_names)
+            matrix = np.arange(new_dim[mode] * orig_dim[mode]).reshape(new_dim[mode], orig_dim[mode])
+            new_name = 5
+            tensor.mode_n_product(matrix, mode=mode, new_name=new_name)
+
 
 def test_super_diag_tensor():
     """ Tests for creating super-diagonal tensor"""
     pass
+
 
 def test_residual_tensor():
     """ Tests for computing/creating a residual tensor """
