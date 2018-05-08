@@ -80,7 +80,7 @@ class TTSVD(BaseTensorTrain):
             C = np.dot(V, np.diag(S)).T
         new_core = C
         cores.append(new_core)
-        tensor_tt = TensorTT(core_values=cores, full_shape=tensor.shape)
+        tensor_tt = TensorTT(core_values=cores, ft_shape=tensor.shape)
         return tensor_tt
 
     @property
