@@ -390,7 +390,7 @@ class TestTensor:
             assert (tensor.mode_names == new_true_names)
 
         # check that name of the correct mode has been changed when multiplied with a matrix as a Tensor object
-        new_matrix_name = {0 : 'age'}
+        new_matrix_name = {0: 'age'}
         for mode in range(len(new_dim)):
             tensor = Tensor(array=array_3d, mode_names=orig_names)
             matrix = Tensor(np.arange(new_dim[mode] * orig_dim[mode]).reshape(new_dim[mode], orig_dim[mode]))
@@ -462,7 +462,6 @@ class TestTensorCPD:
         np.testing.assert_array_equal(tensor_cpd._core_values, core_values)
         assert tensor_cpd._core_values is not core_values
 
-
         # ------ tests for factor matrices
         for mode, fmat in enumerate(tensor_cpd.fmat):
             # check that values are the same but there are not references
@@ -513,7 +512,7 @@ class TestTensorCPD:
         # all factor matrices should be a 2-dimensional numpy array
         with pytest.raises(ValueError):
             incorrect_fmat = [fmat.copy() for fmat in correct_fmat]
-            incorrect_fmat[0] = np.ones([2,2,2])
+            incorrect_fmat[0] = np.ones([2, 2, 2])
             TensorCPD(fmat=incorrect_fmat, core_values=correct_core_values)
 
         # too many (or not enough) `core_values` for `fmat`
@@ -589,10 +588,10 @@ class TestTensorCPD:
         assert tensor_rec_1 is not tensor_rec_2
 
         # ------ tests for chaining methods
-        new_mode_names =  OrderedDict([(0, 'frequency'),
-                                       (1, 'time'),
-                                       (2, 'channel')
-                                       ])
+        new_mode_names = OrderedDict([(0, 'frequency'),
+                                      (1, 'time'),
+                                      (2, 'channel')
+                                      ])
         mode = 0
         new_dim_size = 7
         matrix = np.arange(new_dim_size * ft_shape[mode]).reshape(new_dim_size, ft_shape[mode])
@@ -730,13 +729,13 @@ class TestTensorTKD:
                                                (1, 'mode-1'),
                                                (2, 'mode-2')
                                                ])
-        true_data = np.array([[[  491400,  1628200,  2765000,  3901800],
-                               [ 1609020,  5330080,  9051140, 12772200],
-                               [ 2726640,  9031960, 15337280, 21642600]],
+        true_data = np.array([[[491400,  1628200,  2765000,  3901800],
+                               [1609020,  5330080,  9051140, 12772200],
+                               [2726640,  9031960, 15337280, 21642600]],
 
-                              [[ 1389150,  4596200,  7803250, 11010300],
-                               [ 4507020, 14906780, 25306540, 35706300],
-                               [ 7624890, 25217360, 42809830, 60402300]]]
+                              [[1389150,  4596200,  7803250, 11010300],
+                               [4507020, 14906780, 25306540, 35706300],
+                               [7624890, 25217360, 42809830, 60402300]]]
                              )
 
         tensor_tkd = TensorTKD(fmat=fmat, core_values=core_values)
@@ -789,4 +788,98 @@ def test_super_diag_tensor():
 
 def test_residual_tensor():
     """ Tests for computing/creating a residual tensor """
-    pass
+    true_default_mode_names = OrderedDict([(0, 'mode-0'),
+                                           (1, 'mode-1'),
+                                           (2, 'mode-2')
+                                           ])
+
+    # ------ tests for residual tensor with the Tensor
+    array_3d = np.array([[[0,  1,  2,  3],
+                          [4,  5,  6,  7],
+                          [8,  9, 10, 11]],
+
+                         [[12, 13, 14, 15],
+                          [16, 17, 18, 19],
+                          [20, 21, 22, 23]]])
+    true_residual_data = np.zeros(array_3d.shape)
+    tensor_1 = Tensor(array=array_3d)
+    tensor_2 = Tensor(array=array_3d)
+    residual = residual_tensor(tensor_orig=tensor_1, tensor_approx=tensor_2)
+    assert isinstance(residual, Tensor)
+    assert (residual.mode_names == true_default_mode_names)
+    np.testing.assert_array_equal(residual.data, true_residual_data)
+
+    # ------ tests for residual tensor with the TensorCPD
+    array_3d = np.array([[[100., 250., 400., 550.],
+                          [250., 650., 1050., 1450.],
+                          [400., 1050., 1700., 2350.]],
+
+                         [[250., 650., 1050., 1450.],
+                          [650., 1925., 3200., 4475.],
+                          [1050., 3200., 5350., 7500.]]]
+                        )
+    true_residual_data = np.zeros(array_3d.shape)
+    tensor = Tensor(array=array_3d)
+    ft_shape = (2, 3, 4)    # define shape of the tensor in full form
+    R = 5                   # define Kryskal rank of a tensor in CP form
+    core_values = np.ones(R)
+    fmat = [np.arange(orig_dim * R).reshape(orig_dim, R)
+            for orig_dim in ft_shape]
+    tensor_cpd = TensorCPD(fmat=fmat, core_values=core_values)
+    residual = residual_tensor(tensor_orig=tensor, tensor_approx=tensor_cpd)
+    assert isinstance(residual, Tensor)
+    assert (residual.mode_names == true_default_mode_names)
+    np.testing.assert_array_equal(residual.data, true_residual_data)
+
+    # ------ tests for residual tensor with the TensorTKD
+    array_3d = np.array([[[378,   1346,   2314,   3282,   4250],
+                          [1368,   4856,   8344,  11832,  15320],
+                          [2358,   8366,  14374,  20382,  26390],
+                          [3348,  11876,  20404,  28932,  37460]],
+
+                         [[1458,   5146,   8834,  12522,  16210],
+                          [5112,  17944,  30776,  43608,  56440],
+                          [8766,  30742,  52718,  74694,  96670],
+                          [12420,  43540,  74660, 105780, 136900]],
+
+                         [[2538,   8946,  15354,  21762,  28170],
+                          [8856,  31032,  53208,  75384,  97560],
+                          [15174,  53118,  91062, 129006, 166950],
+                          [21492,  75204, 128916, 182628, 236340]]])
+    true_residual_data = np.zeros(array_3d.shape)
+    tensor = Tensor(array=array_3d)
+    ft_shape = (3, 4, 5)    # define shape of the tensor in full form
+    # define multi-linear rank of a tensor in Tucker form
+    ml_rank = (2, 3, 4)
+    core_size = reduce(lambda x, y: x * y, ml_rank)
+    core_values = np.arange(core_size).reshape(ml_rank)
+    fmat = [np.arange(ft_shape[mode] * ml_rank[mode]).reshape(ft_shape[mode],
+                                                              ml_rank[mode]) for mode in range(len(ft_shape))]
+    tensor_tkd = TensorTKD(fmat=fmat, core_values=core_values)
+    residual = residual_tensor(tensor_orig=tensor, tensor_approx=tensor_tkd)
+    assert isinstance(residual, Tensor)
+    assert (residual.mode_names == true_default_mode_names)
+    np.testing.assert_array_equal(residual.data, true_residual_data)
+
+    # ------ tests for residual tensor with the TensorTT
+    # assert isinstance(residual, Tensor)
+    # assert (residual.mode_names == true_default_mode_names)
+    # np.testing.assert_array_equal(residual.data, true_residual_data)
+
+    # ------ tests that should FAIL for residual tensor due to wrong input type
+    array_3d = np.array([[[0, 1, 2, 3],
+                          [4, 5, 6, 7],
+                          [8, 9, 10, 11]],
+
+                         [[12, 13, 14, 15],
+                          [16, 17, 18, 19],
+                          [20, 21, 22, 23]]])
+    tensor_1 = Tensor(array=array_3d)
+    tensor_2 = array_3d
+    with pytest.raises(TypeError):
+        residual_tensor(tensor_orig=tensor_1, tensor_approx=tensor_2)
+
+    tensor_1 = array_3d
+    tensor_2 = Tensor(array=array_3d)
+    with pytest.raises(TypeError):
+        residual_tensor(tensor_orig=tensor_1, tensor_approx=tensor_2)

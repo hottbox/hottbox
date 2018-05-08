@@ -825,22 +825,31 @@ def super_diag_tensor(order, values=None):
     return tensor
 
 
-def residual_tensor(tensor_A, tensor_B):
+def residual_tensor(tensor_orig, tensor_approx):
     """ Residual tensor
 
     Parameters
     ----------
-    tensor_A : Tensor
-    tensor_B : {Tensor, TensorCPD, TensorTKD, TensorTT}
+    tensor_orig : Tensor
+    tensor_approx : {Tensor, TensorCPD, TensorTKD, TensorTT}
 
     Returns
     -------
     residual : Tensor
     """
-    if isinstance(tensor_B, TensorCPD) or isinstance(tensor_B, TensorTKD) or isinstance(tensor_B, TensorTT):
-        residual = Tensor(tensor_A.data - tensor_B.reconstruct.data)
-    elif isinstance(tensor_B, Tensor):
-        residual = Tensor(tensor_A.data - tensor_B.data)
+    if not isinstance(tensor_orig, Tensor):
+        raise TypeError("Unknown data type of original tensor.\n"
+                        "The available type for `tensor_A` is `Tensor`")
+
+    if isinstance(tensor_approx, Tensor):
+        residual = Tensor(tensor_orig.data - tensor_approx.data)
+    elif isinstance(tensor_approx, TensorCPD):
+        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct.data)
+    elif isinstance(tensor_approx, TensorTKD):
+        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct.data)
+    elif isinstance(tensor_approx, TensorTT):
+        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct.data)
     else:
-        raise TypeError('Unknown data type of the approximation')
+        raise TypeError("Unknown data type of the approximation tensor!\n"
+                        "The available types for `tensor_B` are `Tensor`,  `TensorCPD`,  `TensorTKD`,  `TensorTT`")
     return residual
