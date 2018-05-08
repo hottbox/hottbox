@@ -509,7 +509,8 @@ class TensorCPD(BaseTensorTD):
         -------
         core_tensor : Tensor
         """
-        core_tensor = super_diag_tensor(self.order, values=self._core_values)
+        core_shape = self.rank * self.order
+        core_tensor = super_diag_tensor(core_shape, values=self._core_values)
         return core_tensor
 
     @property
@@ -800,25 +801,40 @@ class TensorTT(BaseTensorTD):
         return tensor
 
 
-def super_diag_tensor(order, values=None):
+def super_diag_tensor(shape, values=None):
     """ Super-diagonal tensor of the specified `order`.
 
     Parameters
     ----------
-    order : int
-        Desired order of the tensor
+    shape : tuple
+        Desired shape of the tensor.
+        len(shape) defines the order of the tensor, whereas its values specify sizes of dimensions of the tensor.
     values : np.ndarray
         Array of values on the super-diagonal of a tensor. By default contains only ones.
-        Length of this vector defines the Kryskal rank of a tensor.
+        Length of this vector defines Kryskal rank which is equal to `shape[0]`.
 
     Returns
     -------
     tensor : Tensor
     """
-    rank = values.size
-    shape = (rank,) * order
+    if not isinstance(shape, tuple):
+        raise TypeError("Parameter `shape` should be passed as a tuple!")
+    if not all(mode_size == shape[0] for mode_size in shape):
+        raise ValueError("All values in `shape` should have the same value!")
+
+    order = len(shape)
+    rank = shape[0]
     if values is None:
-        values = np.ones(rank)
+        values = np.ones(rank)  # set default values
+    elif isinstance(values, np.ndarray):
+        if values.ndim != 1:
+            raise ValueError("The `values` should be 1-dimensional numpy array!")
+        if values.size != rank:
+            raise ValueError("Dimension mismatch! Not enough or too many `values` for the specified `shape`:\n"
+                             "{} != {} (values.size != shape[0])".format(values.size, rank))
+    else:
+        raise TypeError("The `values` should be passed as a numpy array!")
+
     core = np.zeros(shape)
     core[np.diag_indices(rank, ndim=order)] = values
     tensor = Tensor(core)

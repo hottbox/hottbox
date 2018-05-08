@@ -783,7 +783,63 @@ class TestTensorTT:
 
 def test_super_diag_tensor():
     """ Tests for creating super-diagonal tensor"""
-    pass
+    order = 3
+    rank = 2
+    correct_shape = (rank, ) * order
+    true_default_data = np.array([[[1., 0.],
+                                   [0., 0.]],
+
+                                  [[0., 0.],
+                                   [0., 1.]]])
+    true_default_mode_names = OrderedDict([(0, 'mode-0'),
+                                           (1, 'mode-1'),
+                                           (2, 'mode-2')
+                                           ])
+    correct_values = np.arange(rank)
+    true_data = np.array([[[0., 0.],
+                           [0., 0.]],
+
+                          [[0., 0.],
+                           [0., 1.]]])
+
+    # ------ tests for default super diagonal tensor
+    tensor = super_diag_tensor(correct_shape)
+    assert isinstance(tensor, Tensor)
+    np.testing.assert_array_equal(tensor.data, true_default_data)
+    assert (tensor.mode_names == true_default_mode_names)
+
+    # ------ tests for super diagonal tensor with custom values on the main diagonal
+    tensor = super_diag_tensor(correct_shape, values=correct_values)
+    assert isinstance(tensor, Tensor)
+    np.testing.assert_array_equal(tensor.data, true_data)
+    assert (tensor.mode_names == true_default_mode_names)
+
+    # ------ tests that should Fail
+
+    with pytest.raises(TypeError):
+        # shape should be passed as tuple
+        super_diag_tensor(shape=list(correct_shape))
+
+    with pytest.raises(ValueError):
+        # all values in shape should be the same
+        incorrect_shape = [rank] * order
+        incorrect_shape[1] = order+1
+        super_diag_tensor(shape=tuple(incorrect_shape))
+
+    with pytest.raises(ValueError):
+        # values should be an one dimensional numpy array
+        incorrect_values = np.ones([rank, rank])
+        super_diag_tensor(shape=correct_shape, values=incorrect_values)
+
+    with pytest.raises(ValueError):
+        # too many values for the specified shape
+        incorrect_values = np.ones(correct_shape[0]+1)
+        super_diag_tensor(shape=correct_shape, values=incorrect_values)
+
+    with pytest.raises(TypeError):
+        # values should be a numpy array
+        incorrect_values = [1] * correct_shape[0]
+        super_diag_tensor(shape=correct_shape, values=incorrect_values)
 
 
 def test_residual_tensor():
