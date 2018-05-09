@@ -132,7 +132,7 @@ class CPD(BaseCPD):
         self.cost = []
 
     def copy(self):
-        """ Copy of the Decomposition as a new object """
+        """ Copy of the CPD algorithm as a new object """
         new_object = super(CPD, self).copy()
         new_object.cost = []
         return new_object
@@ -175,7 +175,7 @@ class CPD(BaseCPD):
         if not isinstance(rank, tuple):
             raise TypeError("Parameter `rank` should be passed as a tuple!")
         if len(rank) != 1:
-            raise ValueError("Parameter `rank` should be tuple with only one value! ")
+            raise ValueError("Parameter `rank` should be tuple with only one value!")
 
         tensor_cpd = None
         fmat = self._init_fmat(tensor, rank)

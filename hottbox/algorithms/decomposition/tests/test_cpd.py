@@ -14,7 +14,7 @@ class TestBaseCPD:
     """ Tests for BaseCPD class """
 
     def test_init(self):
-        """ Tests for init """
+        """ Tests for constructor of BaseCPD class """
         # Even though we can create such object we shouldn't do that
         default_params = dict(init='svd',
                               max_iter=50,
@@ -92,7 +92,6 @@ class TestCPD:
         assert cpd_copy.mode_description != cpd.mode_description
         assert cpd_copy.verbose != cpd.verbose
         assert cpd.cost != cpd_copy.cost
-
 
     def test_init_fmat(self):
         """ Tests for _init_fmat method """
@@ -211,6 +210,9 @@ class TestCPD:
         assert isinstance(tensor_cpd, TensorCPD)
         assert tensor_cpd.order == tensor.order
         assert tensor_cpd.rank == rank
+        # check dimensionality of computed factor matrices
+        for mode, fmat in enumerate(tensor_cpd.fmat):
+            assert fmat.shape == (tensor.shape[mode], rank[0])
 
         tensor_rec = tensor_cpd.reconstruct
         np.testing.assert_almost_equal(tensor_rec.data, tensor.data)
