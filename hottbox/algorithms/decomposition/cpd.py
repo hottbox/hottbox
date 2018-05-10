@@ -71,7 +71,7 @@ class BaseCPD(Decomposition):
         t_rank = rank[0]
         fmat = [np.array([])] * tensor.order
         # Check if all dimensions are greater then kryskal rank
-        dim_check = (np.array(tensor.shape) > t_rank).sum() == tensor.order
+        dim_check = (np.array(tensor.shape) >= t_rank).sum() == tensor.order
         if dim_check:
             if self.init is 'svd':
                 for mode in range(tensor.order):

@@ -126,18 +126,21 @@ class TestHOSVD:
 
         # ------ tests that should FAIL due to wrong input type
         hosvd = HOSVD()
+        # tensor should be Tensor class
         with pytest.raises(TypeError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
             incorrect_tensor = np.arange(size).reshape(shape)
             correct_rank = (2, 2, 2)
             hosvd.decompose(tensor=incorrect_tensor, rank=correct_rank)
+        # rank should be a tuple
         with pytest.raises(TypeError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
             correct_tensor = Tensor(np.arange(size).reshape(shape))
             incorrect_rank = [2, 2, 2]
             hosvd.decompose(tensor=correct_tensor, rank=incorrect_rank)
+        # incorrect length of rank
         with pytest.raises(ValueError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
@@ -330,18 +333,21 @@ class TestHOOI:
 
         # ------ tests that should FAIL due to wrong input type
         hooi = HOOI()
+        # tensor should be Tensor class
         with pytest.raises(TypeError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
             incorrect_tensor = np.arange(size).reshape(shape)
             correct_rank = (2, 2, 2)
             hooi.decompose(tensor=incorrect_tensor, rank=correct_rank)
+        # rank should be a tuple
         with pytest.raises(TypeError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
             correct_tensor = Tensor(np.arange(size).reshape(shape))
             incorrect_rank = [2, 2, 2]
             hooi.decompose(tensor=correct_tensor, rank=incorrect_rank)
+        # incorrect length of rank
         with pytest.raises(ValueError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
