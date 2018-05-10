@@ -1,4 +1,4 @@
-|Travis|_ |Codecov|_ |Appveyor|_
+|Travis|_ |Appveyor|_ |Codecov|_
 
 .. |Travis| image:: https://img.shields.io/travis/hottbox/hottbox/master.svg?label=TravisCI
 .. _Travis: https://travis-ci.org/hottbox/hottbox/

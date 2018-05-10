@@ -19,6 +19,22 @@ class BaseCPD(Decomposition):
         self.mode_description = mode_description
         self.verbose = verbose
 
+    def copy(self):
+        """ Copy of the Decomposition as a new object """
+        new_object = super(BaseCPD, self).copy()
+        return new_object
+
+    @property
+    def name(self):
+        """ Name of the decomposition
+
+        Returns
+        -------
+        decomposition_name : str
+        """
+        decomposition_name = super(BaseCPD, self).name
+        return decomposition_name
+
     def decompose(self, tensor, rank):
         raise NotImplementedError('Not implemented in base (BaseCPD) class')
 
@@ -28,7 +44,7 @@ class BaseCPD(Decomposition):
 
         Returns
         -------
-        bool
+        is_converged : bool
         """
         try:  # This insures that the cost has been computed at least twice without checking number of iterations
             is_converged = abs(self.cost[-2] - self.cost[-1]) <= self.tol
@@ -55,7 +71,7 @@ class BaseCPD(Decomposition):
         t_rank = rank[0]
         fmat = [np.array([])] * tensor.order
         # Check if all dimensions are greater then kryskal rank
-        dim_check = (np.array(tensor.shape) > t_rank).sum() == tensor.order
+        dim_check = (np.array(tensor.shape) >= t_rank).sum() == tensor.order
         if dim_check:
             if self.init is 'svd':
                 for mode in range(tensor.order):
@@ -64,10 +80,10 @@ class BaseCPD(Decomposition):
             elif self.init is 'random':
                 fmat = [np.random.randn(mode_size, t_rank) for mode_size in tensor.shape]
             else:
-                raise NotImplementedError('The given initialization is not avaliable')
+                raise NotImplementedError('The given initialization is not available')
         else:
             fmat = [np.random.randn(mode_size, t_rank) for mode_size in tensor.shape]
-            if self.verbose:
+            if self.verbose and self.init != 'random':
                 warnings.warn(
                     "Specified rank value is greater then one of the dimensions of a tensor ({} > {}).\n"
                     "Factor matrices have been initialized randomly.".format(t_rank, tensor.shape), RuntimeWarning
@@ -115,6 +131,23 @@ class CPD(BaseCPD):
                                   verbose=verbose)
         self.cost = []
 
+    def copy(self):
+        """ Copy of the CPD algorithm as a new object """
+        new_object = super(CPD, self).copy()
+        new_object.cost = []
+        return new_object
+
+    @property
+    def name(self):
+        """ Name of the decomposition
+
+        Returns
+        -------
+        decomposition_name : str
+        """
+        decomposition_name = super(CPD, self).name
+        return decomposition_name
+
     def decompose(self, tensor, rank, kr_reverse=False):
         """ Performs CPD-ALS on the `tensor` with respect to the specified `rank`
 
@@ -135,9 +168,15 @@ class CPD(BaseCPD):
         Notes
         -----
         khatri-rao product should be of matrices in reversed order. But this will duplicate original data (e.g. images)
-
-
+        Probably this has something to do with data ordering in Python and how it relates to kr product
         """
+        if not isinstance(tensor, Tensor):
+            raise TypeError("Parameter `tensor` should be an object of `Tensor` class!")
+        if not isinstance(rank, tuple):
+            raise TypeError("Parameter `rank` should be passed as a tuple!")
+        if len(rank) != 1:
+            raise ValueError("Parameter `rank` should be tuple with only one value!")
+
         tensor_cpd = None
         fmat = self._init_fmat(tensor, rank)
         core_values = np.repeat(np.array([1]), rank)

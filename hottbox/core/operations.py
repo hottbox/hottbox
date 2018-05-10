@@ -165,7 +165,9 @@ def mode_n_product(tensor, matrix, mode):
         The result of the mode-n product of a `tensor` with a `matrix` along specified `mode`.
     """
     # TODO: Implement mode-n product with a vector
-    # TODO: Add dimensionality check
+    if matrix.ndim != 2:
+        raise ValueError("Mode-n product can only be performed with the 2D array, "
+                         "whereas an array of order {} was provided".format(matrix.ndim))
     orig_shape = list(tensor.shape)
     new_shape = orig_shape
     new_shape[mode] = matrix.shape[0]
