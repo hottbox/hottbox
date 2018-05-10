@@ -3,3 +3,4 @@ include README.rst
 include CHANGELOG.md
 include AUTHORS.rst
 include CONTRIBUTING.rst
+include requirements.txt

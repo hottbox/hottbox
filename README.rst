@@ -36,9 +36,9 @@ There are two options available:
 
         $ pip install -e .
 
-    This will allow you to modify the source code in the way it will suite your needs. Additionally, you will be
+    This will allow you to modify the source code in the way it will suit your needs. Additionally, you will be
     on top of the latest changes and will be able to start using new stable features which are located on
-    **develop** branch until the official release.
+    `develop <https://github.com/hottbox/hottbox/tree/develop>`_ branch until the official release.
 
 
 
