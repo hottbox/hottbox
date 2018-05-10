@@ -2,7 +2,7 @@ import warnings
 import scipy
 import numpy as np
 from .base import Decomposition
-from ...core.structures import Tensor, TensorTT
+from ...core.structures import Tensor, TensorTT, residual_tensor
 
 
 class BaseTensorTrain(Decomposition):
@@ -11,6 +11,22 @@ class BaseTensorTrain(Decomposition):
         super(BaseTensorTrain, self).__init__()
         self.verbose = verbose
         self.mode_description = mode_description
+
+    def copy(self):
+        """ Copy of the Decomposition as a new object """
+        new_object = super(BaseTensorTrain, self).copy()
+        return new_object
+
+    @property
+    def name(self):
+        """ Name of the decomposition
+
+        Returns
+        -------
+        decomposition_name : str
+        """
+        decomposition_name = super(BaseTensorTrain, self).name
+        return decomposition_name
 
     @property
     def converged(self):
@@ -40,6 +56,22 @@ class TTSVD(BaseTensorTrain):
         super(TTSVD, self).__init__(verbose=verbose,
                                     mode_description=mode_description)
 
+    def copy(self):
+        """ Copy of the Decomposition as a new object """
+        new_object = super(TTSVD, self).copy()
+        return new_object
+
+    @property
+    def name(self):
+        """ Name of the decomposition
+
+        Returns
+        -------
+        decomposition_name : str
+        """
+        decomposition_name = super(TTSVD, self).name
+        return decomposition_name
+
     def decompose(self, tensor, rank):
         """ Performs TT-SVD on the `tensor` with respect to the specified `rank`
 
@@ -58,11 +90,27 @@ class TTSVD(BaseTensorTrain):
         Notes
         -----
         Reshaping of the data is performed with respect to the FORTRAN ordering. This makes it easy to compare results
-        with the MATLAB implementation by Oseledets. This doesn't really matter, as long as we do exactly the opposite
-        for the reconstruction
+        with the MATLAB implementation by Oseledets. This doesn't really matter (apart from time it takes to compute),
+        as long as we do exactly the opposite for the reconstruction
         """
-        # TODO: check that rank does not contain ones. check that the length of rank does not exceed order of a tensor
         # TODO: implement using C ordering for the reshape
+        if not isinstance(tensor, Tensor):
+            raise TypeError("Parameter `tensor` should be an object of `Tensor` class!")
+        if not isinstance(rank, tuple):
+            raise TypeError("Parameter `rank` should be passed as a tuple!")
+
+        # since we consider core tensors to be only of order 3
+        if (tensor.order - 1) != len(rank):
+            raise ValueError("Incorrect number of values in `rank`:\n"
+                             "{} != {} (tensor.order-1 != len(rank))".format(tensor.order, len(rank)))
+        # since TT decomposition should compress data
+        if any(rank[i] > tensor.shape[i] for i in range(len(rank))):
+            raise ValueError("Some values in `rank` are greater then the corresponding mode sizes of a `tensor`:\n"
+                             "{} > {} (rank > tensor.shape)".format(rank, tensor.shape[:-1]))
+        if rank[-1] > tensor.shape[-1]:
+            raise ValueError("The last value in `rank` is greater then the last mode size of a `tensor`:\n"
+                             "{} > {} (rank[-1] > tensor.shape[-1])".format(rank[-1], tensor.shape[-1]))
+
         cores = []
         sizes = tensor.shape
         rank = (1,) + rank + (1,)
@@ -80,7 +128,10 @@ class TTSVD(BaseTensorTrain):
             C = np.dot(V, np.diag(S)).T
         new_core = C
         cores.append(new_core)
-        tensor_tt = TensorTT(core_values=cores, full_shape=tensor.shape)
+        tensor_tt = TensorTT(core_values=cores, ft_shape=tensor.shape)
+        if self.verbose:
+            residual = residual_tensor(tensor, tensor_tt)
+            print('Relative error of approximation = {}'.format(abs(residual.frob_norm / tensor.frob_norm)))
         return tensor_tt
 
     @property

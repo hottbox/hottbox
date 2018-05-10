@@ -22,6 +22,11 @@ def rankest(tensor, rank_range, epsilon=10e-3, verbose=False):
     optimal_rank : tuple
         Optimal kryskal rank. For consistency, the type of the returned value is tuple
     """
+    if not isinstance(rank_range, list):
+        raise TypeError("The `rank_range` should be passed as a list of integers")
+    if not all(isinstance(value, int) for value in rank_range):
+        raise TypeError("The `rank_range` should consist of integers only")
+
     cpd = CPD(verbose=False)
     rel_error = []
     for rank in rank_range:
