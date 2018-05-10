@@ -10,24 +10,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 [![Coveralls status](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)
 
 
-
 ### Added
 
-- Added `copy` for the core tensor structures
-- Added function that describes an instance of `Tensor` class
-- Added string descriptions for the modes of `Tensor` through the use of OrderedDict.
+- `copy` method for the core tensor structures
+- `describe` method that describes an instance of `Tensor` class
+- Mode descriptions for the modes of `Tensor` through the use of OrderedDict.
  Modes can also be renamed
+- Input validation for constructors for `Tensor`, `TensorCPD`, `TensorTKD`, `TensorTT`
+- Input validation for input data for `decompose` method for all tensor decomposition algorithms
 - Setup CI using Travis, AppVeyor and Coveralls
-- Unit tests using pytest for the `Tensor`
-
+- Unit tests using pytest for all available modules
 
 
 ### Changed
 
+- Objects of `Tensor`, `TensorCPD`, `TensorTKD`, `TensorTT` classes can only be created from numpy arrays
 - For all tensor representation all their data values can (should) only be accessed through corresponding properties.
-- Objects of `Tensor` class can only be created from numpy arrays
 - The original shape of the tensor can be defined during object creation of `Tensor` class
+- `super_diag_tensor` requires to pass a shape of desired tensor instead of its order
 
+
+### Fixed
+
+- `reconstruct` was changing the the original core so it was not possible to call it several times in a row
+- Incorrect size of a produced factor matrix when its computation is skipped in `decompose` for `HOSVD` and `HOOI` classes 
+  
 
 ### Removed
 
