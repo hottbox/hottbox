@@ -32,11 +32,12 @@ def test_rankest():
     assert captured_output.getvalue() != ''  # to check that something was actually printed
 
     # ------ tests when optimal rank is not within the provided range of values
+    #        therefore all values have been tested (this also ensures full coverage of rankest)
     shape = (4, 4, 4)
     size = reduce(lambda x, y: x * y, shape)
     np.random.seed(0)
     tensor = Tensor(np.random.rand(size).reshape(shape))
-    rank_range = [i for i in range(2, 10)]
+    rank_range = [i for i in range(2, 9)]
 
     true_rank = (rank_range[-1],)
     kryskal_rank = rankest(tensor, rank_range)

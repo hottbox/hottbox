@@ -28,7 +28,7 @@ config = dict(
         'Programming Language :: Python :: 3'
     ],
     keywords=['tensor decompositions', 'machine learning'],
-    install_requires=['numpy', 'scipy', 'pandas'],
+    install_requires=['numpy', 'scipy'],
     include_package_data=True,
     zip_safe=False
 )
@@ -36,4 +36,4 @@ config = dict(
 setup(**config)
 
 print("\nWelcome to HOTTBOX!")
-print("If any questions please visit documentation page")
+print("If any questions please visit documentation page https://hottbox.github.io")
