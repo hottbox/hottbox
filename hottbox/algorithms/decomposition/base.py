@@ -13,6 +13,7 @@ class Decomposition(object):
         pass
 
     def copy(self):
+        """ Copy of the Decomposition as a new object """
         cls = self.__class__
         result = cls.__new__(cls)
         result.__dict__.update(self.__dict__)
@@ -28,14 +29,14 @@ class Decomposition(object):
         """
         return self.__class__.__name__
 
-    def decompose(self, tensor, rank):
+    def decompose(self, **kwargs):
         raise NotImplementedError('Not implemented in base (Decomposition) class')
 
     @property
     def converged(self):
         raise NotImplementedError('Not implemented in base (Decomposition) class')
 
-    def _init_fmat(self, tensor, rank):
+    def _init_fmat(self, **kwargs):
         raise NotImplementedError('Not implemented in base (Decomposition) class')
 
     def plot(self):

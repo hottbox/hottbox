@@ -1,0 +1,34 @@
+sudo: false
+
+language: python
+
+cache:
+  directories:
+  - $HOME/.cache/pip
+  - $HOME/.ccache
+
+env:
+  matrix:
+    - DISTRIB="conda" PYTHON_VERSION="3.6" COVERAGE="true"
+
+git:
+  depth: 3
+
+branches:
+  only:
+  - master
+  - develop
+
+install:
+  - source ci_scripts/travis_install.sh
+  - pip install -r requirements.txt
+  - pip install pytest pytest-cov
+
+script:
+  - source ci_scripts/travis_test.sh
+
+after_success:
+  - source ci_scripts/travis_success.sh
+
+notifications:
+  email: false

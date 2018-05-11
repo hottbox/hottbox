@@ -13,6 +13,22 @@ class BaseTucker(Decomposition):
         self.mode_description = mode_description
         self.verbose = verbose
 
+    def copy(self):
+        """ Copy of the Decomposition as a new object """
+        new_object = super(BaseTucker, self).copy()
+        return new_object
+
+    @property
+    def name(self):
+        """ Name of the decomposition
+
+        Returns
+        -------
+        decomposition_name : str
+        """
+        decomposition_name = super(BaseTucker, self).name
+        return decomposition_name
+
     @property
     def converged(self):
         raise NotImplementedError('Not implemented in base (BaseTucker) class')
@@ -45,6 +61,22 @@ class HOSVD(BaseTucker):
                                     mode_description=mode_description,
                                     verbose=verbose)
 
+    def copy(self):
+        """ Copy of the HOSVD algorithm as a new object """
+        new_object = super(HOSVD, self).copy()
+        return new_object
+
+    @property
+    def name(self):
+        """ Name of the decomposition
+
+        Returns
+        -------
+        decomposition_name : str
+        """
+        decomposition_name = super(HOSVD, self).name
+        return decomposition_name
+
     def decompose(self, tensor, rank):
         """ Performs tucker decomposition via Higher Order Singular Value Decomposition (HOSVD)
 
@@ -60,6 +92,13 @@ class HOSVD(BaseTucker):
         tensor_tkd : TensorTKD
             Tucker representation of the `tensor`
         """
+        if not isinstance(tensor, Tensor):
+            raise TypeError("Parameter `tensor` should be an object of `Tensor` class!")
+        if not isinstance(rank, tuple):
+            raise TypeError("Parameter `rank` should be passed as a tuple!")
+        if tensor.order != len(rank):
+            raise ValueError("Parameter `rank` should be tuple of the same length as the order of a tensor:\n"
+                             "{} != {} (tensor.order != len(rank))".format(tensor.order, len(rank)))
         fmat = [np.array([])] * tensor.order
         core = tensor.copy()
         # TODO: can add check for self.process here
@@ -67,7 +106,7 @@ class HOSVD(BaseTucker):
             self.process = tuple(range(tensor.order))
         for mode in range(tensor.order):
             if mode not in self.process:
-                fmat[mode] = np.eye(rank[mode])
+                fmat[mode] = np.eye(tensor.shape[mode])
                 continue
             tensor_unfolded = unfold(tensor.data, mode)
             U, _, _, = svd(tensor_unfolded, rank[mode])
@@ -135,6 +174,23 @@ class HOOI(BaseTucker):
         # Initialise attributes
         self.cost = []
 
+    def copy(self):
+        """ Copy of the HOSVD algorithm as a new object """
+        new_object = super(HOOI, self).copy()
+        new_object.cost = []
+        return new_object
+
+    @property
+    def name(self):
+        """ Name of the decomposition
+
+        Returns
+        -------
+        decomposition_name : str
+        """
+        decomposition_name = super(HOOI, self).name
+        return decomposition_name
+
     def decompose(self, tensor, rank):
         """ Performs tucker decomposition via Higher Order Orthogonal Iteration (HOOI)
 
@@ -150,6 +206,13 @@ class HOOI(BaseTucker):
         tensor_tkd : TensorTKD
             Tucker representation of the `tensor`
         """
+        if not isinstance(tensor, Tensor):
+            raise TypeError("Parameter `tensor` should be an object of `Tensor` class!")
+        if not isinstance(rank, tuple):
+            raise TypeError("Parameter `rank` should be passed as a tuple!")
+        if tensor.order != len(rank):
+            raise ValueError("Parameter `rank` should be tuple of the same length as the order of a tensor:\n"
+                             "{} != {} (tensor.order != len(rank))".format(tensor.order, len(rank)))
         tensor_tkd = None
         fmat_hooi = self._init_fmat(tensor, rank)
         norm = tensor.frob_norm

@@ -36,4 +36,4 @@ config = dict(
 setup(**config)
 
 print("\nWelcome to HOTTBOX!")
-print("If any questions please visit documentation page")
+print("If any questions please visit documentation page https://hottbox.github.io")
