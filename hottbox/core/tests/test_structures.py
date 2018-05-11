@@ -839,7 +839,7 @@ class TestTensorTT:
             assert (core.order == 2) or (core.order == 3)   # cores should be either matrices or 3d arrays
             if core.order == 2:
                 assert core.mode_names == true_default_mode_names_2d
-            elif core.order == 3:
+            if core.order == 3:
                 assert core.mode_names == true_default_mode_names_3d
 
         # double check for not being references

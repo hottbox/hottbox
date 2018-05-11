@@ -777,10 +777,8 @@ class TensorTT(BaseTensorTD):
             extracted_full_shape[i] = core_values[i].shape[1]
 
         if tuple(extracted_full_shape) != ft_shape:
-            for i in range(len(ft_shape)):
-                if extracted_full_shape[i] != ft_shape[i]:
-                    raise ValueError("Inconsistent shape of the tensor in full form:\n"
-                                     "{} != {} (extracted_full_shape != ft_shape)".format(extracted_full_shape, ft_shape))
+            raise ValueError("Inconsistent shape of the tensor in full form:\n"
+                             "{} != {} (extracted_full_shape != ft_shape)".format(extracted_full_shape, ft_shape))
 
     def copy(self):
         """ Produces a copy of itself as a new object

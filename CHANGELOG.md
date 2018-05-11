@@ -4,11 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased: develop branch]
-[![Travis status](https://img.shields.io/travis/hottbox/hottbox/develop.svg?label=TravisCI)](https://img.shields.io/travis/hottbox/hottbox/develop.svg)
-[![Appveyor status](https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/develop?svg=true)](https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a/branch/develop)
-[![Coveralls status](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)
+## [Unreleased]
 
+### Package status on branch develop
+[![Travis status](https://img.shields.io/travis/hottbox/hottbox/develop.svg?label=TravisCI)](https://travis-ci.org/hottbox/hottbox/)
+[![Appveyor status](https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/develop?svg=true)](https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a/branch/develop)
+[![Coveralls status](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://codecov.io/gh/hottbox/hottbox)
+
+### Added
+
+-
+
+### Changed
+
+-
+
+### Removed
+
+-
+
+
+### Fixed
+
+-
+
+
+
+## HOTTBOX v0.1.2
 
 ### Added
 
@@ -32,15 +54,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- `reconstruct` was changing the the original core so it was not possible to call it several times in a row
+- `reconstruct` was changing the original core so it was not possible to call it several times in a row
 - Incorrect size of a produced factor matrix when its computation is skipped in `decompose` for `HOSVD` and `HOOI` classes 
-  
-
-### Removed
 
 
 
-## [0.1.1]
+## HOTTBOX v0.1.1
 
 ### Added
 
