@@ -28,7 +28,7 @@ config = dict(
         'Programming Language :: Python :: 3'
     ],
     keywords=['tensor decompositions', 'machine learning'],
-    install_requires=['numpy', 'scipy'],
+    install_requires=['numpy', 'scipy', 'pandas'],
     include_package_data=True,
     zip_safe=False
 )
