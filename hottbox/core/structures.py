@@ -21,7 +21,8 @@ class Tensor(object):
         Shape of a tensor object in normal format (without being in unfolded or folded state)
         Can potentially cause a lot of problems in a future.
     _mode_names : OrderedDict
-        Description of the tensor modes
+        Description of the tensor modes in form of a dictionary where Keys and Values
+        correspond to mode number and description respectively
     """
 
     def __init__(self, array, mode_names=None, ft_shape=None) -> None:
@@ -31,10 +32,10 @@ class Tensor(object):
         ----------
         array : np.ndarray
             N-dimensional array
-        mode_names : OrderedDict
+        mode_names : list
             Description of the tensor modes.
             If nothing is specified then all modes of the created ``Tensor``
-            get generic names {0:'mode-0', 1:'mode-1', ...}
+            get generic names 'mode-0', 'mode-1'
         ft_shape : tuple
             Shape of the a tensor in normal format (without being in unfolded or folded state)
 
@@ -42,48 +43,65 @@ class Tensor(object):
         -----
             In most cases use the default settings for `ft_shape`, because it affects folding, unfolding etc.
         """
-        # TODO: covert data to a specific data type (int, float etc)
-        if not isinstance(array, np.ndarray):
-            raise TypeError('Input data should be a numpy array')
+        self._validate_init_data(array, mode_names, ft_shape)
         self._data = array.copy()
-        self._mode_names = self._assign_names(array=array, mode_names=mode_names)
+        self._mode_names = self._assign_mode_names(array=array, mode_names=mode_names)
         self._ft_shape = self._assign_ft_shape(array=array, ft_shape=ft_shape)
 
     @staticmethod
-    def _assign_names(array, mode_names):
+    def _validate_init_data(array, mode_names, ft_shape):
+        """ Validate data for ``Tensor`` constructor
+
+        Parameters
+        ----------
+        array : np.ndarray
+        mode_names : list
+        ft_shape : tuple
+        """
+        # validate data array
+        if not isinstance(array, np.ndarray):
+            raise TypeError('Input data should be a numpy array')
+        # validate mode_names if provided
+        if mode_names is not None:
+            if not isinstance(mode_names, list):
+                raise TypeError("You should use list for mode_names!")
+            if array.ndim != len(mode_names):
+                raise ValueError("Incorrect number of names for the modes of a tensor: {0} != {1} "
+                                 "('array.ndim != len(mode_names)')!\n".format(array.ndim,
+                                                                               len(mode_names)
+                                                                               )
+                                 )
+            if not all(isinstance(name, str) for name in mode_names):
+                raise TypeError("The list of mode names should contain only strings!")
+        # validate ft_shape if provided
+        if ft_shape is not None:
+            if not isinstance(ft_shape, tuple):
+                raise TypeError("Incorrect type of the parameter `ft_shape`!\n"
+                                "It should be tuple")
+
+            size = reduce(lambda x, y: x * y, ft_shape)
+            if array.size != size:
+                raise ValueError("Values of `ft_shape` are inconsistent with the provided data array ({} != {})!\n"
+                                 "reduce(lambda x, y: x * y, ft_shape) != array.size".format(size, array.size))
+
+    @staticmethod
+    def _assign_mode_names(array, mode_names):
         """ Generate list of names for the modes of a tensor
         
         Parameters
         ----------
         array : np.ndarray
             N-dimensional array
-        mode_names : OrderedDict
-            Description of the tensor modes in form of a dictionary where Keys and Values
-            correspond to mode number and description respectively
+        mode_names : list
+            Description of the tensor modes as a list of strings
 
         Returns
         -------
         names : OrderedDict
         """
         if mode_names is None:
-            names = OrderedDict([(mode, "mode-{}".format(mode)) for mode in range(array.ndim)])
-        else:
-            if not isinstance(mode_names, OrderedDict):
-                raise TypeError("You should use OrderDict for mode_names!")
-            if array.ndim != len(mode_names.keys()):
-                raise ValueError("Incorrect number of names for the modes of a tensor: {0} != {1} "
-                                 "('array.ndim != len(mode_names.keys())')!\n".format(array.ndim,
-                                                                                      len(mode_names.keys())
-                                                                                      )
-                                 )
-            if not all(isinstance(mode, int) for mode in mode_names.keys()):
-                raise TypeError("The dict of mode names should contain only integer keys!")
-            if not all(mode < array.ndim for mode in mode_names.keys()):
-                raise ValueError("All specified modes should not exceed the order of the tensor!")
-            if not all(mode >= 0 for mode in mode_names.keys()):
-                raise ValueError("All specified values for modes should be non-negative!")
-
-            names = mode_names.copy()
+            mode_names = ["mode-{}".format(mode) for mode in range(array.ndim)]
+        names = OrderedDict([(mode, name) for mode, name in enumerate(mode_names)])
         return names
 
     @staticmethod
@@ -103,15 +121,6 @@ class Tensor(object):
         if ft_shape is None:
             shape = tuple([mode_size for mode_size in array.shape])
         else:
-            if not isinstance(ft_shape, tuple):
-                raise TypeError("Incorrect type of the parameter `ft_shape`!\n"
-                                "It should be tuple")
-
-            size = reduce(lambda x, y: x * y, ft_shape)
-            if array.size != size:
-                raise ValueError("Values of `ft_shape` are inconsistent with the provided data array ({} != {})!\n"
-                                 "reduce(lambda x, y: x * y, ft_shape) != array.size".format(size, array.size))
-
             shape = tuple([mode_size for mode_size in ft_shape])
         return shape
 
@@ -220,7 +229,7 @@ class Tensor(object):
         Returns
         -------
         self : Tensor
-            Return self so that methods could be chained (Especially for reconstruction in TensorCPD etc.)
+            Return self so that methods could be chained
 
         Notes
         -----
@@ -935,3 +944,75 @@ def residual_tensor(tensor_orig, tensor_approx):
         raise TypeError("Unknown data type of the approximation tensor!\n"
                         "The available types for `tensor_B` are `Tensor`,  `TensorCPD`,  `TensorTKD`,  `TensorTT`")
     return residual
+
+
+class Mode(object):
+    """ This class describe mode of the Tensor
+
+    Attributes
+    ----------
+    _name : str
+    _index : list
+    """
+    def __init__(self, name) -> None:
+        """ Constructor of the ``Mode`` class
+
+        Parameters
+        ----------
+        name : str
+        """
+        if not isinstance(name, str):
+            raise TypeError("name should be a string")
+        self._name = name
+        self._index = None
+
+    def __str__(self):
+        self_as_string = "{}(name=['{}'], index=[{}])".format(self.__class__.__name__,
+                                                          self.name,
+                                                          self.index)
+        return self_as_string
+
+    def __repr__(self):
+        return str(self)
+
+    @property
+    def name(self):
+        """
+
+        Returns
+        -------
+        name : str
+        """
+        name = self._name
+        return name
+
+    @property
+    def index(self):
+        """
+
+        Returns
+        -------
+        index : list
+        """
+        index = self._index
+        return index
+
+    def set_name(self, new_name):
+        """
+
+        Parameters
+        ----------
+        new_name : str
+
+        """
+        self._name = new_name
+
+    def set_index(self, new_index):
+        """
+
+        Parameters
+        ----------
+        new_index : list
+
+        """
+        self._index = new_index
