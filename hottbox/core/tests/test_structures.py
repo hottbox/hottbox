@@ -17,10 +17,7 @@ class TestTensor:
         true_size = reduce(lambda x, y: x * y, true_shape)
         true_order = len(true_shape)
         true_data = np.ones(true_size).reshape(true_shape)
-        true_default_mode_names = OrderedDict([(0, 'mode-0'),
-                                               (1, 'mode-1'),
-                                               (2, 'mode-2')
-                                               ])
+        true_default_mode_names = ['mode-0', 'mode-1', 'mode-2']
         tensor = Tensor(array=true_data)
         np.testing.assert_array_equal(tensor.data, true_data)
         assert (tensor.frob_norm == 8.0)
@@ -32,13 +29,9 @@ class TestTensor:
         assert (tensor._data is not true_data)          # check that is not a reference
 
         # ------ tests for creating a Tensor object with custom mode names
-        true_custom_mode_names = OrderedDict([(0, 'time'),
-                                              (1, 'frequency'),
-                                              (2, 'channel')
-                                              ])
+        true_custom_mode_names = ['time', 'frequency', 'channel']
         tensor = Tensor(array=true_data, mode_names=true_custom_mode_names)
         assert (tensor.mode_names == true_custom_mode_names)        # check that values are the same
-        assert (tensor._mode_names is not true_custom_mode_names)   # check that not a reference
 
         # ------ tests for creating a Tensor object with custom ft_shape
         I, J, K = 2, 4, 8
@@ -76,34 +69,19 @@ class TestTensor:
             Tensor(array=incorrect_data)
 
         # ------ tests for custom mode names being incorrectly defined
-        # mode names are not of OrderedDict type
+        # mode names are not of list type
         with pytest.raises(TypeError):
             incorrect_mode_names = {mode: "{}-mode".format(mode) for mode in range(order)}
             Tensor(array=correct_data, mode_names=incorrect_mode_names)
 
         # not enough mode names
         with pytest.raises(ValueError):
-            incorrect_mode_names = OrderedDict([(mode, "{}-mode".format(mode)) for mode in range(order - 1)])
+            incorrect_mode_names = ["{}-mode".format(mode) for mode in range(order - 1)]
             Tensor(array=correct_data, mode_names=incorrect_mode_names)
 
         # too many mode names
         with pytest.raises(ValueError):
-            incorrect_mode_names = OrderedDict([(mode, "{}-mode".format(mode)) for mode in range(order + 1)])
-            Tensor(array=correct_data, mode_names=incorrect_mode_names)
-
-        # incorrect type of keys (not integers)
-        with pytest.raises(TypeError):
-            incorrect_mode_names = OrderedDict([("{}-mode".format(mode), mode) for mode in range(order)])
-            Tensor(array=correct_data, mode_names=incorrect_mode_names)
-
-        # key value exceeds the order of a tensor
-        with pytest.raises(ValueError):
-            incorrect_mode_names = OrderedDict([(mode, "{}-mode".format(mode)) for mode in range(order - 2, order + 1)])
-            Tensor(array=correct_data, mode_names=incorrect_mode_names)
-
-        # key value is set to be negative
-        with pytest.raises(ValueError):
-            incorrect_mode_names = OrderedDict([(mode, "{}-mode".format(mode)) for mode in range(-1, order - 1)])
+            incorrect_mode_names = ["{}-mode".format(mode) for mode in range(order + 1)]
             Tensor(array=correct_data, mode_names=incorrect_mode_names)
 
         # ------ tests for custom ft_shape being incorrectly defined
@@ -134,7 +112,7 @@ class TestTensor:
         assert (tensor_copy is not tensor)
         assert (tensor_copy._data is not tensor._data)
         assert (tensor_copy._ft_shape is not tensor._ft_shape)
-        assert (tensor_copy._mode_names is not tensor._mode_names)
+        assert (tensor_copy._modes is not tensor._modes)
         np.testing.assert_array_equal(tensor_copy.data, tensor.data)
         assert (tensor_copy.ft_shape == tensor.ft_shape)
         assert (tensor_copy.frob_norm == tensor.frob_norm)
@@ -149,28 +127,16 @@ class TestTensor:
         true_size = reduce(lambda x, y: x * y, true_shape)
         true_order = len(true_shape)
         true_data = np.ones(true_size).reshape(true_shape)
-        orig_mode_names = OrderedDict([(0, '1-mode'),
-                                       (1, '2-mode'),
-                                       (2, '3-mode')
-                                       ])
-        true_new_mode_names_ordered_dict = OrderedDict([(0, 'time'),
-                                                        (1, 'frequency'),
-                                                        (2, 'channel')
-                                                        ])
-        true_new_mode_names_dict = {0: 'pixel_x',
-                                    1: 'pixel_y',
-                                    2: 'color'
-                                    }
+        orig_mode_names = ['1-mode', '2-mode', '3-mode']
+        true_new_mode_names = {0: 'pixel_x',
+                               1: 'pixel_y',
+                               2: 'color'
+                               }
         tensor = Tensor(array=true_data, mode_names=orig_mode_names)
 
-        tensor.rename_modes(true_new_mode_names_ordered_dict)
-        assert (tensor.mode_names == true_new_mode_names_ordered_dict)  # check that values are the same
-        assert (tensor._mode_names is not true_new_mode_names_ordered_dict)  # check that not a reference
-
-        # test that it also works for dict
-        tensor.rename_modes(true_new_mode_names_dict)
-        assert (tensor.mode_names == true_new_mode_names_dict)  # check that values are the same
-        assert (tensor._mode_names is not true_new_mode_names_dict)  # check that not a reference
+        tensor.rename_modes(true_new_mode_names)
+        for i, mode_name in enumerate(tensor.mode_names):
+            assert (mode_name == true_new_mode_names[i])
 
         # ------ tests that should FAIL for new mode names being incorrectly defined for renaming
         with pytest.raises(ValueError):
@@ -203,10 +169,7 @@ class TestTensor:
         true_order = len(true_shape)
         true_size = reduce(lambda x, y: x * y, true_shape)
         true_data = np.ones(true_size).reshape(true_shape)
-        true_mode_names = OrderedDict([(0, 'time'),
-                                       (1, 'frequency'),
-                                       (2, 'channel')
-                                       ])
+        true_mode_names = ['time', 'frequency', 'channel']
         tensor = Tensor(array=true_data, mode_names=true_mode_names)
         tensor.describe()
         assert captured_output.getvalue() != ''  # to check that something was actually printed
@@ -371,10 +334,7 @@ class TestTensor:
         new_dim = [2, 3, 4]
         size = reduce(lambda x, y: x * y, orig_dim)
         array_3d = np.arange(size).reshape(orig_dim)
-        orig_names = OrderedDict([(0, 'country'),
-                                  (1, 'model'),
-                                  (2, 'year')
-                                  ])
+        orig_names = ['country', 'model', 'year']
 
         # check that names have not been changed when multiply with numpy array
         for mode in range(len(new_dim)):
@@ -568,10 +528,7 @@ class TestTensorCPD:
 
     def test_reconstruct(self):
         """ Tests for reconstruction TensorCPD object into the full form (Tensor) """
-        true_default_mode_names = OrderedDict([(0, 'mode-0'),
-                                               (1, 'mode-1'),
-                                               (2, 'mode-2')
-                                               ])
+        true_default_mode_names = ['mode-0', 'mode-1', 'mode-2']
         true_data = np.array([[[225., 555., 885., 1215.],
                                [555., 1425., 2295., 3165.],
                                [885., 2295., 3705., 5115.]],
@@ -601,16 +558,18 @@ class TestTensorCPD:
         assert tensor_rec_1 is not tensor_rec_2
 
         # ------ tests for chaining methods
-        new_mode_names = OrderedDict([(0, 'frequency'),
-                                      (1, 'time'),
-                                      (2, 'channel')
-                                      ])
+        new_mode_names = {0: 'frequency',
+                          1: 'time',
+                          2: 'channel'
+                          }
         mode = 0
         new_dim_size = 7
         matrix = np.arange(new_dim_size * ft_shape[mode]).reshape(new_dim_size, ft_shape[mode])
 
         tensor_rec = tensor_cpd.reconstruct.rename_modes(new_mode_names=new_mode_names)
-        assert (tensor_rec.mode_names == new_mode_names)
+        for i, mode_name in enumerate(tensor_rec.mode_names):
+            assert (mode_name == new_mode_names[i])
+
 
         new_name = 'age'
         tensor_rec = tensor_cpd.reconstruct.mode_n_product(matrix, mode=mode, new_name=new_name)
@@ -738,10 +697,7 @@ class TestTensorTKD:
         core_values = np.arange(core_size).reshape(ml_rank)
         fmat = [np.arange(ft_shape[mode] * ml_rank[mode]).reshape(ft_shape[mode], ml_rank[mode]) for mode
                                in range(len(ft_shape))]
-        true_default_mode_names = OrderedDict([(0, 'mode-0'),
-                                               (1, 'mode-1'),
-                                               (2, 'mode-2')
-                                               ])
+        true_default_mode_names = ['mode-0', 'mode-1', 'mode-2']
         true_data = np.array([[[491400,  1628200,  2765000,  3901800],
                                [1609020,  5330080,  9051140, 12772200],
                                [2726640,  9031960, 15337280, 21642600]],
@@ -768,16 +724,18 @@ class TestTensorTKD:
         assert tensor_rec_1 is not tensor_rec_2
 
         # ------ tests for chaining methods
-        new_mode_names = OrderedDict([(0, 'frequency'),
-                                      (1, 'time'),
-                                      (2, 'channel')
-                                      ])
+        new_mode_names = {0: 'frequency',
+                          1: 'time',
+                          2: 'channel'
+                          }
+
         mode = 0
         new_dim_size = 7
         matrix = np.arange(new_dim_size * ft_shape[mode]).reshape(new_dim_size, ft_shape[mode])
 
         tensor_rec = tensor_tkd.reconstruct.rename_modes(new_mode_names=new_mode_names)
-        assert (tensor_rec.mode_names == new_mode_names)
+        for i, mode_name in enumerate(tensor_rec.mode_names):
+            assert (mode_name == new_mode_names[i])
 
         new_name = 'age'
         tensor_rec = tensor_tkd.reconstruct.mode_n_product(matrix, mode=mode, new_name=new_name)
@@ -805,13 +763,8 @@ class TestTensorTT:
         true_tt_rank = (r1, r2)
         true_ft_shape = (I, J, K)
         true_order = len(true_ft_shape)
-        true_default_mode_names_2d = OrderedDict([(0, 'mode-0'),
-                                                  (1, 'mode-1')
-                                                  ])
-        true_default_mode_names_3d = OrderedDict([(0, 'mode-0'),
-                                                  (1, 'mode-1'),
-                                                  (2, 'mode-2')
-                                                  ])
+        true_default_mode_names_2d = ['mode-0', 'mode-1']
+        true_default_mode_names_3d = ['mode-0', 'mode-1', 'mode-2']
 
         tensor_tt = TensorTT(core_values=core_values, ft_shape=true_ft_shape)
         # ------ tests for types of data being correct
@@ -972,10 +925,7 @@ class TestTensorTT:
                                [3684, 4272, 4860, 5448, 6036, 6624],
                                [4386, 5091, 5796, 6501, 7206, 7911],
                                [5088, 5910, 6732, 7554, 8376, 9198]]])
-        true_default_mode_names = OrderedDict([(0, 'mode-0'),
-                                               (1, 'mode-1'),
-                                               (2, 'mode-2')
-                                               ])
+        true_default_mode_names = ['mode-0', 'mode-1', 'mode-2']
         tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
 
         # ------ basic tests on getting correct results after reconstruction
@@ -993,16 +943,18 @@ class TestTensorTT:
         assert tensor_rec_1 is not tensor_rec_2
 
         # ------ tests for chaining methods
-        new_mode_names = OrderedDict([(0, 'frequency'),
-                                      (1, 'time'),
-                                      (2, 'channel')
-                                      ])
+        new_mode_names = {0: 'frequency',
+                          1: 'time',
+                          2: 'channel'
+                          }
+
         mode = 0
         new_dim_size = 7
         matrix = np.arange(new_dim_size * ft_shape[mode]).reshape(new_dim_size, ft_shape[mode])
 
         tensor_rec = tensor_tt.reconstruct.rename_modes(new_mode_names=new_mode_names)
-        assert (tensor_rec.mode_names == new_mode_names)
+        for i, mode_name in enumerate(tensor_rec.mode_names):
+            assert (mode_name == new_mode_names[i])
 
         new_name = 'age'
         tensor_rec = tensor_tt.reconstruct.mode_n_product(matrix, mode=mode, new_name=new_name)
@@ -1015,11 +967,8 @@ class TestTensorTT:
         assert (tensor_rec.mode_names == new_mode_names)
 
         # ------ tests for the 4th order Tensor
-        true_default_mode_names = OrderedDict([(0, 'mode-0'),
-                                               (1, 'mode-1'),
-                                               (2, 'mode-2'),
-                                               (3, 'mode-3')
-                                               ])
+        true_default_mode_names = ['mode-0', 'mode-1', 'mode-2', 'mode-3']
+
         r1, r2, r3 = 2, 3, 4
         I, J, K, L = 5, 6, 7, 8
         core_1 = np.arange(I * r1).reshape(I, r1)
@@ -1034,12 +983,8 @@ class TestTensorTT:
         assert (tensor_rec.mode_names == true_default_mode_names)
 
         # ------ tests for the 5th order Tensor
-        true_default_mode_names = OrderedDict([(0, 'mode-0'),
-                                               (1, 'mode-1'),
-                                               (2, 'mode-2'),
-                                               (3, 'mode-3'),
-                                               (4, 'mode-4')
-                                               ])
+        true_default_mode_names = ['mode-0', 'mode-1', 'mode-2', 'mode-3', 'mode-4']
+
         r1, r2, r3, r4 = 2, 3, 4, 5
         I, J, K, L, M = 5, 6, 7, 8, 9
         core_1 = np.arange(I * r1).reshape(I, r1)
@@ -1054,6 +999,7 @@ class TestTensorTT:
         assert (tensor_rec.shape == ft_shape)
         assert (tensor_rec.mode_names == true_default_mode_names)
 
+
 def test_super_diag_tensor():
     """ Tests for creating super-diagonal tensor"""
     order = 3
@@ -1064,10 +1010,7 @@ def test_super_diag_tensor():
 
                                   [[0., 0.],
                                    [0., 1.]]])
-    true_default_mode_names = OrderedDict([(0, 'mode-0'),
-                                           (1, 'mode-1'),
-                                           (2, 'mode-2')
-                                           ])
+    true_default_mode_names = ['mode-0', 'mode-1', 'mode-2']
     correct_values = np.arange(rank)
     true_data = np.array([[[0., 0.],
                            [0., 0.]],
@@ -1117,10 +1060,7 @@ def test_super_diag_tensor():
 
 def test_residual_tensor():
     """ Tests for computing/creating a residual tensor """
-    true_default_mode_names = OrderedDict([(0, 'mode-0'),
-                                           (1, 'mode-1'),
-                                           (2, 'mode-2')
-                                           ])
+    true_default_mode_names = ['mode-0', 'mode-1', 'mode-2']
 
     # ------ tests for residual tensor with the Tensor
     array_3d = np.array([[[0,  1,  2,  3],

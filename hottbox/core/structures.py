@@ -20,9 +20,8 @@ class Tensor(object):
     _ft_shape : tuple
         Shape of a tensor object in normal format (without being in unfolded or folded state)
         Can potentially cause a lot of problems in a future.
-    _mode_names : OrderedDict
-        Description of the tensor modes in form of a dictionary where Keys and Values
-        correspond to mode number and description respectively
+    _modes : list
+        Description of the tensor modes in form of a list where each element is object of ``Mode`` class
     """
 
     def __init__(self, array, mode_names=None, ft_shape=None) -> None:
@@ -45,8 +44,8 @@ class Tensor(object):
         """
         self._validate_init_data(array, mode_names, ft_shape)
         self._data = array.copy()
-        self._mode_names = self._assign_mode_names(array=array, mode_names=mode_names)
-        self._ft_shape = self._assign_ft_shape(array=array, ft_shape=ft_shape)
+        self._ft_shape = self._create_ft_shape(array=array, ft_shape=ft_shape)
+        self._modes = self._create_modes(array, mode_names)
 
     @staticmethod
     def _validate_init_data(array, mode_names, ft_shape):
@@ -61,6 +60,7 @@ class Tensor(object):
         # validate data array
         if not isinstance(array, np.ndarray):
             raise TypeError('Input data should be a numpy array')
+
         # validate mode_names if provided
         if mode_names is not None:
             if not isinstance(mode_names, list):
@@ -73,39 +73,19 @@ class Tensor(object):
                                  )
             if not all(isinstance(name, str) for name in mode_names):
                 raise TypeError("The list of mode names should contain only strings!")
+
         # validate ft_shape if provided
         if ft_shape is not None:
             if not isinstance(ft_shape, tuple):
                 raise TypeError("Incorrect type of the parameter `ft_shape`!\n"
                                 "It should be tuple")
-
             size = reduce(lambda x, y: x * y, ft_shape)
             if array.size != size:
                 raise ValueError("Values of `ft_shape` are inconsistent with the provided data array ({} != {})!\n"
                                  "reduce(lambda x, y: x * y, ft_shape) != array.size".format(size, array.size))
 
     @staticmethod
-    def _assign_mode_names(array, mode_names):
-        """ Generate list of names for the modes of a tensor
-        
-        Parameters
-        ----------
-        array : np.ndarray
-            N-dimensional array
-        mode_names : list
-            Description of the tensor modes as a list of strings
-
-        Returns
-        -------
-        names : OrderedDict
-        """
-        if mode_names is None:
-            mode_names = ["mode-{}".format(mode) for mode in range(array.ndim)]
-        names = OrderedDict([(mode, name) for mode, name in enumerate(mode_names)])
-        return names
-
-    @staticmethod
-    def _assign_ft_shape(array, ft_shape):
+    def _create_ft_shape(array, ft_shape):
         """ Generate shape for a normal format of a tensor (without being in unfolded or folded state)
 
         Parameters
@@ -124,24 +104,12 @@ class Tensor(object):
             shape = tuple([mode_size for mode_size in ft_shape])
         return shape
 
-    def copy(self):
-        """ Produces a copy of itself as a new object
-
-        Returns
-        -------
-        new_object : Tensor
-            New object of Tensor class with attributes having the same values, but no memory space is shared
-
-        Notes
-        -----
-            Attribute `_ft_shape` is assigned during object creation based on the shape of data array.
-            In order to preserve the original values without sharing memory space, need to redefine them manually.
-        """
-        array = self.data
-        mode_names = self.mode_names
-        ft_shape = self.ft_shape
-        new_object = Tensor(array=array, mode_names=mode_names, ft_shape=ft_shape)
-        return new_object
+    @staticmethod
+    def _create_modes(array, mode_names):
+        if mode_names is None:
+            mode_names = ["mode-{}".format(i) for i in range(array.ndim)]
+        modes = [Mode(name=name) for name in mode_names]
+        return modes
 
     @property
     def data(self):
@@ -166,6 +134,27 @@ class Tensor(object):
         return shape
 
     @property
+    def modes(self):
+        """
+
+        Returns
+        -------
+        list
+        """
+        return self._modes
+
+    @property
+    def mode_names(self):
+        """ Description of the tensor modes
+
+        Returns
+        -------
+        names : list
+        """
+        names = [mode.name for mode in self.modes]
+        return names
+
+    @property
     def frob_norm(self):
         """ Frobenious norm of a tensor
 
@@ -178,11 +167,12 @@ class Tensor(object):
 
     @property
     def shape(self):
-        """ Sizes of all dimensions of a tensor
+        """ Shape of a tensor in current state
 
         Returns
         -------
         tuple
+            Sizes of all dimensions of a tensor
         """
         return self.data.shape
 
@@ -206,16 +196,45 @@ class Tensor(object):
         """
         return self.data.size
 
-    @property
-    def mode_names(self):
-        """ Description of the tensor modes
+    def copy(self):
+        """ Produces a copy of itself as a new object
 
         Returns
         -------
-        names : OrderedDict
+        new_object : Tensor
+            New object of Tensor class with attributes having the same values, but no memory space is shared
+
+        Notes
+        -----
+            Attribute `_ft_shape` is assigned during object creation based on the shape of data array.
+            In order to preserve the original values without sharing memory space, need to redefine them manually.
         """
-        names = self._mode_names
-        return names
+        array = self.data
+        mode_names = self.mode_names
+        ft_shape = self.ft_shape
+        new_object = Tensor(array=array, mode_names=mode_names, ft_shape=ft_shape)
+        return new_object
+
+    def reset_modes(self):
+        """ Set _modes according to the the current shape of data of a tensor
+
+        Returns
+        -------
+        self
+        """
+        mode_names = ["mode-{}".format(i) for i in range(self._data.ndim)]
+        self._mode = [Mode(name=name) for name in mode_names]
+        return self
+
+    def reset_ft_shape(self):
+        """ Set _ft_shape according to the current shape of data of a tensor
+
+        Returns
+        -------
+        self
+        """
+        self._ft_shape = self._data.shape
+        return self
 
     def rename_modes(self, new_mode_names):
         """ Rename modes of a tensor
@@ -230,11 +249,6 @@ class Tensor(object):
         -------
         self : Tensor
             Return self so that methods could be chained
-
-        Notes
-        -----
-            `new_mode_name` does not have be OrderedDict since `mode_names` attribute is created at the
-            Tensor object creation
         """
         if len(new_mode_names.keys()) > self.order:
             raise ValueError("Too many mode names have been specified")
@@ -244,16 +258,23 @@ class Tensor(object):
             raise ValueError("All specified mode values should not exceed the order of the tensor!")
         if not all(mode >= 0 for mode in new_mode_names.keys()):
             raise ValueError("All specified mode keys should be non-negative!")
-        self._mode_names.update(new_mode_names)
 
+        for i, name in new_mode_names.items():
+            self.modes[i].set_name(name)
+
+        return self
+
+    def set_mode_index(self, mode, index):
+        if len(index) != self.ft_shape[mode]:
+            raise ValueError("Not enough indices")
+        self.modes[mode].set_index(new_index=index)
         return self
 
     def describe(self):
         """ Provides general information about this instance."""
-        mode_names = {key: value for key, value in self.mode_names.items()}
         print("This tensor is of order {}, consists of {} elements and its Frobenious norm = {:.2f}.\n"
               "Sizes and names of its modes are {} and {} respectively.".format(self.order, self.size, self.frob_norm,
-                                                                                self.shape, mode_names))
+                                                                                self.shape, self.mode_names))
 
     def unfold(self, mode, inplace=True):
         """ Perform mode-n unfolding to a matrix
@@ -275,21 +296,28 @@ class Tensor(object):
         -----
             Unfolding operation does not change `_ft_shape` attribute
         """
+        orig_data = self.data
+        orig_modes = self.modes
+        data_unfolded = self._unfold_data(orig_data, mode)
+        modes_unfolded = self._unfold_modes(orig_modes)
+
         if inplace:
             tensor = self
         else:
             tensor = self.copy()
-        tensor._data = unfold(self.data, mode)
 
-        new_mode_names = {0: OrderedDict([(mode, tensor.mode_names[mode])]),
-                          1: OrderedDict([(orig_mode, tensor.mode_names[orig_mode]) for orig_mode in tensor.mode_names.keys() if orig_mode != mode])
-                          }
-        # remove mode names due to collapsed dimensions
-        for mode_to_remove in range(2, len(tensor.mode_names.keys())):
-            del tensor._mode_names[mode_to_remove]
+        tensor._data = data_unfolded
+        tensor._modes = modes_unfolded
 
-        tensor.rename_modes(new_mode_names=new_mode_names)
         return tensor
+
+    @staticmethod
+    def _unfold_data(data, mode):
+        return unfold(data, mode)
+
+    @staticmethod
+    def _unfold_modes(modes):
+        return modes
 
     def fold(self, inplace=True):
         """ Fold to the original shape (undo self.unfold)
@@ -309,16 +337,27 @@ class Tensor(object):
         -----
             Folding operation does not change `_ft_shape` attribute
         """
+        # Do not do anything if the tensor is in the normal form (hadn't been unfolded before)
+        if (self.shape == self._ft_shape):
+            if inplace:
+                return self
+            else:
+                return self.copy()
+
+        orig_data = self.data
+        orig_modes = self.modes
+        new_shape = self.ft_shape
+        mode = 0
+        data_folded = self._fold_data(orig_data, mode, new_shape)
+        modes_folded = self._fold_modes(orig_modes)
         if inplace:
             tensor = self
         else:
             tensor = self.copy()
+        tensor._data = data_folded
+        tensor._modes = modes_folded
 
-        # Do not do anything if the tensor is in the normal form (hadn't been unfolded before)
-        if tensor.shape == tensor._ft_shape:
-            return tensor
-
-        # --------------- UNFOLD DATA
+        # --------------- FOLD DATA
         # Infer along which mode this instance has been previously unfolded
         mode_0 = list(tensor.mode_names[0].keys())
         mode_1 = list(tensor.mode_names[1].keys())
@@ -332,7 +371,7 @@ class Tensor(object):
         # Update data
         tensor._data = fold(matrix=self.data, mode=folding_mode, shape=new_shape)
 
-        # --------------- UNFOLD DESCRIPTION
+        # --------------- FOLD Modes
         # Create dict with new names
         new_mode_names = {**tensor.mode_names[0], **tensor.mode_names[1]}
 
@@ -345,6 +384,14 @@ class Tensor(object):
         # Update description
         tensor.rename_modes(new_mode_names=new_mode_names)
         return tensor
+
+    @staticmethod
+    def _fold_data(data, mode, shape):
+        return fold(data, mode, shape)
+
+    @staticmethod
+    def _fold_modes(modes):
+        return modes
 
     def mode_n_product(self, matrix, mode, inplace=True, new_name=None):
         """ Mode-n product of a tensor with a matrix

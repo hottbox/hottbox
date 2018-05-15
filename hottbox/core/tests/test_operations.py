@@ -98,6 +98,9 @@ def test_unfold():
     np.testing.assert_array_equal(true_res_0, res_0)
     np.testing.assert_array_equal(true_res_1, res_1)
     np.testing.assert_array_equal(true_res_2, res_2)
+    assert res_0 is not array_3d  # check that not references
+    assert res_1 is not array_3d  # check that not references
+    assert res_2 is not array_3d  # check that not references
 
 
 def test_fold():
@@ -129,6 +132,10 @@ def test_fold():
     np.testing.assert_array_equal(true_res, res_0)
     np.testing.assert_array_equal(true_res, res_1)
     np.testing.assert_array_equal(true_res, res_2)
+
+    assert res_0 is not array_0  # check that not references
+    assert res_1 is not array_1  # check that not references
+    assert res_2 is not array_2  # check that not references
 
 
 def test_khatri_rao():
