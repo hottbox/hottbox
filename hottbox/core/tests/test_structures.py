@@ -183,108 +183,61 @@ class TestTensor:
         assert (tensor.size == true_size)
         assert (tensor.mode_names == true_mode_names)
 
-    def test_fold(self):
-        """ Tests for folding a Tensor object """
-        true_folded_shape = (2, 2, 2)
-        size = reduce(lambda x, y: x * y, true_folded_shape)
-        true_result_data = np.arange(size).reshape(true_folded_shape)
-        true_result_mode_names = OrderedDict([(0, 'time'),
-                                              (1, 'frequency'),
-                                              (2, 'person')
-                                              ])
-        orig_unfolded_0_mode_names = OrderedDict([(0, OrderedDict([(0, 'time')])),
-                                                  (1, OrderedDict([(1, 'frequency'), (2, 'person')]))
-                                                  ])
-        orig_unfolded_1_mode_names = OrderedDict([(0, OrderedDict([(1, 'frequency')])),
-                                                  (1, OrderedDict([(0, 'time'), (2, 'person')]))
-                                                  ])
-        orig_unfolded_2_mode_names = OrderedDict([(0, OrderedDict([(2, 'person')])),
-                                                  (1, OrderedDict([(0, 'time'), (1, 'frequency')]))
-                                                  ])
-        orig_unfolded_mode_names = [orig_unfolded_0_mode_names, orig_unfolded_1_mode_names, orig_unfolded_2_mode_names]
-        orig_unfolded_data = [unfold(tensor=true_result_data, mode=mode) for mode in range(len(true_folded_shape))]
+    def test_unfold_fold(self):
+        """ Tests for folding and unfolding of a Tensor object """
+        shape = (2, 3, 4)
+        size = reduce(lambda x, y: x * y, shape)
 
-        # check that there would be no changes if tensor hasn't been unfolded previously
-        tensor = Tensor(array=true_result_data, mode_names=true_result_mode_names)
-        tensor.fold(inplace=True)
-        np.testing.assert_array_equal(tensor.data, true_result_data)
-        assert (tensor.mode_names == true_result_mode_names)
+        orig_data = np.arange(size).reshape(shape)
+        unfolded_data = [unfold(tensor=orig_data, mode=mode) for mode in range(len(shape))]
 
-        # --------- tests for folding INPLACE=TRUE
-        for mode in range(len(true_folded_shape)):
-            tensor = Tensor(array=orig_unfolded_data[mode],
-                            mode_names=orig_unfolded_mode_names[mode],
-                            ft_shape=true_folded_shape)
-            tensor.fold(inplace=True)
-            np.testing.assert_array_equal(tensor.data, true_result_data)
-            assert (tensor.mode_names == true_result_mode_names)
+        orig_mode_names = ['time', 'frequency', 'person']
+        unfolded_mode_names = [
+            ['time', 'frequency_person'],
+            ['frequency', 'time_person'],
+            ['person', 'time_frequency']
+        ]
 
-        # --------- tests for unfolding INPLACE=FALSE
-        for mode in range(len(true_folded_shape)):
-            tensor = Tensor(array=orig_unfolded_data[mode],
-                            mode_names=orig_unfolded_mode_names[mode],
-                            ft_shape=true_folded_shape)
-            tensor_folded = tensor.fold(inplace=False)
+        orig_state = [i for i in range(len(shape))]
+        unfolded_state = [
+            [[0], [1, 2]],
+            [[1], [0, 2]],
+            [[2], [0, 1]]
+        ]
 
-            # check that a new object was returned, but values `_ft_shape` were preserved
-            assert (tensor_folded is not tensor)
-            assert (tensor_folded._ft_shape is not tensor._ft_shape)
-            assert (tensor_folded.ft_shape == tensor.ft_shape)
+        tensor = Tensor(array=orig_data, mode_names=orig_mode_names)
 
-            # check that the original tensor object has not been modified
-            # (no internal references with the unfolded version)
-            np.testing.assert_array_equal(tensor.data, orig_unfolded_data[mode])
-            assert (tensor.mode_names == orig_unfolded_mode_names[mode])
-
-            # check the result of folding
-            np.testing.assert_array_equal(tensor_folded.data, true_result_data)
-            assert (tensor_folded.mode_names == true_result_mode_names)
-
-    def test_unfold(self):
-        """ Tests for unfolding a Tensor object """
-        true_orig_shape = (2, 2, 2)
-        size = reduce(lambda x, y: x * y, true_orig_shape)
-        orig_folded_data = np.arange(size).reshape(true_orig_shape)
-        orig_folded_mode_names = OrderedDict([(0, 'time'),
-                                              (1, 'frequency'),
-                                              (2, 'person')
-                                              ])
-        true_result_0_mode_names = OrderedDict([(0, OrderedDict([(0, 'time')])),
-                                                (1, OrderedDict([(1, 'frequency'), (2, 'person')]))
-                                                ])
-        true_result_1_mode_names = OrderedDict([(0, OrderedDict([(1, 'frequency')])),
-                                                (1, OrderedDict([(0, 'time'), (2, 'person')]))
-                                                ])
-        true_result_2_mode_names = OrderedDict([(0, OrderedDict([(2, 'person')])),
-                                                (1, OrderedDict([(0, 'time'), (1, 'frequency')]))
-                                                ])
-        true_result_mode_names = [true_result_0_mode_names, true_result_1_mode_names, true_result_2_mode_names]
-        true_result_data = [unfold(tensor=orig_folded_data, mode=mode) for mode in range(orig_folded_data.ndim)]
-
-        # --------- tests for unfolding INPLACE=TRUE
-        for mode in range(orig_folded_data.ndim):
-            tensor = Tensor(array=orig_folded_data, mode_names=orig_folded_mode_names)
+        # --------- tests for folding and unfolding INPLACE=TRUE
+        for mode in range(len(shape)):
             tensor.unfold(mode=mode, inplace=True)
-            np.testing.assert_array_equal(tensor.data, true_result_data[mode])
-            assert (tensor.mode_names == true_result_mode_names[mode])
+            assert tensor.current_state == unfolded_state[mode]
+            np.testing.assert_array_equal(tensor.data, unfolded_data[mode])
+            assert (tensor.mode_names == unfolded_mode_names[mode])
 
-        # --------- tests for unfolding INPLACE=FALSE
-        for mode in range(orig_folded_data.ndim):
-            tensor = Tensor(array=orig_folded_data, mode_names=orig_folded_mode_names)
+            tensor.fold(inplace=True)
+            assert tensor.current_state == orig_state
+            np.testing.assert_array_equal(tensor.data, orig_data)
+            assert (tensor.mode_names == orig_mode_names)
+
+        # --------- tests for folding and unfolding INPLACE=FALSE
+        for mode in range(len(shape)):
             tensor_unfolded = tensor.unfold(mode=mode, inplace=False)
-            # check that a new object was returned, but values `_ft_shape` were preserved
-            assert (tensor_unfolded is not tensor)
-            assert (tensor_unfolded._ft_shape is not tensor._ft_shape)
-            assert (tensor_unfolded._ft_shape == tensor._ft_shape)
+            tensor_folded = tensor_unfolded.fold(inplace=False)
 
-            # check that the original tensor object has not been modified
-            # (no internal references with the unfolded version)
-            np.testing.assert_array_equal(tensor.data, orig_folded_data)
-            assert (tensor.mode_names == orig_folded_mode_names)
+            assert tensor_unfolded is not tensor
+            assert tensor_folded is not tensor_unfolded
 
-            # check the result of unfolding
-            np.testing.assert_array_equal(tensor_unfolded.data, true_result_data[mode])
-            assert (tensor_unfolded.mode_names == true_result_mode_names[mode])
+            assert tensor.current_state == orig_state
+            assert (tensor.mode_names == orig_mode_names)
+            np.testing.assert_array_equal(tensor.data, orig_data)
+
+            assert tensor_unfolded.current_state == unfolded_state[mode]
+            assert (tensor_unfolded.mode_names == unfolded_mode_names[mode])
+            np.testing.assert_array_equal(tensor_unfolded.data, unfolded_data[mode])
+
+            assert tensor_folded.current_state == orig_state
+            assert (tensor_folded.mode_names == orig_mode_names)
+            np.testing.assert_array_equal(tensor_folded.data, orig_data)
 
     def test_mode_n_product(self):
         """ Tests for mode-n product on an object of Tensor class """

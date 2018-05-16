@@ -1,4 +1,4 @@
-|Travis|_ |Appveyor|_ |Coveralls|_
+|Travis|_ |Appveyor|_ |Coveralls|_ |PyPi|_
 
 .. |Travis| image:: https://img.shields.io/travis/hottbox/hottbox/master.svg?label=TravisCI
 .. _Travis: https://travis-ci.org/hottbox/hottbox/
@@ -8,6 +8,9 @@
 
 .. |Coveralls| image:: https://img.shields.io/coveralls/github/hottbox/hottbox/master.svg
 .. _Coveralls: https://coveralls.io/github/hottbox/hottbox
+
+.. |PyPi| image:: https://badge.fury.io/py/hottbox.svg
+.. _PyPi: https://badge.fury.io/py/hottbox
 
 Higher Order Tensors ToolBOX (hottbox)
 ======================================

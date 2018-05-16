@@ -4,8 +4,8 @@ Classes for different tensor representations
 
 import numpy as np
 from functools import reduce
-from collections import OrderedDict
 from .operations import unfold, fold, mode_n_product
+from .meta import Mode
 
 
 class Tensor(object):
@@ -16,12 +16,15 @@ class Tensor(object):
     Attributes
     ----------
     _data : np.ndarray
-        N-dimensional array
+        N-dimensional array.
     _ft_shape : tuple
-        Shape of a tensor object in normal format (without being in unfolded or folded state)
-        Can potentially cause a lot of problems in a future.
-    _modes : list
-        Description of the tensor modes in form of a list where each element is object of ``Mode`` class
+        Shape of a tensor object in normal format (without being in unfolded or folded state).
+        Meta information.
+    _modes : list[Mode]
+        Description of the tensor modes in form of a list where each element is object of ``Mode`` class.
+        Meta information.
+    _state : {list[int], list[list[int]]}
+        Meta information.
     """
 
     def __init__(self, array, mode_names=None, ft_shape=None) -> None:
@@ -31,7 +34,7 @@ class Tensor(object):
         ----------
         array : np.ndarray
             N-dimensional array
-        mode_names : list
+        mode_names : list[str]
             Description of the tensor modes.
             If nothing is specified then all modes of the created ``Tensor``
             get generic names 'mode-0', 'mode-1'
@@ -42,10 +45,11 @@ class Tensor(object):
         -----
             In most cases use the default settings for `ft_shape`, because it affects folding, unfolding etc.
         """
-        self._validate_init_data(array, mode_names, ft_shape)
+        self._validate_init_data(array=array, mode_names=mode_names, ft_shape=ft_shape)
         self._data = array.copy()
         self._ft_shape = self._create_ft_shape(array=array, ft_shape=ft_shape)
-        self._modes = self._create_modes(array, mode_names)
+        self._modes = self._create_modes(array=array, mode_names=mode_names)
+        self._state = self._create_state(array=array)
 
     @staticmethod
     def _validate_init_data(array, mode_names, ft_shape):
@@ -54,7 +58,7 @@ class Tensor(object):
         Parameters
         ----------
         array : np.ndarray
-        mode_names : list
+        mode_names : list[str]
         ft_shape : tuple
         """
         # validate data array
@@ -106,10 +110,36 @@ class Tensor(object):
 
     @staticmethod
     def _create_modes(array, mode_names):
+        """ Create meta data for modes of the tensor
+
+        Parameters
+        ----------
+        array : np.ndarray
+        mode_names : list[str]
+
+        Returns
+        -------
+        modes : list[Mode]
+        """
         if mode_names is None:
             mode_names = ["mode-{}".format(i) for i in range(array.ndim)]
         modes = [Mode(name=name) for name in mode_names]
         return modes
+
+    @staticmethod
+    def _create_state(array):
+        """ Create state for the tensor
+
+        Parameters
+        ----------
+        array
+
+        Returns
+        -------
+        state : list[int]
+        """
+        state = [i for i in range(array.ndim)]
+        return state
 
     @property
     def data(self):
@@ -135,23 +165,52 @@ class Tensor(object):
 
     @property
     def modes(self):
-        """
+        """ Meta data for the modes of a tensor
 
         Returns
         -------
-        list
+        list[Mode]
         """
         return self._modes
 
     @property
-    def mode_names(self):
-        """ Description of the tensor modes
+    def in_normal_state(self):
+        if isinstance(self.current_state[0], int):
+            return True
+        elif isinstance(self.current_state[0], list):
+            return False
+        else:
+            raise ValueError("Undefined state of the tensor!")
+
+    @property
+    def current_state(self):
+        """
 
         Returns
         -------
-        names : list
+        {list[int], list[list[int]]}
         """
-        names = [mode.name for mode in self.modes]
+        return self._state
+
+    @property
+    def mode_names(self):
+        """ Description of the tensor modes in current state
+
+        Returns
+        -------
+        names : list[str]
+        """
+        if self._ft_shape == self.shape:
+            # if tensor in the original
+            names = [mode.name for mode in self.modes]
+        else:
+            # if tensor is in unfolded state
+            state_0 = self.current_state[0]
+            state_1 = self.current_state[1]
+            name_0 = self.modes[state_0[0]].name
+            name_2 = [self.modes[i].name for i in state_1]
+            name_1 = '_'.join(name_2)
+            names = [name_0, name_1]
         return names
 
     @property
@@ -209,33 +268,29 @@ class Tensor(object):
             Attribute `_ft_shape` is assigned during object creation based on the shape of data array.
             In order to preserve the original values without sharing memory space, need to redefine them manually.
         """
+        # TODO: ideally we need to preserve `_state` and mode indices
         array = self.data
-        mode_names = self.mode_names
         ft_shape = self.ft_shape
-        new_object = Tensor(array=array, mode_names=mode_names, ft_shape=ft_shape)
+        new_object = Tensor(array=array, ft_shape=ft_shape)
+        new_object._modes = [mode.copy() for mode in self.modes]
+        new_object._state = self.current_state
         return new_object
 
-    def reset_modes(self):
-        """ Set _modes according to the the current shape of data of a tensor
+    def reset_meta(self):
+        """ Set all meta information with respect to the current state of data
 
         Returns
         -------
         self
         """
-        mode_names = ["mode-{}".format(i) for i in range(self._data.ndim)]
-        self._mode = [Mode(name=name) for name in mode_names]
+        default_mode_names = ["mode-{}".format(i) for i in range(self.data.ndim)]
+        self._modes = [Mode(name=name) for name in default_mode_names]
+        self._state = [i for i in range(self.data.ndim)]
+        self._ft_shape = self.data.shape
+
         return self
 
-    def reset_ft_shape(self):
-        """ Set _ft_shape according to the current shape of data of a tensor
-
-        Returns
-        -------
-        self
-        """
-        self._ft_shape = self._data.shape
-        return self
-
+    # TODO: refactor this method to ``set_mode_names`` and the corresponding tests
     def rename_modes(self, new_mode_names):
         """ Rename modes of a tensor
         
@@ -264,16 +319,25 @@ class Tensor(object):
 
         return self
 
+    def reset_mode_names(self):
+        for i, mode in self.modes:
+            new_name = "mode-".format(i)
+            mode.set_name(new_name=new_name)
+        return self
+
     def set_mode_index(self, mode, index):
         if len(index) != self.ft_shape[mode]:
             raise ValueError("Not enough indices")
         self.modes[mode].set_index(new_index=index)
         return self
 
+    def reset_mode_index(self, mode):
+        self.modes[mode].reset_index()
+
     def describe(self):
         """ Provides general information about this instance."""
-        print("This tensor is of order {}, consists of {} elements and its Frobenious norm = {:.2f}.\n"
-              "Sizes and names of its modes are {} and {} respectively.".format(self.order, self.size, self.frob_norm,
+        print("This tensor is of order {} and consists of {} elements.\n"
+              "Sizes and names of its modes are {} and {} respectively.".format(self.order, self.size,
                                                                                 self.shape, self.mode_names))
 
     def unfold(self, mode, inplace=True):
@@ -294,12 +358,18 @@ class Tensor(object):
 
         Notes
         -----
-            Unfolding operation does not change `_ft_shape` attribute
+            Unfolding operation does not change `_ft_shape` and `_modes` attributes but changes `_state` attribute
         """
-        orig_data = self.data
-        orig_modes = self.modes
-        data_unfolded = self._unfold_data(orig_data, mode)
-        modes_unfolded = self._unfold_modes(orig_modes)
+        if not self.in_normal_state:
+            raise Exception("The tensor is not in the original form")
+
+        # Unfold data
+        data_unfolded = unfold(self.data, mode)
+
+        # Unfold state
+        state_1 = [self.current_state[mode]]
+        state_2 = [self.current_state[i] for i in range(self.order) if i != mode]
+        state_unfolded = [state_1, state_2]
 
         if inplace:
             tensor = self
@@ -307,17 +377,9 @@ class Tensor(object):
             tensor = self.copy()
 
         tensor._data = data_unfolded
-        tensor._modes = modes_unfolded
+        tensor._state = state_unfolded
 
         return tensor
-
-    @staticmethod
-    def _unfold_data(data, mode):
-        return unfold(data, mode)
-
-    @staticmethod
-    def _unfold_modes(modes):
-        return modes
 
     def fold(self, inplace=True):
         """ Fold to the original shape (undo self.unfold)
@@ -335,65 +397,31 @@ class Tensor(object):
 
         Notes
         -----
-            Folding operation does not change `_ft_shape` attribute
+            Folding operation does not change `_ft_shape` and `_modes` attributes but changes `_state` attribute
         """
         # Do not do anything if the tensor is in the normal form (hadn't been unfolded before)
-        if (self.shape == self._ft_shape):
-            if inplace:
-                return self
-            else:
-                return self.copy()
+        if self.in_normal_state:
+            raise Exception("The tensor hadn't bee unfolded before")
 
-        orig_data = self.data
-        orig_modes = self.modes
-        new_shape = self.ft_shape
-        mode = 0
-        data_folded = self._fold_data(orig_data, mode, new_shape)
-        modes_folded = self._fold_modes(orig_modes)
+        # Fold data
+        temp = np.array(self.current_state[0])
+        folding_mode = temp[0]
+        data_folded = fold(matrix=self.data, mode=folding_mode, shape=self.ft_shape)
+
+        # Fold state
+        state_folded = [*self.current_state[0], *self.current_state[1]]
+        state_folded.sort()
+
         if inplace:
             tensor = self
         else:
             tensor = self.copy()
+
         tensor._data = data_folded
-        tensor._modes = modes_folded
-
-        # --------------- FOLD DATA
-        # Infer along which mode this instance has been previously unfolded
-        mode_0 = list(tensor.mode_names[0].keys())
-        mode_1 = list(tensor.mode_names[1].keys())
-        folding_mode = mode_0[0]
-
-        # Infer shape of the folded version
-        new_shape = [None] * (len(mode_0) + len(mode_1))
-        for i in (mode_0 + mode_1):
-            new_shape[i] = tensor._ft_shape[i]
-
-        # Update data
-        tensor._data = fold(matrix=self.data, mode=folding_mode, shape=new_shape)
-
-        # --------------- FOLD Modes
-        # Create dict with new names
-        new_mode_names = {**tensor.mode_names[0], **tensor.mode_names[1]}
-
-        # Sequentially add default description for missing modes in order to accommodate new info
-        start = len(tensor.mode_names.keys())
-        stop = len(new_mode_names.keys())
-        for i in range(start, stop):
-            tensor._mode_names[i] = 'mode-{}'.format(i)
-
-        # Update description
-        tensor.rename_modes(new_mode_names=new_mode_names)
+        tensor._state = state_folded
         return tensor
 
-    @staticmethod
-    def _fold_data(data, mode, shape):
-        return fold(data, mode, shape)
-
-    @staticmethod
-    def _fold_modes(modes):
-        return modes
-
-    def mode_n_product(self, matrix, mode, inplace=True, new_name=None):
+    def mode_n_product(self, matrix, mode, new_name=None, inplace=True):
         """ Mode-n product of a tensor with a matrix
 
         Parameters
@@ -423,6 +451,9 @@ class Tensor(object):
                it will be changed to `matrix.mode_names[0]`
             4. If `matrix.mode_names[0] == "mode-0"` then no changes to `tensor.mode_names` will be made
         """
+        if not self.in_normal_state:
+            raise Exception("The tensor is not in the original form")
+
         # TODO: need to rethink this if statements so it would be easier to follow
         if isinstance(matrix, Tensor) and new_name is not None:
             raise ValueError("Oops... Don't know which name for the mode description to use!\n"
@@ -437,12 +468,15 @@ class Tensor(object):
         if new_name is None:
             new_name = matrix.mode_names[0]
 
+        new_data = mode_n_product(tensor=self.data, matrix=matrix.data, mode=mode)
+        new_ft_shape = new_data.shape
         if inplace:
             tensor = self
         else:
             tensor = self.copy()
-        tensor._data = mode_n_product(tensor=tensor.data, matrix=matrix.data, mode=mode)
-        tensor._ft_shape = tensor.shape
+        tensor._data = new_data
+        tensor._ft_shape = new_ft_shape
+        tensor.reset_mode_index(mode=mode)
 
         # The only one case when mode name won't be changed
         if new_name != "mode-0":            
@@ -991,75 +1025,3 @@ def residual_tensor(tensor_orig, tensor_approx):
         raise TypeError("Unknown data type of the approximation tensor!\n"
                         "The available types for `tensor_B` are `Tensor`,  `TensorCPD`,  `TensorTKD`,  `TensorTT`")
     return residual
-
-
-class Mode(object):
-    """ This class describe mode of the Tensor
-
-    Attributes
-    ----------
-    _name : str
-    _index : list
-    """
-    def __init__(self, name) -> None:
-        """ Constructor of the ``Mode`` class
-
-        Parameters
-        ----------
-        name : str
-        """
-        if not isinstance(name, str):
-            raise TypeError("name should be a string")
-        self._name = name
-        self._index = None
-
-    def __str__(self):
-        self_as_string = "{}(name=['{}'], index=[{}])".format(self.__class__.__name__,
-                                                          self.name,
-                                                          self.index)
-        return self_as_string
-
-    def __repr__(self):
-        return str(self)
-
-    @property
-    def name(self):
-        """
-
-        Returns
-        -------
-        name : str
-        """
-        name = self._name
-        return name
-
-    @property
-    def index(self):
-        """
-
-        Returns
-        -------
-        index : list
-        """
-        index = self._index
-        return index
-
-    def set_name(self, new_name):
-        """
-
-        Parameters
-        ----------
-        new_name : str
-
-        """
-        self._name = new_name
-
-    def set_index(self, new_index):
-        """
-
-        Parameters
-        ----------
-        new_index : list
-
-        """
-        self._index = new_index
