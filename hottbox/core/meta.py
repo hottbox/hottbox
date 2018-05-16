@@ -22,8 +22,8 @@ class Mode(object):
             Name of the mode
         """
         if not isinstance(name, str):
-            raise TypeError("name should be a string")
-        self._name = name
+            raise TypeError("Parameter `name` should be a string!")
+        self._name = name.strip().replace("_", "-")
         self._index = None
 
     def __str__(self):
@@ -78,6 +78,8 @@ class Mode(object):
         name : str
             New name of the mode
         """
+        if not isinstance(name, str):
+            raise TypeError("Parameter `name` should be a string!")
         self._name = name
 
     def set_index(self, index):
@@ -85,13 +87,14 @@ class Mode(object):
 
         Parameters
         ----------
-        index : list[str]
-
+        index : list
         """
+        if index is not None:
+            if not isinstance(index, list):
+                raise TypeError("Parameter `index` should be a list!")
+
         self._index = index
 
     def reset_index(self):
-        """ Drop list of indices for the mode
-
-        """
+        """ Drop list of indices for the mode """
         self._index = None

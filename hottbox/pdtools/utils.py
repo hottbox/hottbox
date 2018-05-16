@@ -1,83 +1,80 @@
 import numpy as np
 import pandas as pd
-from itertools import product
-from functools import reduce
-from collections import OrderedDict
 from ..core.structures import Tensor
 
 
-def pd_to_tensor(df, time_col=None):
-    """ Represent a multi-index pandas dataframe as a tensor
+def pd_to_tensor(df, keep_index=True):
+    """ Represent multi-index pandas dataframe as a tensor
 
     Parameters
     ----------
     df : pd.DataFrame
         Multi-index dataframe with only one column of data
-    time_col : str
+    keep_index : bool
+        Keep level values of dataframe multi-index
 
     Returns
     -------
     tensor : Tensor
     """
-    # TODO: clean this mess ))
-    # time_col (if declared) is the name of the index column associated to time
+    # TODO: need to think what should we do when multi-index dataframe is composed of several columns
 
-    # assume all index columns are data-modes
-    mode_cols = list(df.index.names)
-    mode_names = OrderedDict([(i, name) for i, name in enumerate(mode_cols)])
+    # Reshape values into multi-dimensional array
+    dims = tuple([len(level) for level in df.index.levels])
+    data = df.as_matrix().reshape(dims)
 
-    # if time mode declared, reorder the index columns such that time is the last mode
-    if time_col is not None:
-        mode_cols.append(mode_cols.pop(mode_cols.index(time_col)))  # bring time column to end of list
-        time_vals = np.unique(df.index.get_level_values(time_col))  # get unique time values
+    # Get mode names
+    mode_names = df.index.names
 
-    # get dimensionality of each mode
-    dims = []
-    for mode in mode_cols: dims.append(np.unique(df.index.get_level_values(mode)).shape[0])
-
-    # reorder data into associated tensor format
-    data = df.as_matrix().reshape(*dims)
+    # Create tensor
     tensor = Tensor(array=data, mode_names=mode_names)
 
+    # Set index for each tensor mode
+    if keep_index:
+        multi_index = df.index
+        for i in range(len(dims)):
+            level_index = multi_index.get_level_values(i)
+            level_index_names = level_index.get_values()
+            idx = np.unique(level_index_names, return_index=True)[1]
+            mode_index = [level_index_names[j] for j in sorted(idx)]
+            tensor.set_mode_index(mode=i, index=mode_index)
     return tensor
 
 
-def tensor_to_pd(tensor, time_mode=False):
-    """ Represent a tensor as a multi-index pandas dataframe
+def tensor_to_pd(tensor, col_name=None):
+    """ Represent tensor as a multi-index pandas dataframe
 
     Parameters
     ----------
     tensor : Tensor
         Tensor to be represented as a multi-index dataframe
-    time_mode : int
+    col_name : str
+        Column label to use for resulting dataframe
 
     Returns
     -------
     df : pd.DataFrame
         Multi-index data frame
     """
-    dims = tensor.shape
+    if not tensor.in_normal_state:
+        raise TypeError("`tensor` should be in normal state prior this conversion")
 
-    # for each mode, introduce dummy variable names (integers)
-    combos = [np.arange(i) for i in dims]
+    # Create multidimensional index
+    names = tensor.mode_names
+    all_indices = [None] * tensor.order
+    for i, mode in enumerate(tensor.modes):
+        if mode.index is None:
+            all_indices[i] = [j for j in range(tensor.shape[i])]
+        else:
+            all_indices[i] = mode.index
+    index = pd.MultiIndex.from_product(all_indices, names=names)
 
-    # compute all tensor element indices based on mode-wise variable names
-    prod_combos = np.array(
-        list(product(*combos))
-    )
+    # Vectorise values (!!! keep in mind, tensor should not be modified in anyway !!!)
+    # data = tensor.unfold(mode=0, inplace=False).data.ravel()
+    data = tensor.data.ravel()
 
-    df = pd.DataFrame()  # create empty panda
-    # df['Value'] = tensor.unfold(mode=(tensor.order-1), inplace=False).data.ravel()
-    # df['Value'] = tensor.unfold(mode=-1, inplace=False).data.ravel()
-    df['Value'] = tensor.unfold(mode=0, inplace=False).data.ravel()
-    for i in np.arange(len(dims)):
-        df[tensor.mode_names[i]] = prod_combos[:, i]
-
-    df = df.set_index(list(df.columns[1:]))
-
-    if time_mode is not False:
-        ix_names = list(df.index.names)
-        ix_names[time_mode] = 'Time'
-        df.index.names = ix_names
-
+    # Create dataframe
+    if col_name is None:
+        col_name = 'Values'
+    df = pd.DataFrame(data=data, index=index, columns=[col_name])
     return df
