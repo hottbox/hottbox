@@ -9,7 +9,9 @@ class Mode(object):
     Attributes
     ----------
     _name : str
+        Placeholder for the name of the mode
     _index : list[str]
+        Placeholder for the list of indices for this mode
     """
     def __init__(self, name) -> None:
         """ Constructor of the ``Mode`` class
@@ -17,6 +19,7 @@ class Mode(object):
         Parameters
         ----------
         name : str
+            Name of the mode
         """
         if not isinstance(name, str):
             raise TypeError("name should be a string")
@@ -42,12 +45,12 @@ class Mode(object):
         name = self.name
         index = self.index
         new_object = Mode(name=name)
-        new_object.set_index(new_index=index)
+        new_object.set_index(index=index)
         return new_object
 
     @property
     def name(self):
-        """
+        """ Name of the mode
 
         Returns
         -------
@@ -58,34 +61,37 @@ class Mode(object):
 
     @property
     def index(self):
-        """
+        """ List of indices for the mode
 
         Returns
         -------
-        index : list
+        index : list[str]
         """
         index = self._index
         return index
 
-    def set_name(self, new_name):
-        """
+    def set_name(self, name):
+        """ Set new name of the mode
 
         Parameters
         ----------
-        new_name : str
-
+        name : str
+            New name of the mode
         """
-        self._name = new_name
+        self._name = name
 
-    def set_index(self, new_index):
-        """
+    def set_index(self, index):
+        """ Set new list of indices for the mode
 
         Parameters
         ----------
-        new_index : list
+        index : list[str]
 
         """
-        self._index = new_index
+        self._index = index
 
     def reset_index(self):
+        """ Drop list of indices for the mode
+
+        """
         self._index = None

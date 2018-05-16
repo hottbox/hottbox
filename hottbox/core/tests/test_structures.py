@@ -134,7 +134,7 @@ class TestTensor:
                                }
         tensor = Tensor(array=true_data, mode_names=orig_mode_names)
 
-        tensor.rename_modes(true_new_mode_names)
+        tensor.set_mode_names(true_new_mode_names)
         for i, mode_name in enumerate(tensor.mode_names):
             assert (mode_name == true_new_mode_names[i])
 
@@ -142,22 +142,22 @@ class TestTensor:
         with pytest.raises(ValueError):
             # too many mode names
             incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(true_order + 1)}
-            tensor.rename_modes(new_mode_names=incorrect_new_mode_names)
+            tensor.set_mode_names(mode_names=incorrect_new_mode_names)
 
         with pytest.raises(TypeError):
             # incorrect type of keys (not integers)
             incorrect_new_mode_names = {"{}-mode".format(mode): mode for mode in range(true_order)}
-            tensor.rename_modes(new_mode_names=incorrect_new_mode_names)
+            tensor.set_mode_names(mode_names=incorrect_new_mode_names)
 
         with pytest.raises(ValueError):
             # key value exceeds the order of a tensor
             incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(true_order - 2, true_order + 1)}
-            tensor.rename_modes(new_mode_names=incorrect_new_mode_names)
+            tensor.set_mode_names(mode_names=incorrect_new_mode_names)
 
         with pytest.raises(ValueError):
             # key value is set to be negative
             incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(-1, true_order - 1)}
-            tensor.rename_modes(new_mode_names=incorrect_new_mode_names)
+            tensor.set_mode_names(mode_names=incorrect_new_mode_names)
 
     def test_describe(self):
         """ Tests for describe function of a Tensor object """
@@ -318,7 +318,7 @@ class TestTensor:
         for mode in range(len(new_dim)):
             tensor = Tensor(array=array_3d, mode_names=orig_names)
             matrix = Tensor(np.arange(new_dim[mode] * orig_dim[mode]).reshape(new_dim[mode], orig_dim[mode]))
-            matrix.rename_modes(new_mode_names=new_matrix_name)
+            matrix.set_mode_names(mode_names=new_matrix_name)
             tensor.mode_n_product(matrix, mode=mode)
             new_true_names = orig_names.copy()
             new_true_names[mode] = new_matrix_name[0]
@@ -519,7 +519,7 @@ class TestTensorCPD:
         new_dim_size = 7
         matrix = np.arange(new_dim_size * ft_shape[mode]).reshape(new_dim_size, ft_shape[mode])
 
-        tensor_rec = tensor_cpd.reconstruct.rename_modes(new_mode_names=new_mode_names)
+        tensor_rec = tensor_cpd.reconstruct.set_mode_names(mode_names=new_mode_names)
         for i, mode_name in enumerate(tensor_rec.mode_names):
             assert (mode_name == new_mode_names[i])
 
@@ -686,7 +686,7 @@ class TestTensorTKD:
         new_dim_size = 7
         matrix = np.arange(new_dim_size * ft_shape[mode]).reshape(new_dim_size, ft_shape[mode])
 
-        tensor_rec = tensor_tkd.reconstruct.rename_modes(new_mode_names=new_mode_names)
+        tensor_rec = tensor_tkd.reconstruct.set_mode_names(mode_names=new_mode_names)
         for i, mode_name in enumerate(tensor_rec.mode_names):
             assert (mode_name == new_mode_names[i])
 
@@ -905,7 +905,7 @@ class TestTensorTT:
         new_dim_size = 7
         matrix = np.arange(new_dim_size * ft_shape[mode]).reshape(new_dim_size, ft_shape[mode])
 
-        tensor_rec = tensor_tt.reconstruct.rename_modes(new_mode_names=new_mode_names)
+        tensor_rec = tensor_tt.reconstruct.set_mode_names(mode_names=new_mode_names)
         for i, mode_name in enumerate(tensor_rec.mode_names):
             assert (mode_name == new_mode_names[i])
 

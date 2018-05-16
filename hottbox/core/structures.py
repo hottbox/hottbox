@@ -24,7 +24,12 @@ class Tensor(object):
         Description of the tensor modes in form of a list where each element is object of ``Mode`` class.
         Meta information.
     _state : {list[int], list[list[int]]}
+        List of references to meta information about modes of a tensor.
         Meta information.
+
+    Notes
+    -----
+        It is very likely that _state will be formalised in a separate class!
     """
 
     def __init__(self, array, mode_names=None, ft_shape=None) -> None:
@@ -175,6 +180,14 @@ class Tensor(object):
 
     @property
     def in_normal_state(self):
+        """ Checks state of a tensor
+
+        Returns
+        -------
+        bool
+            If True, then can call `unfold` and `mode_n_product`
+            If False, then can call `fold`
+        """
         if isinstance(self.current_state[0], int):
             return True
         elif isinstance(self.current_state[0], list):
@@ -184,7 +197,7 @@ class Tensor(object):
 
     @property
     def current_state(self):
-        """
+        """ Defines relation between modes of a tensor
 
         Returns
         -------
@@ -268,7 +281,6 @@ class Tensor(object):
             Attribute `_ft_shape` is assigned during object creation based on the shape of data array.
             In order to preserve the original values without sharing memory space, need to redefine them manually.
         """
-        # TODO: ideally we need to preserve `_state` and mode indices
         array = self.data
         ft_shape = self.ft_shape
         new_object = Tensor(array=array, ft_shape=ft_shape)
@@ -277,7 +289,7 @@ class Tensor(object):
         return new_object
 
     def reset_meta(self):
-        """ Set all meta information with respect to the current state of data
+        """ Set all meta information with respect to the current shape of data array
 
         Returns
         -------
@@ -290,13 +302,12 @@ class Tensor(object):
 
         return self
 
-    # TODO: refactor this method to ``set_mode_names`` and the corresponding tests
-    def rename_modes(self, new_mode_names):
+    def set_mode_names(self, mode_names):
         """ Rename modes of a tensor
         
         Parameters
         ----------        
-        new_mode_names : dict
+        mode_names : dict
             New names for the tensor modes in form of a dictionary
             The name of the mode defined by the Key of the dict will be renamed to the corresponding Value
 
@@ -305,34 +316,65 @@ class Tensor(object):
         self : Tensor
             Return self so that methods could be chained
         """
-        if len(new_mode_names.keys()) > self.order:
+        if len(mode_names.keys()) > self.order:
             raise ValueError("Too many mode names have been specified")
-        if not all(isinstance(mode, int) for mode in new_mode_names.keys()):
-            raise TypeError("The dict of `new_mode_names` should contain only integer keys!")
-        if not all(mode < self.order for mode in new_mode_names.keys()):
+        if not all(isinstance(mode, int) for mode in mode_names.keys()):
+            raise TypeError("The dict of `mode_names` should contain only integer keys!")
+        if not all(mode < self.order for mode in mode_names.keys()):
             raise ValueError("All specified mode values should not exceed the order of the tensor!")
-        if not all(mode >= 0 for mode in new_mode_names.keys()):
+        if not all(mode >= 0 for mode in mode_names.keys()):
             raise ValueError("All specified mode keys should be non-negative!")
 
-        for i, name in new_mode_names.items():
+        for i, name in mode_names.items():
             self.modes[i].set_name(name)
 
         return self
 
     def reset_mode_names(self):
-        for i, mode in self.modes:
+        """ Set default name for each mode
+
+        Returns
+        -------
+        self
+        """
+        for i, mode in enumerate(self.modes):
             new_name = "mode-".format(i)
-            mode.set_name(new_name=new_name)
+            mode.set_name(name=new_name)
         return self
 
     def set_mode_index(self, mode, index):
+        """ Set index for specified mode
+
+        Parameters
+        ----------
+        mode : int
+            Consecutive number of the mode to be changed
+        index : list[str]
+            index to be set
+
+        Returns
+        -------
+        self
+        """
         if len(index) != self.ft_shape[mode]:
             raise ValueError("Not enough indices")
-        self.modes[mode].set_index(new_index=index)
+        self.modes[mode].set_index(index=index)
         return self
 
     def reset_mode_index(self, mode):
+        """ Drop index for the specified mode number
+
+        Parameters
+        ----------
+        mode : int
+            Mode number
+
+        Returns
+        -------
+        self
+        """
         self.modes[mode].reset_index()
+        return self
 
     def describe(self):
         """ Provides general information about this instance."""
@@ -481,7 +523,7 @@ class Tensor(object):
         # The only one case when mode name won't be changed
         if new_name != "mode-0":            
             new_mode_names = {mode: new_name}
-            tensor.rename_modes(new_mode_names=new_mode_names)
+            tensor.set_mode_names(mode_names=new_mode_names)
 
         return tensor
 
