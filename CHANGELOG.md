@@ -13,11 +13,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- [x] Class `Mode` as a part of meta information for tensor representations
+- [x] Class `Mode` for meta information for tensor representations (as a part of pandas and plotting integration)
 - [x] Methods for (re)setting mode names and the corresponding indices for `Tensor`
 - [ ] Placeholder `_state` which tracks changes of the `Tensor`
-- [ ] Mode description for `TensorCPD` and `TensorTKD` classes
+- [ ] Mode description (and the corresponding methods) for `TensorCPD` and `TensorTKD` classes 
+      by analogy with the `Tensor` class
 - [x] Quick construction of generic objects of `Tensor` class
+- [ ] Quick construction of generic objects of `TensorCPD`, `TensorTKD` and `TensorTT` classes
 - [ ] Direct summation and comparison of `Tensor` objects (redefined \_\_add\_\_, \_\_eq\_\_)
 - [ ] Vectorisation method for a `Tensor` class 
 - [ ] Describe functions for `TensorCPD`, `TensorTKD` and `TensorTT`
@@ -25,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - [x] Restrictions on methods `fold`, `unfold` and `mode_n_product` of `Tensor`.
       Whether they can be called is determined by the current state of the `Tensor` object.
 - [x] Tools to convert multi-index pandas dataframe into a `Tensor` and vise versa 
+
 
 ### Changed
 
@@ -42,7 +45,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
--
+- [ ] Index change for during `mode_n_product`
 
 
 

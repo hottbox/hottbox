@@ -36,8 +36,9 @@ def pd_to_tensor(df, keep_index=True):
             level_index = multi_index.get_level_values(i)
             level_index_names = level_index.get_values()
             idx = np.unique(level_index_names, return_index=True)[1]
-            mode_index = [level_index_names[j] for j in sorted(idx)]
-            tensor.set_mode_index(mode=i, index=mode_index)
+            index = [level_index_names[j] for j in sorted(idx)]
+            mode_index = {i : index}
+            tensor.set_mode_index(mode_index)
     return tensor
 
 
