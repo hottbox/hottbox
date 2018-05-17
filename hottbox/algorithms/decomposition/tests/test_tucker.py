@@ -15,7 +15,6 @@ class TestBaseTucker:
     def test_init(self):
         """ Tests for constructor of BaseTucker class """
         default_params = dict(process=(),
-                              mode_description='mode_description',
                               verbose=False
                               )
 
@@ -46,15 +45,12 @@ class TestHOSVD:
     def test_init(self):
         """ Tests for the constructor of HOSVD algorithm """
         process = (3, 1, 2)
-        mode_description = 'mode_hosvd'
         verbose = False
         hosvd = HOSVD(process=process,
-                      mode_description=mode_description,
                       verbose=verbose)
 
         assert hosvd.name == HOSVD.__name__
         assert hosvd.process == process
-        assert hosvd.mode_description == mode_description
         assert hosvd.verbose == verbose
 
     def test_copy(self):
@@ -66,14 +62,12 @@ class TestHOSVD:
         assert hosvd_copy is not hosvd
         assert hosvd_copy.name == hosvd.name
         assert hosvd_copy.process == hosvd.process
-        assert hosvd_copy.mode_description == hosvd.mode_description
         assert hosvd_copy.verbose == hosvd.verbose
 
         hosvd.process = (1, 2, 3)
-        hosvd.mode_description = 'qwerty'
+        hosvd.scription = 'qwerty'
         hosvd.verbose = not hosvd.verbose
         assert hosvd_copy.process != hosvd.process
-        assert hosvd_copy.mode_description != hosvd.mode_description
         assert hosvd_copy.verbose != hosvd.verbose
 
     def test_init_fmat(self):
@@ -173,14 +167,12 @@ class TestHOOI:
         epsilon = 10e-3
         tol = 10e-5
         process = (3, 2, 1)
-        mode_description = 'mode_hooi'
         verbose = False
         hooi = HOOI(init=init,
                     max_iter=max_iter,
                     epsilon=epsilon,
                     tol=tol,
                     process=process,
-                    mode_description=mode_description,
                     verbose=verbose)
         assert not hooi.cost  # check that this list is empty
         assert hooi.name == HOOI.__name__
@@ -189,7 +181,6 @@ class TestHOOI:
         assert hooi.epsilon == epsilon
         assert hooi.tol == tol
         assert hooi.process == process
-        assert hooi.mode_description == mode_description
         assert hooi.verbose == verbose
 
     def test_copy(self):
@@ -206,7 +197,6 @@ class TestHOOI:
         assert hooi_copy.epsilon == hooi.epsilon
         assert hooi_copy.tol == hooi.tol
         assert hooi_copy.process == hooi.process
-        assert hooi_copy.mode_description == hooi.mode_description
         assert hooi_copy.verbose == hooi.verbose
         assert hooi_copy.cost != hooi.cost
 
@@ -215,7 +205,6 @@ class TestHOOI:
         hooi.epsilon += 1
         hooi.tol += 1
         hooi.process = (1, 2, 3)
-        hooi.mode_description = 'qwerty'
         hooi.verbose = not hooi.verbose
         hooi.cost = [3, 4]
         assert hooi_copy.init != hooi.init
@@ -223,7 +212,6 @@ class TestHOOI:
         assert hooi_copy.epsilon != hooi.epsilon
         assert hooi_copy.tol != hooi.tol
         assert hooi_copy.process != hooi.process
-        assert hooi_copy.mode_description != hooi.mode_description
         assert hooi_copy.verbose != hooi.verbose
         assert hooi.cost != hooi_copy.cost
 

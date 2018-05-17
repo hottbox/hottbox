@@ -9,14 +9,13 @@ from ...core.operations import khatri_rao, hadamard
 # TODO: Need to add option of sorting vectors in the factor matrices and making them sign invariant
 class BaseCPD(Decomposition):
 
-    def __init__(self, init, max_iter, epsilon, tol, random_state, mode_description, verbose):
+    def __init__(self, init, max_iter, epsilon, tol, random_state, verbose):
         super(BaseCPD, self).__init__()
         self.init = init
         self.max_iter = max_iter
         self.epsilon = epsilon
         self.tol = tol
         self.random_state = random_state
-        self.mode_description = mode_description
         self.verbose = verbose
 
     def copy(self):
@@ -110,7 +109,6 @@ class CPD(BaseCPD):
     tol : float
         Threshold for convergence of factor matrices
     random_state : int
-    mode_description : str
     verbose : bool
         If True, enable verbose output
 
@@ -121,13 +119,12 @@ class CPD(BaseCPD):
     """
 
     def __init__(self, init='svd', max_iter=50, epsilon=10e-3, tol=10e-5,
-                 random_state=None, mode_description='mode_cpd', verbose=False) -> None:
+                 random_state=None, verbose=False) -> None:
         super(CPD, self).__init__(init=init,
                                   max_iter=max_iter,
                                   epsilon=epsilon,
                                   tol=tol,
                                   random_state=random_state,
-                                  mode_description=mode_description,
                                   verbose=verbose)
         self.cost = []
 

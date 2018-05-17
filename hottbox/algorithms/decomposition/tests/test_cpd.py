@@ -21,7 +21,6 @@ class TestBaseCPD:
                               epsilon=10e-3,
                               tol=10e-5,
                               random_state=None,
-                              mode_description='mode_description',
                               verbose=False
                               )
 
@@ -45,13 +44,11 @@ class TestCPD:
         max_iter = 50
         epsilon = 10e-3
         tol = 10e-5
-        mode_description = 'mode_description'
         verbose = False
         cpd = CPD(init=init,
                   max_iter=max_iter,
                   epsilon=epsilon,
                   tol=tol,
-                  mode_description=mode_description,
                   verbose=verbose)
         assert not cpd.cost         # check that this list is empty
         assert cpd.name == CPD.__name__
@@ -59,7 +56,6 @@ class TestCPD:
         assert cpd.max_iter == max_iter
         assert cpd.epsilon == epsilon
         assert cpd.tol == tol
-        assert cpd.mode_description == mode_description
         assert cpd.verbose == verbose
 
     def test_copy(self):
@@ -74,7 +70,6 @@ class TestCPD:
         assert cpd_copy.max_iter == cpd.max_iter
         assert cpd_copy.epsilon == cpd.epsilon
         assert cpd_copy.tol == cpd.tol
-        assert cpd_copy.mode_description == cpd.mode_description
         assert cpd_copy.verbose == cpd.verbose
         assert cpd_copy.cost != cpd.cost
 
@@ -82,14 +77,12 @@ class TestCPD:
         cpd.max_iter += 1
         cpd.epsilon += 1
         cpd.tol += 1
-        cpd.mode_description = 'qwerty'
         cpd.verbose = not cpd.verbose
         cpd.cost = [3, 4]
         assert cpd_copy.init != cpd.init
         assert cpd_copy.max_iter != cpd.max_iter
         assert cpd_copy.epsilon != cpd.epsilon
         assert cpd_copy.tol != cpd.tol
-        assert cpd_copy.mode_description != cpd.mode_description
         assert cpd_copy.verbose != cpd.verbose
         assert cpd.cost != cpd_copy.cost
 

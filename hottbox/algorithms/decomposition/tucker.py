@@ -7,10 +7,9 @@ from ...core.operations import unfold
 
 class BaseTucker(Decomposition):
 
-    def __init__(self, process, mode_description, verbose):
+    def __init__(self, process, verbose):
         super(BaseTucker, self).__init__()
         self.process = process
-        self.mode_description = mode_description
         self.verbose = verbose
 
     def copy(self):
@@ -51,14 +50,12 @@ class HOSVD(BaseTucker):
     process : tuple
         Specifies the order of modes to be processed. The factor matrices for the missing modes will be set to identity.
         If empty, then all modes are processed in the consecutive ascending order.
-    mode_description : str
     verbose : bool
         If True, enable verbose output
     """
 
-    def __init__(self,  process=(), mode_description='mode_hosvd', verbose=False) -> None:
+    def __init__(self,  process=(), verbose=False) -> None:
         super(HOSVD, self).__init__(process=process,
-                                    mode_description=mode_description,
                                     verbose=verbose)
 
     def copy(self):
@@ -151,7 +148,6 @@ class HOOI(BaseTucker):
     tol : float
         Threshold for convergence of factor matrices
     random_state : int
-    mode_description : str
     verbose : bool
         If True, enable verbose output
 
@@ -162,9 +158,8 @@ class HOOI(BaseTucker):
     """
 
     def __init__(self, init='hosvd', max_iter=50, epsilon=10e-3, tol=10e-5,
-                 random_state=None, process=(), mode_description='mode_hooi', verbose=False) -> None:
+                 random_state=None, process=(), verbose=False) -> None:
         super(HOOI, self).__init__(process=process,
-                                   mode_description=mode_description,
                                    verbose=verbose)
         self.init = init
         self.max_iter = max_iter

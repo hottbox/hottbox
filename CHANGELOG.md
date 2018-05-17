@@ -13,23 +13,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- [ ] Quick construction of generic objects of `Tensor` class
-- [ ] Direct summation of `Tensor` objects
-- [ ] Method for resetting mode names
-- [ ] Mode names for `TensorCPD` and `TensorTKD` classes
+- [x] Class `Mode` as a part of meta information for tensor representations
+- [x] Methods for (re)setting mode names and the corresponding indices for `Tensor`
+- [ ] Placeholder `_state` which tracks changes of the `Tensor`
+- [ ] Mode description for `TensorCPD` and `TensorTKD` classes
+- [x] Quick construction of generic objects of `Tensor` class
+- [ ] Direct summation and comparison of `Tensor` objects (redefined \_\_add\_\_, \_\_eq\_\_)
+- [ ] Vectorisation method for a `Tensor` class 
 - [ ] Describe functions for `TensorCPD`, `TensorTKD` and `TensorTT`
 - [ ] Option for sorting vectors for the `CPD`
+- [x] Restrictions on methods `fold`, `unfold` and `mode_n_product` of `Tensor`.
+      Whether they can be called is determined by the current state of the `Tensor` object.
+- [x] Tools to convert multi-index pandas dataframe into a `Tensor` and vise versa 
 
 ### Changed
 
-- [ ] The values of `_mode_names` dictionary are in form of list with length two. 
-      The first element of such list specifies name for corresponding mode, whereas the second
-      element is a place holder for index names 
+- [x] Each mode of a `Tensor` there is characterised by a corresponding `Mode` object with meta information
+- [x] Mode names for the `Tensor` constructor should be passed as list instead of OrderedDict.
+      These names are used to create `Mode` objects which are stored in a  list `Tensor._modes`
+       
 
 ### Removed
 
 - [ ] Parameter `ft_shape` from the `TensorTT` constructor
-- [ ] Parameter `mode_description` from constructors for all tensor decomposition algorithms
+- [x] Parameter `mode_description` from constructors for all tensor decomposition algorithms
+- [x] Attribute `_mode_names` from the `Tensor`
 
 
 ### Fixed

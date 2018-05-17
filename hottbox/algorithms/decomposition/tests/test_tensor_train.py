@@ -14,9 +14,7 @@ class TestBaseTensorTrain:
     """ Tests for BaseTensorTrain class """
     def test_init(self):
         """ Tests for constructor of BaseTensorTrain class """
-        default_params = dict(mode_description='mode_description',
-                              verbose=False
-                              )
+        default_params = dict(verbose=False)
 
         # basically for coverage tests object of
         with pytest.raises(NotImplementedError):
@@ -44,13 +42,10 @@ class TestTTSVD:
     """ Tests for TTSVD class """
     def test_init(self):
         """ Tests for the constructor of HOSVD algorithm """
-        mode_description = 'mode_hosvd'
         verbose = False
-        ttsvd = TTSVD(mode_description=mode_description,
-                      verbose=verbose)
+        ttsvd = TTSVD(verbose=verbose)
 
         assert ttsvd.name == TTSVD.__name__
-        assert ttsvd.mode_description == mode_description
         assert ttsvd.verbose == verbose
 
     def test_copy(self):
@@ -60,13 +55,10 @@ class TestTTSVD:
 
         assert ttsvd_copy is not ttsvd
         assert ttsvd_copy.name == ttsvd.name
-        assert ttsvd_copy.mode_description == ttsvd.mode_description
         assert ttsvd_copy.verbose == ttsvd.verbose
 
         ttsvd.process = (1, 2, 3)
-        ttsvd.mode_description = 'qwerty'
         ttsvd.verbose = not ttsvd.verbose
-        assert ttsvd_copy.mode_description != ttsvd.mode_description
         assert ttsvd_copy.verbose != ttsvd.verbose
 
     def test_init_fmat(self):

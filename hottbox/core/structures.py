@@ -5,7 +5,7 @@ Classes for different tensor representations
 import numpy as np
 from functools import reduce
 from .operations import unfold, fold, mode_n_product
-from .meta import Mode
+from ._meta import Mode
 
 
 class Tensor(object):

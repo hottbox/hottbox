@@ -1,5 +1,5 @@
 import pytest
-from ..meta import Mode
+from .._meta import Mode
 
 
 class TestMode:
