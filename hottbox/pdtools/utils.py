@@ -75,6 +75,6 @@ def tensor_to_pd(tensor, col_name=None):
 
     # Create dataframe
     if col_name is None:
-        col_name = 'Values'
+        col_name = "Values"
     df = pd.DataFrame(data=data, index=index, columns=[col_name])
     return df
