@@ -16,8 +16,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - [x] Class `Mode` for meta information for tensor representations (as a part of pandas and plotting integration)
 - [x] Methods for (re)setting mode names and the corresponding indices for `Tensor`
 - [ ] Placeholder `_state` which tracks changes of the `Tensor`
-- [ ] Mode description (and the corresponding methods) for `TensorCPD` and `TensorTKD` classes 
+- [x] Mode description (and the corresponding methods) for `TensorCPD` and `TensorTKD` classes 
       by analogy with the `Tensor` class
+- [x] Parameter `keep_meta` to `decompose` methods for the cpd and tucker type decompositions.
+      Base on its value, meta information of the modes of `tensor` to be decomposed can be extracted
+      and assigned to the `TensorCPD` and `TensorTKD` respectively. 
 - [x] Quick construction of generic objects of `Tensor` class
 - [ ] Quick construction of generic objects of `TensorCPD`, `TensorTKD` and `TensorTT` classes
 - [ ] Direct summation and comparison of `Tensor` objects (redefined \_\_add\_\_, \_\_eq\_\_)
@@ -46,6 +49,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - [ ] Index change for during `mode_n_product`
+- [ ] Fix copy methods for `TensorCPD` and `TensorTKD` due to new attributes
 
 
 

@@ -28,8 +28,9 @@ class TestBaseCPD:
         with pytest.raises(NotImplementedError):
             tensor = Tensor(np.arange(2))
             rank = 5
+            keep_meta = 0
             base_cpd = BaseCPD(**default_params)
-            base_cpd.decompose(tensor, rank)
+            base_cpd.decompose(tensor, rank, keep_meta)
         with pytest.raises(NotImplementedError):
             base_cpd = BaseCPD(**default_params)
             base_cpd.plot()

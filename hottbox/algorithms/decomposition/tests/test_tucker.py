@@ -22,8 +22,9 @@ class TestBaseTucker:
         with pytest.raises(NotImplementedError):
             tensor = Tensor(np.arange(2))
             rank = 5
+            keep_meta = 0
             base_tucker = BaseTucker(**default_params)
-            base_tucker.decompose(tensor, rank)
+            base_tucker.decompose(tensor, rank, keep_meta)
 
         with pytest.raises(NotImplementedError):
             tensor = Tensor(np.arange(2))

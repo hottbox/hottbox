@@ -34,7 +34,7 @@ class BaseCPD(Decomposition):
         decomposition_name = super(BaseCPD, self).name
         return decomposition_name
 
-    def decompose(self, tensor, rank):
+    def decompose(self, tensor, rank, keep_meta):
         raise NotImplementedError('Not implemented in base (BaseCPD) class')
 
     @property
@@ -145,7 +145,7 @@ class CPD(BaseCPD):
         decomposition_name = super(CPD, self).name
         return decomposition_name
 
-    def decompose(self, tensor, rank, kr_reverse=False):
+    def decompose(self, tensor, rank, keep_meta=0, kr_reverse=False):
         """ Performs CPD-ALS on the `tensor` with respect to the specified `rank`
 
         Parameters
@@ -155,6 +155,11 @@ class CPD(BaseCPD):
         rank : tuple
             Desired Kryskal rank for the given `tensor`. Should contain only one value.
             If it is greater then any of dimensions then random initialisation is used
+        keep_meta : int
+            Keep meta information about modes of the given `tensor`.
+            0 - the output will have default values for the meta data
+            1 - keep only mode names
+            2 - keep mode names and indices
         kr_reverse : bool
 
         Returns
@@ -209,6 +214,14 @@ class CPD(BaseCPD):
         if self.verbose and not self.converged and self.cost[-1] > self.epsilon:
             print('Maximum number of iterations ({}) has been reached. '
                   'Variation = {}'.format(self.max_iter, abs(self.cost[-2] - self.cost[-1])))
+
+        if keep_meta == 1:
+            mode_names = {i: mode.name for i, mode in enumerate(tensor.modes)}
+            tensor_cpd.set_mode_names(mode_names=mode_names)
+        elif keep_meta == 2:
+            tensor_cpd.copy_modes(tensor)
+        else:
+            pass
         return tensor_cpd
 
     @property
