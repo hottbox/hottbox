@@ -27,13 +27,27 @@ class Mode(object):
         self._index = None
 
     def __str__(self):
-        self_as_string = "{}(name=['{}'], index=[{}])".format(self.__class__.__name__,
-                                                              self.name,
-                                                              self.index)
+        self_as_string = "{}(name='{}', index={})".format(self.__class__.__name__,
+                                                          self.name,
+                                                          self.index)
         return self_as_string
 
     def __repr__(self):
         return str(self)
+
+    def __eq__(self, other):
+        """
+        Returns
+        -------
+        bool
+
+        Notes
+        -----
+        Modes are equal when everything is the same.
+        """
+        if isinstance(self, other.__class__):
+            return self.__dict__ == other.__dict__
+        return False
 
     def copy(self):
         """ Produces a copy of itself as a new object
@@ -77,10 +91,15 @@ class Mode(object):
         ----------
         name : str
             New name of the mode
+
+        Returns
+        -------
+        self : Mode
         """
         if not isinstance(name, str):
             raise TypeError("Parameter `name` should be a string!")
         self._name = name
+        return self
 
     def set_index(self, index):
         """ Set new list of indices for the mode
@@ -88,13 +107,24 @@ class Mode(object):
         Parameters
         ----------
         index : list
+
+        Returns
+        -------
+        self : Mode
         """
         if index is not None:
             if not isinstance(index, list):
                 raise TypeError("Parameter `index` should be a list!")
 
         self._index = index
+        return self
 
     def reset_index(self):
-        """ Drop list of indices for the mode """
+        """ Drop list of indices for the mode
+
+        Returns
+        -------
+        self : Mode
+        """
         self._index = None
+        return self
