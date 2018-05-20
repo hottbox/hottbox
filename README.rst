@@ -1,13 +1,16 @@
-|Travis|_ |Appveyor|_ |Coveralls|_
+|Travis|_ |Appveyor|_ |Coveralls|_ |PyPi|_
 
 .. |Travis| image:: https://img.shields.io/travis/hottbox/hottbox/master.svg?label=TravisCI
 .. _Travis: https://travis-ci.org/hottbox/hottbox/
 
-.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/sh2rk41gpn26h7a7/branch/master?svg=true
+.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/master?svg=true
 .. _Appveyor: https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a
 
 .. |Coveralls| image:: https://img.shields.io/coveralls/github/hottbox/hottbox/master.svg
 .. _Coveralls: https://coveralls.io/github/hottbox/hottbox
+
+.. |PyPi| image:: https://badge.fury.io/py/hottbox.svg
+.. _PyPi: https://badge.fury.io/py/hottbox
 
 Higher Order Tensors ToolBOX (hottbox)
 ======================================

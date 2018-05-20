@@ -9,14 +9,13 @@ from ...core.operations import khatri_rao, hadamard
 # TODO: Need to add option of sorting vectors in the factor matrices and making them sign invariant
 class BaseCPD(Decomposition):
 
-    def __init__(self, init, max_iter, epsilon, tol, random_state, mode_description, verbose):
+    def __init__(self, init, max_iter, epsilon, tol, random_state, verbose):
         super(BaseCPD, self).__init__()
         self.init = init
         self.max_iter = max_iter
         self.epsilon = epsilon
         self.tol = tol
         self.random_state = random_state
-        self.mode_description = mode_description
         self.verbose = verbose
 
     def copy(self):
@@ -35,7 +34,7 @@ class BaseCPD(Decomposition):
         decomposition_name = super(BaseCPD, self).name
         return decomposition_name
 
-    def decompose(self, tensor, rank):
+    def decompose(self, tensor, rank, keep_meta):
         raise NotImplementedError('Not implemented in base (BaseCPD) class')
 
     @property
@@ -110,7 +109,6 @@ class CPD(BaseCPD):
     tol : float
         Threshold for convergence of factor matrices
     random_state : int
-    mode_description : str
     verbose : bool
         If True, enable verbose output
 
@@ -121,13 +119,12 @@ class CPD(BaseCPD):
     """
 
     def __init__(self, init='svd', max_iter=50, epsilon=10e-3, tol=10e-5,
-                 random_state=None, mode_description='mode_cpd', verbose=False) -> None:
+                 random_state=None, verbose=False) -> None:
         super(CPD, self).__init__(init=init,
                                   max_iter=max_iter,
                                   epsilon=epsilon,
                                   tol=tol,
                                   random_state=random_state,
-                                  mode_description=mode_description,
                                   verbose=verbose)
         self.cost = []
 
@@ -148,7 +145,7 @@ class CPD(BaseCPD):
         decomposition_name = super(CPD, self).name
         return decomposition_name
 
-    def decompose(self, tensor, rank, kr_reverse=False):
+    def decompose(self, tensor, rank, keep_meta=0, kr_reverse=False):
         """ Performs CPD-ALS on the `tensor` with respect to the specified `rank`
 
         Parameters
@@ -158,6 +155,11 @@ class CPD(BaseCPD):
         rank : tuple
             Desired Kryskal rank for the given `tensor`. Should contain only one value.
             If it is greater then any of dimensions then random initialisation is used
+        keep_meta : int
+            Keep meta information about modes of the given `tensor`.
+            0 - the output will have default values for the meta data
+            1 - keep only mode names
+            2 - keep mode names and indices
         kr_reverse : bool
 
         Returns
@@ -212,6 +214,14 @@ class CPD(BaseCPD):
         if self.verbose and not self.converged and self.cost[-1] > self.epsilon:
             print('Maximum number of iterations ({}) has been reached. '
                   'Variation = {}'.format(self.max_iter, abs(self.cost[-2] - self.cost[-1])))
+
+        if keep_meta == 1:
+            mode_names = {i: mode.name for i, mode in enumerate(tensor.modes)}
+            tensor_cpd.set_mode_names(mode_names=mode_names)
+        elif keep_meta == 2:
+            tensor_cpd.copy_modes(tensor)
+        else:
+            pass
         return tensor_cpd
 
     @property

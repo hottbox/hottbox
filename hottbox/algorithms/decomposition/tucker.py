@@ -7,10 +7,9 @@ from ...core.operations import unfold
 
 class BaseTucker(Decomposition):
 
-    def __init__(self, process, mode_description, verbose):
+    def __init__(self, process, verbose):
         super(BaseTucker, self).__init__()
         self.process = process
-        self.mode_description = mode_description
         self.verbose = verbose
 
     def copy(self):
@@ -33,7 +32,7 @@ class BaseTucker(Decomposition):
     def converged(self):
         raise NotImplementedError('Not implemented in base (BaseTucker) class')
 
-    def decompose(self, tensor, rank):
+    def decompose(self, tensor, rank, keep_meta):
         raise NotImplementedError('Not implemented in base (BaseTucker) class')
 
     def _init_fmat(self, tensor, rank):
@@ -51,14 +50,12 @@ class HOSVD(BaseTucker):
     process : tuple
         Specifies the order of modes to be processed. The factor matrices for the missing modes will be set to identity.
         If empty, then all modes are processed in the consecutive ascending order.
-    mode_description : str
     verbose : bool
         If True, enable verbose output
     """
 
-    def __init__(self,  process=(), mode_description='mode_hosvd', verbose=False) -> None:
+    def __init__(self,  process=(), verbose=False) -> None:
         super(HOSVD, self).__init__(process=process,
-                                    mode_description=mode_description,
                                     verbose=verbose)
 
     def copy(self):
@@ -77,7 +74,7 @@ class HOSVD(BaseTucker):
         decomposition_name = super(HOSVD, self).name
         return decomposition_name
 
-    def decompose(self, tensor, rank):
+    def decompose(self, tensor, rank, keep_meta=0):
         """ Performs tucker decomposition via Higher Order Singular Value Decomposition (HOSVD)
 
         Parameters
@@ -86,6 +83,11 @@ class HOSVD(BaseTucker):
             Multidimensional data to be decomposed
         rank : tuple
             Desired multilinear rank for the given `tensor`
+        keep_meta : int
+            Keep meta information about modes of the given `tensor`.
+            0 - the output will have default values for the meta data
+            1 - keep only mode names
+            2 - keep mode names and indices
 
         Returns
         -------
@@ -116,6 +118,15 @@ class HOSVD(BaseTucker):
         if self.verbose:
             residual = residual_tensor(tensor, tensor_tkd)
             print('Relative error of approximation = {}'.format(abs(residual.frob_norm / tensor.frob_norm)))
+
+        if keep_meta == 1:
+            mode_names = {i: mode.name for i, mode in enumerate(tensor.modes)}
+            tensor_tkd.set_mode_names(mode_names=mode_names)
+        elif keep_meta == 2:
+            tensor_tkd.copy_modes(tensor)
+        else:
+            pass
+
         return tensor_tkd
 
     @property
@@ -151,7 +162,6 @@ class HOOI(BaseTucker):
     tol : float
         Threshold for convergence of factor matrices
     random_state : int
-    mode_description : str
     verbose : bool
         If True, enable verbose output
 
@@ -162,9 +172,8 @@ class HOOI(BaseTucker):
     """
 
     def __init__(self, init='hosvd', max_iter=50, epsilon=10e-3, tol=10e-5,
-                 random_state=None, process=(), mode_description='mode_hooi', verbose=False) -> None:
+                 random_state=None, process=(), verbose=False) -> None:
         super(HOOI, self).__init__(process=process,
-                                   mode_description=mode_description,
                                    verbose=verbose)
         self.init = init
         self.max_iter = max_iter
@@ -191,7 +200,7 @@ class HOOI(BaseTucker):
         decomposition_name = super(HOOI, self).name
         return decomposition_name
 
-    def decompose(self, tensor, rank):
+    def decompose(self, tensor, rank, keep_meta=0):
         """ Performs tucker decomposition via Higher Order Orthogonal Iteration (HOOI)
 
         Parameters
@@ -200,6 +209,11 @@ class HOOI(BaseTucker):
             Multidimensional data to be decomposed
         rank : tuple
             Desired multilinear rank for the given `tensor`
+        keep_meta : int
+            Keep meta information about modes of the given `tensor`.
+            0 - the output will have default values for the meta data
+            1 - keep only mode names
+            2 - keep mode names and indices
 
         Returns
         -------
@@ -253,6 +267,15 @@ class HOOI(BaseTucker):
         if self.verbose and not self.converged and self.cost[-1] > self.epsilon:
             print('Maximum number of iterations ({}) has been reached. '
                   'Variation = {}'.format(self.max_iter, abs(self.cost[-2] - self.cost[-1])))
+
+        if keep_meta == 1:
+            mode_names = {i: mode.name for i, mode in enumerate(tensor.modes)}
+            tensor_tkd.set_mode_names(mode_names=mode_names)
+        elif keep_meta == 2:
+            tensor_tkd.copy_modes(tensor)
+        else:
+            pass
+
         return tensor_tkd
 
     @property

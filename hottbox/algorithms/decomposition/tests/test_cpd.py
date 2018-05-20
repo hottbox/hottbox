@@ -5,9 +5,12 @@ import pytest
 import sys
 import io
 import numpy as np
+import pandas as pd
 from functools import reduce
+from itertools import product
 from ..cpd import *
 from ....core.structures import Tensor, TensorCPD
+from ....pdtools import pd_to_tensor
 
 
 class TestBaseCPD:
@@ -21,7 +24,6 @@ class TestBaseCPD:
                               epsilon=10e-3,
                               tol=10e-5,
                               random_state=None,
-                              mode_description='mode_description',
                               verbose=False
                               )
 
@@ -29,8 +31,9 @@ class TestBaseCPD:
         with pytest.raises(NotImplementedError):
             tensor = Tensor(np.arange(2))
             rank = 5
+            keep_meta = 0
             base_cpd = BaseCPD(**default_params)
-            base_cpd.decompose(tensor, rank)
+            base_cpd.decompose(tensor, rank, keep_meta)
         with pytest.raises(NotImplementedError):
             base_cpd = BaseCPD(**default_params)
             base_cpd.plot()
@@ -45,13 +48,11 @@ class TestCPD:
         max_iter = 50
         epsilon = 10e-3
         tol = 10e-5
-        mode_description = 'mode_description'
         verbose = False
         cpd = CPD(init=init,
                   max_iter=max_iter,
                   epsilon=epsilon,
                   tol=tol,
-                  mode_description=mode_description,
                   verbose=verbose)
         assert not cpd.cost         # check that this list is empty
         assert cpd.name == CPD.__name__
@@ -59,7 +60,6 @@ class TestCPD:
         assert cpd.max_iter == max_iter
         assert cpd.epsilon == epsilon
         assert cpd.tol == tol
-        assert cpd.mode_description == mode_description
         assert cpd.verbose == verbose
 
     def test_copy(self):
@@ -74,7 +74,6 @@ class TestCPD:
         assert cpd_copy.max_iter == cpd.max_iter
         assert cpd_copy.epsilon == cpd.epsilon
         assert cpd_copy.tol == cpd.tol
-        assert cpd_copy.mode_description == cpd.mode_description
         assert cpd_copy.verbose == cpd.verbose
         assert cpd_copy.cost != cpd.cost
 
@@ -82,14 +81,12 @@ class TestCPD:
         cpd.max_iter += 1
         cpd.epsilon += 1
         cpd.tol += 1
-        cpd.mode_description = 'qwerty'
         cpd.verbose = not cpd.verbose
         cpd.cost = [3, 4]
         assert cpd_copy.init != cpd.init
         assert cpd_copy.max_iter != cpd.max_iter
         assert cpd_copy.epsilon != cpd.epsilon
         assert cpd_copy.tol != cpd.tol
-        assert cpd_copy.mode_description != cpd.mode_description
         assert cpd_copy.verbose != cpd.verbose
         assert cpd.cost != cpd_copy.cost
 
@@ -214,7 +211,7 @@ class TestCPD:
         for mode, fmat in enumerate(tensor_cpd.fmat):
             assert fmat.shape == (tensor.shape[mode], rank[0])
 
-        tensor_rec = tensor_cpd.reconstruct
+        tensor_rec = tensor_cpd.reconstruct()
         np.testing.assert_almost_equal(tensor_rec.data, tensor.data)
 
         # ------ tests that should FAIL due to wrong input type
@@ -240,6 +237,33 @@ class TestCPD:
             correct_tensor = Tensor(np.arange(size).reshape(shape))
             incorrect_rank = (2, 3)
             cpd.decompose(tensor=correct_tensor, rank=incorrect_rank)
+
+    def test_decompose_with_meta(self):
+        """ Tests for keeping meta data about modes """
+        content = dict(
+            country=['UK', 'RUS'],
+            year=[2005, 2015, 2010],
+            month=['Jan', 'Feb', 'Mar', 'Apr']
+        )
+        data = list(product(*content.values()))
+        columns = list(content.keys())
+        df = pd.DataFrame(data=data, columns=columns)
+        df['population'] = np.arange(df.shape[0], dtype='float32')
+        df_mi = df.set_index(columns)
+        tensor = pd_to_tensor(df=df_mi, keep_index=True)
+        rank = (2,)
+        cpd = CPD()
+
+        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=2)
+        assert tensor_cpd.modes == tensor.modes
+
+        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=1)
+        assert all([tensor_cpd.modes[i].name == tensor.modes[i].name for i in range(tensor_cpd.order)])
+        assert all([tensor_cpd.modes[i].index is None for i in range(tensor_cpd.order)])
+
+        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=0)
+        tensor.reset_meta()
+        assert tensor_cpd.modes == tensor.modes
 
     def test_converged(self):
         """ Tests for converged method """
