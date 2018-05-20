@@ -673,12 +673,11 @@ class BaseTensorTD(object):
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
     @property
-    def reconstruct(self):
-        """ Convert to the full tensor as an object of Tensor class """
+    def frob_norm(self):
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
-    @property
-    def frob_norm(self):
+    def reconstruct(self):
+        """ Convert to the full tensor as an object of Tensor class """
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
     def unfold(self):
@@ -938,9 +937,16 @@ class TensorCPD(BaseTensorTD):
         rank = (fmat.shape[1],)
         return rank
 
-    @property
-    def reconstruct(self):
+    def reconstruct(self, keep_meta=0):
         """ Converts the CP representation of a tensor into a full tensor
+
+        Parameters
+        ----------
+        keep_meta : int
+            Keep meta information about modes of the given `tensor`.
+            0 - the output will have default values for the meta data
+            1 - keep only mode names
+            2 - keep mode names and indices
 
         Returns
         -------
@@ -949,8 +955,15 @@ class TensorCPD(BaseTensorTD):
         tensor = self.core
         for mode, fmat in enumerate(self.fmat):
             tensor.mode_n_product(fmat, mode=mode, inplace=True)
-        # Set metadata
-        tensor.copy_modes(self)
+
+        if keep_meta == 1:
+            mode_names = {i: mode.name for i, mode in enumerate(self.modes)}
+            tensor.set_mode_names(mode_names=mode_names)
+        elif keep_meta == 2:
+            tensor.copy_modes(self)
+        else:
+            pass
+
         return tensor
 
     def copy(self):
@@ -1187,9 +1200,16 @@ class TensorTKD(BaseTensorTD):
         rank = tuple([fmat.shape[1] for fmat in self.fmat])
         return rank
 
-    @property
-    def reconstruct(self):
+    def reconstruct(self, keep_meta=0):
         """ Converts the Tucker representation of a tensor into a full tensor
+
+        Parameters
+        ----------
+        keep_meta : int
+            Keep meta information about modes of the given `tensor`.
+            0 - the output will have default values for the meta data
+            1 - keep only mode names
+            2 - keep mode names and indices
 
         Returns
         -------
@@ -1198,8 +1218,15 @@ class TensorTKD(BaseTensorTD):
         tensor = self.core
         for mode, fmat in enumerate(self.fmat):
             tensor.mode_n_product(fmat, mode=mode, inplace=True)
-        # Set metadata
-        tensor.copy_modes(self)
+
+        if keep_meta == 1:
+            mode_names = {i: mode.name for i, mode in enumerate(self.modes)}
+            tensor.set_mode_names(mode_names=mode_names)
+        elif keep_meta == 2:
+            tensor.copy_modes(self)
+        else:
+            pass
+
         return tensor
 
     def copy(self):
@@ -1471,9 +1498,16 @@ class TensorTT(BaseTensorTD):
         """
         return tuple([core_values.shape[-1] for core_values in self._core_values[:-1]])
 
-    @property
-    def reconstruct(self):
+    def reconstruct(self, keep_meta=0):
         """ Converts the TT representation of a tensor into a full tensor
+
+        Parameters
+        ----------
+        keep_meta : int
+            Keep meta information about modes of the given `tensor`.
+            0 - the output will have default values for the meta data
+            1 - keep only mode names
+            2 - keep mode names and indices
 
         Returns
         -------
@@ -1490,8 +1524,14 @@ class TensorTT(BaseTensorTD):
         data = np.reshape(data, self._ft_shape, order='F')
         tensor = Tensor(data)
 
-        # Set metadata
-        tensor.copy_modes(self)
+        if keep_meta == 1:
+            mode_names = {i: mode.name for i, mode in enumerate(self.modes)}
+            tensor.set_mode_names(mode_names=mode_names)
+        elif keep_meta == 2:
+            tensor.copy_modes(self)
+        else:
+            pass
+
         return tensor
 
     def copy_modes(self, tensor):
@@ -1580,7 +1620,6 @@ class TensorTT(BaseTensorTD):
         return self
 
 
-
 def super_diag_tensor(shape, values=None):
     """ Super-diagonal tensor of the specified `order`.
 
@@ -1640,11 +1679,11 @@ def residual_tensor(tensor_orig, tensor_approx):
     if isinstance(tensor_approx, Tensor):
         residual = Tensor(tensor_orig.data - tensor_approx.data)
     elif isinstance(tensor_approx, TensorCPD):
-        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct.data)
+        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct().data)
     elif isinstance(tensor_approx, TensorTKD):
-        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct.data)
+        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct().data)
     elif isinstance(tensor_approx, TensorTT):
-        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct.data)
+        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct().data)
     else:
         raise TypeError("Unknown data type of the approximation tensor!\n"
                         "The available types for `tensor_B` are `Tensor`,  `TensorCPD`,  `TensorTKD`,  `TensorTT`")

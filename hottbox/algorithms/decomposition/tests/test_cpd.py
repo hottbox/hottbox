@@ -211,7 +211,7 @@ class TestCPD:
         for mode, fmat in enumerate(tensor_cpd.fmat):
             assert fmat.shape == (tensor.shape[mode], rank[0])
 
-        tensor_rec = tensor_cpd.reconstruct
+        tensor_rec = tensor_cpd.reconstruct()
         np.testing.assert_almost_equal(tensor_rec.data, tensor.data)
 
         # ------ tests that should FAIL due to wrong input type

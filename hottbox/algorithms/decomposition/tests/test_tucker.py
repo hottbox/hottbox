@@ -120,7 +120,7 @@ class TestHOSVD:
         rank = tensor.shape
         hosvd.process = ()
         tensor_tkd = hosvd.decompose(tensor=tensor, rank=rank)
-        np.testing.assert_almost_equal(tensor_tkd.reconstruct.data, tensor.data)
+        np.testing.assert_almost_equal(tensor_tkd.reconstruct().data, tensor.data)
 
         # ------ tests that should FAIL due to wrong input type
         hosvd = HOSVD()
@@ -346,7 +346,7 @@ class TestHOOI:
         # ------ tests perfect reconstruction
         rank = tensor.shape
         tensor_tkd = hooi.decompose(tensor=tensor, rank=rank)
-        tensor_rec = tensor_tkd.reconstruct
+        tensor_rec = tensor_tkd.reconstruct()
         np.testing.assert_almost_equal(tensor_rec.data, tensor.data)
 
         # ------ tests that should FAIL due to wrong input type

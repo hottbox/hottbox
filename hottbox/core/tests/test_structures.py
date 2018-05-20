@@ -547,7 +547,7 @@ class TestBaseTensorTD:
         with pytest.raises(NotImplementedError):
             tensor_interface.mode_n_product()
         with pytest.raises(NotImplementedError):
-            tensor_interface.reconstruct
+            tensor_interface.reconstruct()
 
 
 class TestTensorCPD:
@@ -679,15 +679,15 @@ class TestTensorCPD:
         tensor_cpd = TensorCPD(fmat=fmat_list, core_values=core_values)
 
         # ------ basic tests on getting correct results after reconstruction
-        tensor_rec = tensor_cpd.reconstruct
+        tensor_rec = tensor_cpd.reconstruct()
         assert isinstance(tensor_rec, Tensor)
         np.testing.assert_array_equal(tensor_rec.data, true_data)
         assert (tensor_rec.ft_shape == ft_shape)
         assert (tensor_rec.mode_names == true_default_mode_names)
 
         # ------ tests for consecutive reconstructions: results should be the same but different objects
-        tensor_rec_1 = tensor_cpd.reconstruct
-        tensor_rec_2 = tensor_cpd.reconstruct
+        tensor_rec_1 = tensor_cpd.reconstruct()
+        tensor_rec_2 = tensor_cpd.reconstruct()
         np.testing.assert_array_equal(tensor_rec_1.data, true_data)
         np.testing.assert_array_equal(tensor_rec_1.data, tensor_rec_2.data)
         assert tensor_rec_1 is not tensor_rec_2
@@ -701,13 +701,13 @@ class TestTensorCPD:
         new_dim_size = 7
         matrix = np.arange(new_dim_size * ft_shape[mode]).reshape(new_dim_size, ft_shape[mode])
 
-        tensor_rec = tensor_cpd.reconstruct.set_mode_names(mode_names=new_mode_names)
+        tensor_rec = tensor_cpd.reconstruct().set_mode_names(mode_names=new_mode_names)
         for i, mode_name in enumerate(tensor_rec.mode_names):
             assert (mode_name == new_mode_names[i])
 
 
         new_name = 'age'
-        tensor_rec = tensor_cpd.reconstruct.mode_n_product(matrix, mode=mode, new_name=new_name)
+        tensor_rec = tensor_cpd.reconstruct().mode_n_product(matrix, mode=mode, new_name=new_name)
         new_shape = [i for i in ft_shape]
         new_shape[mode] = new_dim_size
         new_shape = tuple(new_shape)
@@ -966,15 +966,15 @@ class TestTensorTKD:
         tensor_tkd = TensorTKD(fmat=fmat, core_values=core_values)
 
         # ------ basic tests on getting correct results after reconstruction
-        tensor_rec = tensor_tkd.reconstruct
+        tensor_rec = tensor_tkd.reconstruct()
         assert isinstance(tensor_rec, Tensor)
         np.testing.assert_array_equal(tensor_rec.data, true_data)
         assert (tensor_rec.ft_shape == ft_shape)
         assert (tensor_rec.mode_names == true_default_mode_names)
 
         # ------ tests for consecutive reconstructions: results should be the same but different objects
-        tensor_rec_1 = tensor_tkd.reconstruct
-        tensor_rec_2 = tensor_tkd.reconstruct
+        tensor_rec_1 = tensor_tkd.reconstruct()
+        tensor_rec_2 = tensor_tkd.reconstruct()
         np.testing.assert_array_equal(tensor_rec_1.data, true_data)
         np.testing.assert_array_equal(tensor_rec_1.data, tensor_rec_2.data)
         assert tensor_rec_1 is not tensor_rec_2
@@ -989,12 +989,12 @@ class TestTensorTKD:
         new_dim_size = 7
         matrix = np.arange(new_dim_size * ft_shape[mode]).reshape(new_dim_size, ft_shape[mode])
 
-        tensor_rec = tensor_tkd.reconstruct.set_mode_names(mode_names=new_mode_names)
+        tensor_rec = tensor_tkd.reconstruct().set_mode_names(mode_names=new_mode_names)
         for i, mode_name in enumerate(tensor_rec.mode_names):
             assert (mode_name == new_mode_names[i])
 
         new_name = 'age'
-        tensor_rec = tensor_tkd.reconstruct.mode_n_product(matrix, mode=mode, new_name=new_name)
+        tensor_rec = tensor_tkd.reconstruct().mode_n_product(matrix, mode=mode, new_name=new_name)
         new_shape = [i for i in ft_shape]
         new_shape[mode] = new_dim_size
         new_shape = tuple(new_shape)
@@ -1267,15 +1267,15 @@ class TestTensorTT:
         tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
 
         # ------ basic tests on getting correct results after reconstruction
-        tensor_rec = tensor_tt.reconstruct
+        tensor_rec = tensor_tt.reconstruct()
         assert isinstance(tensor_rec, Tensor)
         np.testing.assert_array_equal(tensor_rec.data, true_data)
         assert (tensor_rec.ft_shape == ft_shape)
         assert (tensor_rec.mode_names == true_default_mode_names)
 
         # ------ tests for consecutive reconstructions: results should be the same but different objects
-        tensor_rec_1 = tensor_tt.reconstruct
-        tensor_rec_2 = tensor_tt.reconstruct
+        tensor_rec_1 = tensor_tt.reconstruct()
+        tensor_rec_2 = tensor_tt.reconstruct()
         np.testing.assert_array_equal(tensor_rec_1.data, true_data)
         np.testing.assert_array_equal(tensor_rec_1.data, tensor_rec_2.data)
         assert tensor_rec_1 is not tensor_rec_2
@@ -1290,12 +1290,12 @@ class TestTensorTT:
         new_dim_size = 7
         matrix = np.arange(new_dim_size * ft_shape[mode]).reshape(new_dim_size, ft_shape[mode])
 
-        tensor_rec = tensor_tt.reconstruct.set_mode_names(mode_names=new_mode_names)
+        tensor_rec = tensor_tt.reconstruct().set_mode_names(mode_names=new_mode_names)
         for i, mode_name in enumerate(tensor_rec.mode_names):
             assert (mode_name == new_mode_names[i])
 
         new_name = 'age'
-        tensor_rec = tensor_tt.reconstruct.mode_n_product(matrix, mode=mode, new_name=new_name)
+        tensor_rec = tensor_tt.reconstruct().mode_n_product(matrix, mode=mode, new_name=new_name)
         new_shape = [i for i in ft_shape]
         new_shape[mode] = new_dim_size
         new_shape = tuple(new_shape)
@@ -1316,7 +1316,7 @@ class TestTensorTT:
         core_values = [core_1, core_2, core_3, core_4]
         ft_shape = (I, J, K, L)
         tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
-        tensor_rec = tensor_tt.reconstruct
+        tensor_rec = tensor_tt.reconstruct()
         assert (tensor_rec.shape == ft_shape)
         assert (tensor_rec.mode_names == true_default_mode_names)
 
@@ -1333,7 +1333,7 @@ class TestTensorTT:
         core_values = [core_1, core_2, core_3, core_4, core_5]
         ft_shape = (I, J, K, L, M)
         tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
-        tensor_rec = tensor_tt.reconstruct
+        tensor_rec = tensor_tt.reconstruct()
         assert (tensor_rec.shape == ft_shape)
         assert (tensor_rec.mode_names == true_default_mode_names)
 

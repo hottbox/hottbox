@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - [x] Each mode of a `Tensor` there is characterised by a corresponding `Mode` object with meta information
 - [x] Mode names for the `Tensor` constructor should be passed as list instead of OrderedDict.
       These names are used to create `Mode` objects which are stored in a  list `Tensor._modes`
+- [x] Property `reconstruct` of `TensorCPD`, `TensorTKD` and `TensorTT` classes is now a method 
+      (should have been in the first place). Also it take optional parameter `keep_mata` for extraction
+      of meta information about modes
        
 
 ### Removed
