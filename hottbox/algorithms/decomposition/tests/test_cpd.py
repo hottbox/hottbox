@@ -5,9 +5,12 @@ import pytest
 import sys
 import io
 import numpy as np
+import pandas as pd
 from functools import reduce
+from itertools import product
 from ..cpd import *
 from ....core.structures import Tensor, TensorCPD
+from ....pdtools import pd_to_tensor
 
 
 class TestBaseCPD:
@@ -234,6 +237,33 @@ class TestCPD:
             correct_tensor = Tensor(np.arange(size).reshape(shape))
             incorrect_rank = (2, 3)
             cpd.decompose(tensor=correct_tensor, rank=incorrect_rank)
+
+    def test_decompose_with_meta(self):
+        """ Tests for keeping meta data about modes """
+        content = dict(
+            country=['UK', 'RUS'],
+            year=[2005, 2015, 2010],
+            month=['Jan', 'Feb', 'Mar', 'Apr']
+        )
+        data = list(product(*content.values()))
+        columns = list(content.keys())
+        df = pd.DataFrame(data=data, columns=columns)
+        df['population'] = np.arange(df.shape[0], dtype='float32')
+        df_mi = df.set_index(columns)
+        tensor = pd_to_tensor(df=df_mi, keep_index=True)
+        rank = (2,)
+        cpd = CPD()
+
+        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=2)
+        assert tensor_cpd.modes == tensor.modes
+
+        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=1)
+        assert all([tensor_cpd.modes[i].name == tensor.modes[i].name for i in range(tensor.order)])
+        assert all([tensor_cpd.modes[i].index is None for i in range(tensor.order)])
+
+        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=0)
+        tensor.reset_meta()
+        assert tensor_cpd.modes == tensor.modes
 
     def test_converged(self):
         """ Tests for converged method """

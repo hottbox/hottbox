@@ -69,7 +69,7 @@ class TTSVD(BaseTensorTrain):
         decomposition_name = super(TTSVD, self).name
         return decomposition_name
 
-    def decompose(self, tensor, rank):
+    def decompose(self, tensor, rank, keep_meta=0):
         """ Performs TT-SVD on the `tensor` with respect to the specified `rank`
 
         Parameters
@@ -78,6 +78,11 @@ class TTSVD(BaseTensorTrain):
             Multidimensional data to be decomposed
         rank : tuple
             Desired tt-rank for the given `tensor`
+        keep_meta : int
+            Keep meta information about modes of the given `tensor`.
+            0 - the output will have default values for the meta data
+            1 - keep only mode names
+            2 - keep mode names and indices
 
         Returns
         -------
@@ -129,6 +134,13 @@ class TTSVD(BaseTensorTrain):
         if self.verbose:
             residual = residual_tensor(tensor, tensor_tt)
             print('Relative error of approximation = {}'.format(abs(residual.frob_norm / tensor.frob_norm)))
+        if keep_meta == 1:
+            mode_names = {i: mode.name for i, mode in enumerate(tensor.modes)}
+            tensor_tt.set_mode_names(mode_names=mode_names)
+        elif keep_meta == 2:
+            tensor_tt.copy_modes(tensor)
+        else:
+            pass
         return tensor_tt
 
     @property

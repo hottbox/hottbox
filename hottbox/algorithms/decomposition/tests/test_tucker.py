@@ -5,9 +5,12 @@ import pytest
 import sys
 import io
 import numpy as np
+import pandas as pd
 from functools import reduce
+from itertools import product
 from ..tucker import *
 from ....core.structures import Tensor, TensorTKD
+from ....pdtools import pd_to_tensor
 
 
 class TestBaseTucker:
@@ -142,6 +145,32 @@ class TestHOSVD:
             correct_tensor = Tensor(np.arange(size).reshape(shape))
             incorrect_rank = (2, 2)
             hosvd.decompose(tensor=correct_tensor, rank=incorrect_rank)
+
+    def test_decompose_with_meta(self):
+        """ Tests for keeping meta data about modes """
+        content = dict(
+            country=['UK', 'RUS'],
+            year=[2005, 2015, 2010],
+            month=['Jan', 'Feb', 'Mar', 'Apr']
+        )
+        data = list(product(*content.values()))
+        columns = list(content.keys())
+        df = pd.DataFrame(data=data, columns=columns)
+        df['population'] = np.arange(df.shape[0], dtype='float32')
+        df_mi = df.set_index(columns)
+        tensor = pd_to_tensor(df=df_mi, keep_index=True)
+        rank = (2, 2, 2)
+        hosvd = HOSVD()
+
+        tensor_tkd = hosvd.decompose(tensor=tensor, rank=rank, keep_meta=2)
+        assert tensor.modes == tensor_tkd.modes
+
+        tensor_tkd = hosvd.decompose(tensor=tensor, rank=rank, keep_meta=1)
+        assert all([tensor.modes[i].name == tensor_tkd.modes[i].name for i in range(tensor.order)])
+
+        tensor_tkd = hosvd.decompose(tensor=tensor, rank=rank, keep_meta=0)
+        tensor.reset_meta()
+        assert tensor_tkd.modes == tensor.modes
 
     def test_converged(self):
         """ Tests for converged method """
@@ -343,6 +372,33 @@ class TestHOOI:
             correct_tensor = Tensor(np.arange(size).reshape(shape))
             incorrect_rank = (2, 2)
             hooi.decompose(tensor=correct_tensor, rank=incorrect_rank)
+
+    def test_decompose_with_meta(self):
+        """ Tests for keeping meta data about modes """
+        content = dict(
+            country=['UK', 'RUS'],
+            year=[2005, 2015, 2010],
+            month=['Jan', 'Feb', 'Mar', 'Apr']
+        )
+        data = list(product(*content.values()))
+        columns = list(content.keys())
+        df = pd.DataFrame(data=data, columns=columns)
+        df['population'] = np.arange(df.shape[0], dtype='float32')
+        df_mi = df.set_index(columns)
+        tensor = pd_to_tensor(df=df_mi, keep_index=True)
+        rank = (2, 2, 2)
+        hooi = HOOI()
+
+        tensor_tkd = hooi.decompose(tensor=tensor, rank=rank, keep_meta=2)
+        assert tensor_tkd.modes == tensor.modes
+
+        tensor_tkd = hooi.decompose(tensor=tensor, rank=rank, keep_meta=1)
+        assert all([tensor_tkd.modes[i].name == tensor.modes[i].name for i in range(tensor.order)])
+        assert all([tensor_tkd.modes[i].index is None for i in range(tensor.order)])
+
+        tensor_tkd = hooi.decompose(tensor=tensor, rank=rank, keep_meta=0)
+        tensor.reset_meta()
+        assert tensor_tkd.modes == tensor.modes
 
     def test_converged(self):
         """ Tests for converged method """
