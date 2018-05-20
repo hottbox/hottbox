@@ -705,7 +705,6 @@ class TestTensorCPD:
         for i, mode_name in enumerate(tensor_rec.mode_names):
             assert (mode_name == new_mode_names[i])
 
-
         new_name = 'age'
         tensor_rec = tensor_cpd.reconstruct().mode_n_product(matrix, mode=mode, new_name=new_name)
         new_shape = [i for i in ft_shape]
@@ -715,6 +714,31 @@ class TestTensorCPD:
         new_mode_names[mode] = new_name
         assert (tensor_rec.shape == new_shape)
         assert (tensor_rec.mode_names == new_mode_names)
+
+    def test_reconstruct_with_meta(self):
+        """ Tests for keeping meta data about modes """
+        ft_shape = (2, 3, 4)  # define shape of the tensor in full form
+        R = 2  # define Kryskal rank of a tensor in CP form
+        core_values = np.ones(R)
+        fmat_list = [np.arange(orig_dim * R).reshape(orig_dim, R) for orig_dim in ft_shape]
+        mode_names = ["country", "year", "month"]
+        mode_index ={0: ['UK', 'RUS'],
+                     1: [2005, 2015, 2010],
+                     2: ['Jan', 'Feb', 'Mar', 'Apr']}
+        tensor_cpd = TensorCPD(fmat=fmat_list, core_values=core_values, mode_names=mode_names)
+        tensor_cpd.set_mode_index(mode_index=mode_index)
+
+        tensor = tensor_cpd.reconstruct(keep_meta=2)
+        assert tensor.modes == tensor_cpd.modes
+
+        tensor = tensor_cpd.reconstruct(keep_meta=1)
+        assert all([tensor.modes[i].name == tensor_cpd.modes[i].name for i in range(tensor.order)])
+        assert all([tensor.modes[i].index is None for i in range(tensor.order)])
+
+        tensor = tensor_cpd.reconstruct(keep_meta=0)
+        tensor_cpd.reset_mode_name()
+        tensor_cpd.reset_mode_index()
+        assert tensor.modes == tensor_cpd.modes
 
     def test_set_mode_names(self):
         """ Tests for `set_mode_names` method """
@@ -1002,6 +1026,33 @@ class TestTensorTKD:
         new_mode_names[mode] = new_name
         assert (tensor_rec.shape == new_shape)
         assert (tensor_rec.mode_names == new_mode_names)
+
+    def test_reconstruct_with_meta(self):
+        """ Tests for keeping meta data about modes """
+        ft_shape = (2, 3, 4)  # define shape of the tensor in full form
+        ml_rank = (5, 6, 7)  # define multi-linear rank of a tensor in Tucker form
+        core_size = reduce(lambda x, y: x * y, ml_rank)
+        core_values = np.arange(core_size).reshape(ml_rank)
+        fmat_list = [np.arange(ft_shape[mode] * ml_rank[mode]).reshape(ft_shape[mode], ml_rank[mode]) for mode
+                in range(len(ft_shape))]
+        mode_names = ["country", "year", "month"]
+        mode_index ={0: ['UK', 'RUS'],
+                     1: [2005, 2015, 2010],
+                     2: ['Jan', 'Feb', 'Mar', 'Apr']}
+        tensor_tkd = TensorTKD(fmat=fmat_list, core_values=core_values, mode_names=mode_names)
+        tensor_tkd.set_mode_index(mode_index=mode_index)
+
+        tensor = tensor_tkd.reconstruct(keep_meta=2)
+        assert tensor.modes == tensor_tkd.modes
+
+        tensor = tensor_tkd.reconstruct(keep_meta=1)
+        assert all([tensor.modes[i].name == tensor_tkd.modes[i].name for i in range(tensor.order)])
+        assert all([tensor.modes[i].index is None for i in range(tensor.order)])
+
+        tensor = tensor_tkd.reconstruct(keep_meta=0)
+        tensor_tkd.reset_mode_name()
+        tensor_tkd.reset_mode_index()
+        assert tensor.modes == tensor_tkd.modes
 
     def test_set_mode_names(self):
         """ Tests for `set_mode_names` method """
@@ -1336,6 +1387,34 @@ class TestTensorTT:
         tensor_rec = tensor_tt.reconstruct()
         assert (tensor_rec.shape == ft_shape)
         assert (tensor_rec.mode_names == true_default_mode_names)
+
+    def test_reconstruct_with_meta(self):
+        """ Tests for keeping meta data about modes """
+        r1, r2 = 2, 3
+        I, J, K = 2, 3, 4
+        core_1 = np.arange(I * r1).reshape(I, r1)
+        core_2 = np.arange(r1 * J * r2).reshape(r1, J, r2)
+        core_3 = np.arange(r2 * K).reshape(r2, K)
+        core_values = [core_1, core_2, core_3]
+        ft_shape = (I, J, K)
+        mode_names = ["country", "year", "month"]
+        mode_index ={0: ['UK', 'RUS'],
+                     1: [2005, 2015, 2010],
+                     2: ['Jan', 'Feb', 'Mar', 'Apr']}
+        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape, mode_names=mode_names)
+        tensor_tt.set_mode_index(mode_index=mode_index)
+
+        tensor = tensor_tt.reconstruct(keep_meta=2)
+        assert tensor.modes == tensor_tt.modes
+
+        tensor = tensor_tt.reconstruct(keep_meta=1)
+        assert all([tensor.modes[i].name == tensor_tt.modes[i].name for i in range(tensor.order)])
+        assert all([tensor.modes[i].index is None for i in range(tensor.order)])
+
+        tensor = tensor_tt.reconstruct(keep_meta=0)
+        tensor_tt.reset_mode_name()
+        tensor_tt.reset_mode_index()
+        assert tensor.modes == tensor_tt.modes
 
     def test_set_mode_names(self):
         """ Tests for `set_mode_names` method """

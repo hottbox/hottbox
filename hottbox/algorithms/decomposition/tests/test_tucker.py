@@ -166,7 +166,8 @@ class TestHOSVD:
         assert tensor.modes == tensor_tkd.modes
 
         tensor_tkd = hosvd.decompose(tensor=tensor, rank=rank, keep_meta=1)
-        assert all([tensor.modes[i].name == tensor_tkd.modes[i].name for i in range(tensor.order)])
+        assert all([tensor.modes[i].name == tensor_tkd.modes[i].name for i in range(tensor_tkd.order)])
+        assert all([tensor_tkd.modes[i].index is None for i in range(tensor_tkd.order)])
 
         tensor_tkd = hosvd.decompose(tensor=tensor, rank=rank, keep_meta=0)
         tensor.reset_meta()
@@ -393,8 +394,8 @@ class TestHOOI:
         assert tensor_tkd.modes == tensor.modes
 
         tensor_tkd = hooi.decompose(tensor=tensor, rank=rank, keep_meta=1)
-        assert all([tensor_tkd.modes[i].name == tensor.modes[i].name for i in range(tensor.order)])
-        assert all([tensor_tkd.modes[i].index is None for i in range(tensor.order)])
+        assert all([tensor_tkd.modes[i].name == tensor.modes[i].name for i in range(tensor_tkd.order)])
+        assert all([tensor_tkd.modes[i].index is None for i in range(tensor_tkd.order)])
 
         tensor_tkd = hooi.decompose(tensor=tensor, rank=rank, keep_meta=0)
         tensor.reset_meta()

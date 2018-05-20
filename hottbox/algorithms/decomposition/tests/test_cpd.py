@@ -258,8 +258,8 @@ class TestCPD:
         assert tensor_cpd.modes == tensor.modes
 
         tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=1)
-        assert all([tensor_cpd.modes[i].name == tensor.modes[i].name for i in range(tensor.order)])
-        assert all([tensor_cpd.modes[i].index is None for i in range(tensor.order)])
+        assert all([tensor_cpd.modes[i].name == tensor.modes[i].name for i in range(tensor_cpd.order)])
+        assert all([tensor_cpd.modes[i].index is None for i in range(tensor_cpd.order)])
 
         tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=0)
         tensor.reset_meta()

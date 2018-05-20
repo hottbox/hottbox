@@ -190,8 +190,8 @@ class TestTTSVD:
         assert tensor_tt.modes == tensor.modes
 
         tensor_tt = ttsvd.decompose(tensor=tensor, rank=rank, keep_meta=1)
-        assert all([tensor_tt.modes[i].name == tensor.modes[i].name for i in range(tensor.order)])
-        assert all([tensor_tt.modes[i].index is None for i in range(tensor.order)])
+        assert all([tensor_tt.modes[i].name == tensor.modes[i].name for i in range(tensor_tt.order)])
+        assert all([tensor_tt.modes[i].index is None for i in range(tensor_tt.order)])
 
         tensor_tt = ttsvd.decompose(tensor=tensor, rank=rank, keep_meta=0)
         tensor.reset_meta()
