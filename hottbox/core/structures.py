@@ -56,6 +56,58 @@ class Tensor(object):
         self._modes = self._create_modes(array=array, mode_names=mode_names)
         self._state = self._create_state(array=array)
 
+    def __eq__(self, other):
+        """
+        Returns
+        -------
+        bool
+
+        Notes
+        -----
+        Tensors are equal when everything is the same.
+        """
+        equal = False
+        if isinstance(self, other.__class__):
+            if self.shape == other.shape:
+                data_equal = np.allclose(self.data, other.data,  rtol=1e-05, atol=1e-08, equal_nan=True)
+                state_equal = self.current_state == other.current_state
+                modes_equal = all([self.modes[i] == other.modes[i] for i in range(self.order)])
+                equal = data_equal and state_equal and modes_equal
+
+        return equal
+
+    def __add__(self, other):
+        """ Summation of objects of ``Tensor`` class
+
+        Returns
+        -------
+        tensor : Tensor
+
+        Notes
+        -----
+            Two objects of ``Tensor`` class can be added together if:
+                1) Both are in normal state (haven't been rotated, unfolded or folded)
+                2) Both have the same shape
+                3) Bath have the same indices : all([self.modes[i].index == other.modes[i].index])
+            If names of the modes are different the summation will be performed, and
+        """
+        if not isinstance(self, other.__class__):
+            raise TypeError("Don't know how to sum object of {} class "
+                            "with an object of {} class!".format(self.__class__.__name__,
+                                                                other.__class__.__name__))
+        if not all([self.in_normal_state, other.in_normal_state]):
+            raise ValueError("Both tensors should be in normal state!")
+        if self.shape != other.shape:
+            raise ValueError("Both tensors should have the same shape!")
+        if not all([self.modes[i].index == other.modes[i].index for i in range(self.order)]):
+            raise ValueError("Both tensors should have the same indices!")
+        array = self.data + other.data
+        tensor = Tensor(array=array).copy_modes(self)
+        if self.mode_names != other.mode_names:
+            for i in range(tensor.order):
+                tensor.reset_mode_name(mode=i)
+        return tensor
+
     @staticmethod
     def _validate_init_data(array, mode_names, ft_shape):
         """ Validate data for ``Tensor`` constructor
@@ -284,9 +336,23 @@ class Tensor(object):
         array = self.data
         ft_shape = self.ft_shape
         new_object = Tensor(array=array, ft_shape=ft_shape)
-        new_object._modes = [mode.copy() for mode in self.modes]
-        new_object._state = self.current_state
+        new_object.copy_modes(self)
+        new_object._state = self.current_state.copy()
         return new_object
+
+    def copy_modes(self, tensor):
+        """ Copy modes meta from tensor representation
+
+        Parameters
+        ----------
+        tensor : {Tensor, TensorCPD, TensorTKD, TensorTT}
+
+        Returns
+        -------
+        self : Tensor
+        """
+        self._modes = [mode.copy() for mode in tensor.modes]
+        return self
 
     def reset_meta(self):
         """ Set all meta information with respect to the current shape of data array
@@ -429,7 +495,7 @@ class Tensor(object):
             Unfolding operation does not change `_ft_shape` and `_modes` attributes but changes `_state` attribute
         """
         if not self.in_normal_state:
-            raise Exception("The tensor is not in the original form")
+            raise TypeError("The tensor is not in the original form")
 
         # Unfold data
         data_unfolded = unfold(self.data, mode)
@@ -469,7 +535,7 @@ class Tensor(object):
         """
         # Do not do anything if the tensor is in the normal form (hadn't been unfolded before)
         if self.in_normal_state:
-            raise Exception("The tensor hadn't bee unfolded before")
+            raise TypeError("The tensor hadn't bee unfolded before")
 
         # Fold data
         temp = np.array(self.current_state[0])
@@ -520,7 +586,7 @@ class Tensor(object):
             4. If `matrix.mode_names[0] == "mode-0"` then no changes to `tensor.mode_names` will be made
         """
         if not self.in_normal_state:
-            raise Exception("The tensor is not in the original form")
+            raise TypeError("The tensor is not in the original form")
 
         # TODO: need to rethink this if statements so it would be easier to follow
         if isinstance(matrix, Tensor) and new_name is not None:
@@ -561,12 +627,34 @@ class BaseTensorTD(object):
     def __init__(self):
         pass
 
-    def _validate_init_data(self, **kwargs):
+    @staticmethod
+    def _validate_init_data(**kwargs):
         """ Validate data for the constructor of a new object """
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
+    def _create_modes(self, mode_names):
+        """ Create meta data for each mode of tensor representation
+
+        Parameters
+        ----------
+        mode_names : list[str]
+
+        Returns
+        -------
+        modes : list[Mode]
+        """
+        if mode_names is None:
+            mode_names = ["mode-{}".format(i) for i in range(self.order)]
+        modes = [Mode(name=name) for name in mode_names]
+        return modes
+
     def copy(self):
         """ Produces a copy of itself as a new object """
+        raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
+
+    @property
+    def modes(self):
+        """ Meta data for each mode of tensor representation """
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
     @property
@@ -602,6 +690,123 @@ class BaseTensorTD(object):
     def mode_n_product(self):
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
+    def copy_modes(self, tensor):
+        """ Copy modes meta from tensor
+
+        Parameters
+        ----------
+        tensor : {Tensor, TensorCPD, TensorTKD, TensorTT}
+
+        Returns
+        -------
+        self
+        """
+        self._modes = [mode.copy() for mode in tensor.modes]
+        return self
+
+    def set_mode_names(self, mode_names):
+        """ Rename modes of a tensor representation
+
+        Parameters
+        ----------
+        mode_names : dict
+            New names for the tensor modes in form of a dictionary
+            The name of the mode defined by the Key of the dict will be renamed to the corresponding Value
+
+        Returns
+        -------
+        self
+        """
+        if len(mode_names.keys()) > self.order:
+            raise ValueError("Too many mode names have been specified")
+        if not all(isinstance(mode, int) for mode in mode_names.keys()):
+            raise TypeError("The dict of `mode_names` should contain only integer keys!")
+        if not all(mode < self.order for mode in mode_names.keys()):
+            raise ValueError("All specified mode values should not exceed the order of the tensor!")
+        if not all(mode >= 0 for mode in mode_names.keys()):
+            raise ValueError("All specified mode keys should be non-negative!")
+
+        for i, name in mode_names.items():
+            self.modes[i].set_name(name)
+
+        return self
+
+    def reset_mode_name(self, mode):
+        """ Set default name for the specified mode number
+
+        Parameters
+        ----------
+        mode : int
+            Mode number which name to be set to default value
+            By default resets names of all modes
+
+        Returns
+        -------
+        self
+        """
+        if mode is None:
+            for i, t_mode in enumerate(self.modes):
+                default_name = "mode-{}".format(i)
+                t_mode.set_name(name=default_name)
+        else:
+            default_name = "mode-{}".format(mode)
+            self.modes[mode].set_name(name=default_name)
+        return self
+
+    def set_mode_index(self, mode_index):
+        """ Set index for specified mode
+
+        Parameters
+        ----------
+        mode_index : dict
+            New indices for the factor matrices in form of a dictionary.
+            Key defines the mode whose index to be changed.
+            Value contains a list of new indices for this mode.
+
+        Returns
+        -------
+        self
+        """
+        if len(mode_index.keys()) > self.order:
+            raise ValueError("Too many sets of indices have been specified")
+        if not all(isinstance(mode, int) for mode in mode_index.keys()):
+            raise TypeError("The dict of `mode_index` should contain only integer keys!")
+        if not all(mode < self.order for mode in mode_index.keys()):
+            raise ValueError("All specified mode values should not exceed the order of the tensor!")
+        if not all(mode >= 0 for mode in mode_index.keys()):
+            raise ValueError("All specified mode keys should be non-negative!")
+        if isinstance(self, TensorTT):
+            index_long_enough = all([len(index) == self._ft_shape[mode] for mode, index in mode_index.items()])
+        else:
+            index_long_enough = all([len(index) == self.fmat[mode].shape[0] for mode, index in mode_index.items()])
+        if not index_long_enough:
+            raise ValueError("Not enough of too many indices for the specified mode")
+
+        for i, index in mode_index.items():
+            self.modes[i].set_index(index=index)
+
+        return self
+
+    def reset_mode_index(self, mode):
+        """ Drop index for the specified mode number
+
+        Parameters
+        ----------
+        mode : int
+            Mode number which index to be dropped
+            By default resets all indices
+
+        Returns
+        -------
+        self
+        """
+        if mode is None:
+            for i in range(self.order):
+                self.modes[i].reset_index()
+        else:
+            self.modes[mode].reset_index()
+        return self
+
 
 class TensorCPD(BaseTensorTD):
     """ Representation of a tensor in the CPD form.
@@ -631,7 +836,7 @@ class TensorCPD(BaseTensorTD):
         self._validate_init_data(fmat=fmat, core_values=core_values)
         self._fmat = [mat.copy() for mat in fmat]
         self._core_values = core_values.copy()
-        self._modes = self._create_modes(fmat=fmat, mode_names=mode_names)
+        self._modes = self._create_modes(mode_names=mode_names)
 
     @staticmethod
     def _validate_init_data(fmat, core_values):
@@ -659,23 +864,18 @@ class TensorCPD(BaseTensorTD):
             raise ValueError("Dimension mismatch!\n"
                              "Number of columns of all factor matrices should be the same and equal to len(core_values)!")
 
-    @staticmethod
-    def _create_modes(fmat, mode_names):
+    def _create_modes(self, mode_names):
         """ Create meta data for each factor matrix
 
         Parameters
         ----------
-        fmat : list[np.ndarray]
-            List of factor matrices
         mode_names : list[str]
 
         Returns
         -------
         modes : list[Mode]
         """
-        if mode_names is None:
-            mode_names = ["mode-{}".format(i) for i in range(len(fmat))]
-        modes = [Mode(name=name) for name in mode_names]
+        modes = super(TensorCPD, self)._create_modes(mode_names=mode_names)
         return modes
 
     @property
@@ -749,6 +949,8 @@ class TensorCPD(BaseTensorTD):
         tensor = self.core
         for mode, fmat in enumerate(self.fmat):
             tensor.mode_n_product(fmat, mode=mode, inplace=True)
+        # Set metadata
+        tensor.copy_modes(self)
         return tensor
 
     def copy(self):
@@ -761,6 +963,7 @@ class TensorCPD(BaseTensorTD):
         fmat = self._fmat
         core_values = self._core_values
         new_object = TensorCPD(fmat=fmat, core_values=core_values)
+        new_object.copy_modes(self)
         return new_object
 
     def copy_modes(self, tensor):
@@ -768,7 +971,7 @@ class TensorCPD(BaseTensorTD):
 
         Parameters
         ----------
-        tensor : Tensor
+        tensor : {Tensor, TensorCPD, TensorTKD, TensorTT}
 
         Returns
         -------
@@ -779,7 +982,7 @@ class TensorCPD(BaseTensorTD):
             Most of the time this method should only be used by the CPD type algorithm
         """
         # TODO: check for dimensionality
-        self._modes = [mode.copy() for mode in tensor.modes]
+        super(TensorCPD, self).copy_modes(tensor=tensor)
         return self
 
     def set_mode_names(self, mode_names):
@@ -794,19 +997,8 @@ class TensorCPD(BaseTensorTD):
         Returns
         -------
         self : TensorCPD
-            Return self so that methods could be chained
         """
-        if len(mode_names.keys()) > self.order:
-            raise ValueError("Too many mode names have been specified")
-        if not all(isinstance(mode, int) for mode in mode_names.keys()):
-            raise TypeError("The dict of `mode_names` should contain only integer keys!")
-        if not all(mode < self.order for mode in mode_names.keys()):
-            raise ValueError("All specified mode values should not exceed the order of the tensor!")
-        if not all(mode >= 0 for mode in mode_names.keys()):
-            raise ValueError("All specified mode keys should be non-negative!")
-
-        for i, name in mode_names.items():
-            self.modes[i].set_name(name)
+        super(TensorCPD, self).set_mode_names(mode_names=mode_names)
 
         return self
 
@@ -823,13 +1015,7 @@ class TensorCPD(BaseTensorTD):
         -------
         self : TensorCPD
         """
-        if mode is None:
-            for i, t_mode in enumerate(self.modes):
-                default_name = "mode-{}".format(i)
-                t_mode.set_name(name=default_name)
-        else:
-            default_name = "mode-{}".format(mode)
-            self.modes[mode].set_name(name=default_name)
+        super(TensorCPD, self).reset_mode_name(mode=mode)
         return self
 
     def set_mode_index(self, mode_index):
@@ -846,20 +1032,7 @@ class TensorCPD(BaseTensorTD):
         -------
         self : TensorCPD
         """
-        if len(mode_index.keys()) > self.order:
-            raise ValueError("Too many sets of indices have been specified")
-        if not all(isinstance(mode, int) for mode in mode_index.keys()):
-            raise TypeError("The dict of `mode_index` should contain only integer keys!")
-        if not all(mode < self.order for mode in mode_index.keys()):
-            raise ValueError("All specified mode values should not exceed the order of the tensor!")
-        if not all(mode >= 0 for mode in mode_index.keys()):
-            raise ValueError("All specified mode keys should be non-negative!")
-        if not all([len(index) == self.fmat[mode].shape[0] for mode, index in mode_index.items()]):
-            raise ValueError("Not enough of too many indices for the specified mode")
-
-        for i, index in mode_index.items():
-            self.modes[i].set_index(index=index)
-
+        super(TensorCPD, self).set_mode_index(mode_index=mode_index)
         return self
 
     def reset_mode_index(self, mode=None):
@@ -875,11 +1048,7 @@ class TensorCPD(BaseTensorTD):
         -------
         self : TensorCPD
         """
-        if mode is None:
-            for i in range(self.order):
-                self.modes[i].reset_index()
-        else:
-            self.modes[mode].reset_index()
+        super(TensorCPD, self).reset_mode_index(mode=mode)
         return self
 
 
@@ -911,7 +1080,7 @@ class TensorTKD(BaseTensorTD):
         self._validate_init_data(fmat=fmat, core_values=core_values)
         self._fmat = [mat.copy() for mat in fmat]
         self._core_values = core_values.copy()
-        self._modes = self._create_modes(fmat=fmat, mode_names=mode_names)
+        self._modes = self._create_modes(mode_names=mode_names)
 
     @staticmethod
     def _validate_init_data(fmat, core_values):
@@ -946,23 +1115,18 @@ class TensorTKD(BaseTensorTD):
                              "dimension size of the core tensor:\n"
                              "{} != {} (fmat[i].shape[1] != core_values.shape)".format(mat_shapes, ml_rank))
 
-    @staticmethod
-    def _create_modes(fmat, mode_names):
+    def _create_modes(self, mode_names):
         """ Create meta data for each factor matrix
 
         Parameters
         ----------
-        fmat : list[np.ndarray]
-            List of factor matrices
         mode_names : list[str]
 
         Returns
         -------
         modes : list[Mode]
         """
-        if mode_names is None:
-            mode_names = ["mode-{}".format(i) for i in range(len(fmat))]
-        modes = [Mode(name=name) for name in mode_names]
+        modes = super(TensorTKD, self)._create_modes(mode_names=mode_names)
         return modes
 
     @property
@@ -1034,6 +1198,8 @@ class TensorTKD(BaseTensorTD):
         tensor = self.core
         for mode, fmat in enumerate(self.fmat):
             tensor.mode_n_product(fmat, mode=mode, inplace=True)
+        # Set metadata
+        tensor.copy_modes(self)
         return tensor
 
     def copy(self):
@@ -1046,6 +1212,7 @@ class TensorTKD(BaseTensorTD):
         fmat = self._fmat
         core_values = self._core_values
         new_object = TensorTKD(fmat=fmat, core_values=core_values)
+        new_object.copy_modes(self)
         return new_object
 
     def copy_modes(self, tensor):
@@ -1053,7 +1220,7 @@ class TensorTKD(BaseTensorTD):
 
         Parameters
         ----------
-        tensor : Tensor
+        tensor : {Tensor, TensorCPD, TensorTKD, TensorTT}
 
         Returns
         -------
@@ -1064,7 +1231,7 @@ class TensorTKD(BaseTensorTD):
             Most of the time this method should only be used by the CPD type algorithm
         """
         # TODO: check for dimensionality
-        self._modes = [mode.copy() for mode in tensor.modes]
+        super(TensorTKD, self).copy_modes(tensor=tensor)
         return self
 
     def set_mode_names(self, mode_names):
@@ -1079,19 +1246,8 @@ class TensorTKD(BaseTensorTD):
         Returns
         -------
         self : TensorTKD
-            Return self so that methods could be chained
         """
-        if len(mode_names.keys()) > self.order:
-            raise ValueError("Too many mode names have been specified")
-        if not all(isinstance(mode, int) for mode in mode_names.keys()):
-            raise TypeError("The dict of `mode_names` should contain only integer keys!")
-        if not all(mode < self.order for mode in mode_names.keys()):
-            raise ValueError("All specified mode values should not exceed the order of the tensor!")
-        if not all(mode >= 0 for mode in mode_names.keys()):
-            raise ValueError("All specified mode keys should be non-negative!")
-
-        for i, name in mode_names.items():
-            self.modes[i].set_name(name)
+        super(TensorTKD, self).set_mode_names(mode_names=mode_names)
 
         return self
 
@@ -1108,13 +1264,7 @@ class TensorTKD(BaseTensorTD):
         -------
         self : TensorTKD
         """
-        if mode is None:
-            for i, t_mode in enumerate(self.modes):
-                default_name = "mode-{}".format(i)
-                t_mode.set_name(name=default_name)
-        else:
-            default_name = "mode-{}".format(mode)
-            self.modes[mode].set_name(name=default_name)
+        super(TensorTKD, self).reset_mode_name(mode=mode)
         return self
 
     def set_mode_index(self, mode_index):
@@ -1131,20 +1281,7 @@ class TensorTKD(BaseTensorTD):
         -------
         self : TensorTKD
         """
-        if len(mode_index.keys()) > self.order:
-            raise ValueError("Too many sets of indices have been specified")
-        if not all(isinstance(mode, int) for mode in mode_index.keys()):
-            raise TypeError("The dict of `mode_index` should contain only integer keys!")
-        if not all(mode < self.order for mode in mode_index.keys()):
-            raise ValueError("All specified mode values should not exceed the order of the tensor!")
-        if not all(mode >= 0 for mode in mode_index.keys()):
-            raise ValueError("All specified mode keys should be non-negative!")
-        if not all([len(index) == self.fmat[mode].shape[0] for mode, index in mode_index.items()]):
-            raise ValueError("Not enough of too many indices for the specified mode")
-
-        for i, index in mode_index.items():
-            self.modes[i].set_index(index=index)
-
+        super(TensorTKD, self).set_mode_index(mode_index=mode_index)
         return self
 
     def reset_mode_index(self, mode=None):
@@ -1160,11 +1297,7 @@ class TensorTKD(BaseTensorTD):
         -------
         self : TensorTKD
         """
-        if mode is None:
-            for i in range(self.order):
-                self.modes[i].reset_index()
-        else:
-            self.modes[mode].reset_index()
+        super(TensorTKD, self).reset_mode_index(mode=mode)
         return self
 
 
@@ -1179,7 +1312,7 @@ class TensorTT(BaseTensorTD):
         Placeholder for a shape of the full tensor (``TensorTT.reconstruct.shape``).
         Makes the reconstruction process easier.
     """
-    def __init__(self, core_values, ft_shape):
+    def __init__(self, core_values, ft_shape, mode_names=None):
         """
         
         Parameters
@@ -1193,6 +1326,7 @@ class TensorTT(BaseTensorTD):
         self._validate_init_data(core_values=core_values, ft_shape=ft_shape)
         self._core_values = [core.copy() for core in core_values]
         self._ft_shape = tuple([mode_size for mode_size in ft_shape])
+        self._modes = self._create_modes(mode_names=mode_names)
 
     def _validate_init_data(self, core_values, ft_shape):
         """ Validate data for the TensorTT constructor
@@ -1246,6 +1380,20 @@ class TensorTT(BaseTensorTD):
             raise ValueError("Inconsistent shape of the tensor in full form:\n"
                              "{} != {} (extracted_full_shape != ft_shape)".format(extracted_full_shape, ft_shape))
 
+    def _create_modes(self, mode_names):
+        """ Create meta data for each factor matrix
+
+        Parameters
+        ----------
+        mode_names : list[str]
+
+        Returns
+        -------
+        modes : list[Mode]
+        """
+        modes = super(TensorTT, self)._create_modes(mode_names=mode_names)
+        return modes
+
     def copy(self):
         """ Produces a copy of itself as a new object
 
@@ -1256,6 +1404,7 @@ class TensorTT(BaseTensorTD):
         core_values = self._core_values
         ft_shape = self._ft_shape
         new_object = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        new_object.copy_modes(self)
         return new_object
 
     def core(self, i):
@@ -1287,6 +1436,16 @@ class TensorTT(BaseTensorTD):
         """
         core_list = [self.core(i) for i in range(len(self._core_values))]
         return core_list
+
+    @property
+    def modes(self):
+        """ Meta data for the factor matrices
+
+        Returns
+        -------
+        list[Mode]
+        """
+        return self._modes
 
     @property
     def order(self):
@@ -1330,7 +1489,96 @@ class TensorTT(BaseTensorTD):
             data = np.dot(data, core_flat)
         data = np.reshape(data, self._ft_shape, order='F')
         tensor = Tensor(data)
+
+        # Set metadata
+        tensor.copy_modes(self)
         return tensor
+
+    def copy_modes(self, tensor):
+        """ Copy modes meta from tensor
+
+        Parameters
+        ----------
+        tensor : {Tensor, TensorCPD, TensorTKD, TensorTT}
+
+        Returns
+        -------
+        self : TensorTT
+
+        Notes
+        -----
+            Most of the time this method should only be used by the CPD type algorithm
+        """
+        # TODO: check for dimensionality
+        super(TensorTT, self).copy_modes(tensor=tensor)
+        return self
+
+    def set_mode_names(self, mode_names):
+        """ Rename modes of a tensor representation
+
+        Parameters
+        ----------
+        mode_names : dict
+            New names for the tensor modes in form of a dictionary
+            The name of the mode defined by the Key of the dict will be renamed to the corresponding Value
+
+        Returns
+        -------
+        self : TensorTT
+        """
+        super(TensorTT, self).set_mode_names(mode_names=mode_names)
+
+        return self
+
+    def reset_mode_name(self, mode=None):
+        """ Set default name for the specified mode number
+
+        Parameters
+        ----------
+        mode : int
+            Mode number which name to be set to default value
+            By default resets names of all modes
+
+        Returns
+        -------
+        self : TensorTT
+        """
+        super(TensorTT, self).reset_mode_name(mode=mode)
+        return self
+
+    def set_mode_index(self, mode_index):
+        """ Set index for specified mode
+
+        Parameters
+        ----------
+        mode_index : dict
+            New indices for the factor matrices in form of a dictionary.
+            Key defines the mode whose index to be changed.
+            Value contains a list of new indices for this mode.
+
+        Returns
+        -------
+        self : TensorTT
+        """
+        super(TensorTT, self).set_mode_index(mode_index=mode_index)
+        return self
+
+    def reset_mode_index(self, mode=None):
+        """ Drop index for the specified mode number
+
+        Parameters
+        ----------
+        mode : int
+            Mode number which index to be dropped
+            By default resets all indices
+
+        Returns
+        -------
+        self : TensorTT
+        """
+        super(TensorTT, self).reset_mode_index(mode=mode)
+        return self
+
 
 
 def super_diag_tensor(shape, values=None):

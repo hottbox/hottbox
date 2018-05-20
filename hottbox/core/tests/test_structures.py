@@ -84,6 +84,12 @@ class TestTensor:
             incorrect_mode_names = ["{}-mode".format(mode) for mode in range(order + 1)]
             Tensor(array=correct_data, mode_names=incorrect_mode_names)
 
+        # all mode names should be strings
+        with pytest.raises(TypeError):
+            incorrect_mode_names = ["{}-mode".format(mode) for mode in range(order)]
+            incorrect_mode_names[0] = 0
+            Tensor(array=correct_data, mode_names=incorrect_mode_names)
+
         # ------ tests for custom ft_shape being incorrectly defined
         # should of of tuple type
         with pytest.raises(TypeError):
@@ -104,39 +110,133 @@ class TestTensor:
             incorrect_ft_shape = (I + 1, J, K)
             Tensor(array=correct_data, ft_shape=incorrect_ft_shape)
 
+    def test_equal(self):
+        """ Test for tensors being equal """
+        shape = (2, 2, 2)
+        size = reduce(lambda x, y: x * y, shape)
+        data_1 = np.ones(size).reshape(shape)
+        data_2 = np.ones(size).reshape(shape)
+        data_3 = np.arange(size).reshape(shape)
+        init_names = ["country", "year", "month"]
+        new_mode_names = {i: "mode" for i in range(len(shape))}
+        new_mode_index = {i: ["index" for _ in range(shape[i])] for i in range(len(shape))}
+
+        tensor_1 = Tensor(data_1)
+        tensor_2 = Tensor(data_2)
+        assert tensor_1 == tensor_2
+
+        tensor_1 = Tensor(array=data_1, mode_names=init_names)
+        tensor_2 = Tensor(array=data_2, mode_names=init_names)
+        assert tensor_1 == tensor_2
+
+        tensor_1 = Tensor(array=data_1).set_mode_index(mode_index=new_mode_index)
+        tensor_2 = Tensor(array=data_2).set_mode_index(mode_index=new_mode_index)
+        assert tensor_1 == tensor_2
+
+        # TODO: make this test to pass!!!
+        # tensor_1 = Tensor(array=data_1, mode_names=init_names)
+        # tensor_2 = Tensor(array=data_2).set_mode_names(mode_names=new_mode_names)
+        # assert tensor_1 == tensor_2
+
+        tensor_1 = Tensor(array=data_1)
+        tensor_2 = Tensor(array=data_3)
+        assert tensor_1 != tensor_2
+
+        tensor_1 = Tensor(array=data_1)
+        tensor_2 = Tensor(array=data_2).unfold(mode=0, inplace=True)
+        assert tensor_1 != tensor_2
+
+        tensor_1 = Tensor(array=data_1, mode_names=init_names)
+        tensor_2 = Tensor(array=data_2)
+        assert tensor_1 != tensor_2
+
+        tensor_1 = Tensor(array=data_1).set_mode_index(mode_index=new_mode_index)
+        tensor_2 = Tensor(array=data_2)
+        assert tensor_1 != tensor_2
+
+        assert tensor_1 != data_1
+
+    def test_addition(self):
+        shape = (2, 2, 2)
+        size = reduce(lambda x, y: x * y, shape)
+        data_1 = np.ones(size).reshape(shape)
+        data_2 = np.arange(size).reshape(shape)
+        data_res = data_1 + data_2
+
+        tensor_1 = Tensor(array=data_1)
+        tensor_2 = Tensor(array=data_2)
+        tensor_res = Tensor(array=data_res)
+        tensor = tensor_1 + tensor_2
+        assert tensor_res == tensor
+
+        tensor_1 = Tensor(array=data_1, mode_names=["country", "year", "month"])
+        tensor_2 = Tensor(array=data_2)
+        tensor_res = Tensor(array=data_res)
+        tensor = tensor_1 + tensor_2
+        assert tensor_res == tensor
+
+        #---- Tests that should fail
+        with pytest.raises(TypeError):
+            assert Tensor(data_1) + data_1
+
+        with pytest.raises(ValueError):
+            tensor_1 = Tensor(array=data_1)
+            tensor_2 = Tensor(array=data_2).unfold(mode=0, inplace=True)
+            assert tensor_1 + tensor_2
+
+        with pytest.raises(ValueError):
+            mode_index = {0: ["idx1", "idx2"]}
+            tensor_1 = Tensor(array=data_1)
+            tensor_2 = Tensor(array=data_2).set_mode_index(mode_index=mode_index)
+            assert tensor_1 + tensor_2
+
+        with pytest.raises(ValueError):
+            data_2 = np.arange(2*2).reshape(2,2)
+            tensor_1 = Tensor(array=data_1)
+            tensor_2 = Tensor(array=data_2)
+            assert tensor_1 + tensor_2
+
     def test_copy(self):
         """ Tests for creation a copy of a Tensor object """
         data = np.arange(24).reshape(2, 3, 4)
-        tensor = Tensor(data)
+        mode_index = {0: ["idx1", "idx2"],
+                      1: ["idx1", "idx2", "idx3"],
+                      2: ["idx1", "idx2", "idx3", "idx4"],}
+        tensor = Tensor(data, mode_names=['pixel_x', 'pixel_y', 'color']).set_mode_index(mode_index=mode_index)
         tensor_copy = tensor.copy()
+        assert tensor_copy == tensor
         assert (tensor_copy is not tensor)
         assert (tensor_copy._data is not tensor._data)
         assert (tensor_copy._ft_shape is not tensor._ft_shape)
         assert (tensor_copy._modes is not tensor._modes)
-        np.testing.assert_array_equal(tensor_copy.data, tensor.data)
-        assert (tensor_copy.ft_shape == tensor.ft_shape)
-        assert (tensor_copy.frob_norm == tensor.frob_norm)
-        assert (tensor_copy.shape == tensor.shape)
-        assert (tensor_copy.order == tensor.order)
-        assert (tensor_copy.size == tensor.size)
-        assert (tensor_copy.mode_names == tensor.mode_names)
+        assert (tensor_copy._state is not tensor._state)
 
-    def test_rename_modes(self):
+    def test_reset_meta(self):
+        """ Tests for `reset_meta` method """
+        shape = (2, 2, 2)
+        size = reduce(lambda x, y: x * y, shape)
+        data = np.ones(size).reshape(shape)
+        init_names = ["country", "year", "month"]
+        mode_index = {i: ["index" for _ in range(shape[i])] for i in range(len(shape))}
+
+        tensor = Tensor(array=data, mode_names=init_names).set_mode_index(mode_index=mode_index)
+        tensor.reset_meta()
+        tensor_true_result = Tensor(array=data)
+        assert tensor == tensor_true_result
+
+    def test_set_mode_names(self):
         """ Tests for renaming modes """
         true_shape = (2, 4, 8)
         true_size = reduce(lambda x, y: x * y, true_shape)
         true_order = len(true_shape)
         true_data = np.ones(true_size).reshape(true_shape)
-        orig_mode_names = ['1-mode', '2-mode', '3-mode']
         true_new_mode_names = {0: 'pixel_x',
                                1: 'pixel_y',
                                2: 'color'
                                }
-        tensor = Tensor(array=true_data, mode_names=orig_mode_names)
-
+        tensor = Tensor(array=true_data)
         tensor.set_mode_names(true_new_mode_names)
-        for i, mode_name in enumerate(tensor.mode_names):
-            assert (mode_name == true_new_mode_names[i])
+        assert tensor.mode_names == list(true_new_mode_names.values())
 
         # ------ tests that should FAIL for new mode names being incorrectly defined for renaming
         with pytest.raises(ValueError):
@@ -159,6 +259,74 @@ class TestTensor:
             incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(-1, true_order - 1)}
             tensor.set_mode_names(mode_names=incorrect_new_mode_names)
 
+    def test_reset_mode_name(self):
+        """ Tests for `reset_mode_name` method """
+        shape = (2, 2, 2)
+        size = reduce(lambda x, y: x * y, shape)
+        data = np.ones(size).reshape(shape)
+        init_names = ["country", "year", "month"]
+        mode_index = {i: ["index" for _ in range(shape[i])] for i in range(len(shape))}
+
+        tensor = Tensor(array=data, mode_names=init_names).set_mode_index(mode_index=mode_index)
+        tensor.reset_mode_name()
+        tensor_true_result = Tensor(array=data).set_mode_index(mode_index=mode_index)
+        assert tensor == tensor_true_result
+
+        tensor = Tensor(array=data, mode_names=init_names)
+        tensor.reset_mode_name(mode=0)
+        init_names[0] = "mode-0"
+        tensor_true_result = Tensor(array=data, mode_names=init_names)
+        assert tensor == tensor_true_result
+
+    def test_set_mode_index(self):
+        """ Tests for `set_mode_index` method """
+        shape = (2, 2, 2)
+        true_order = len(shape)
+        size = reduce(lambda x, y: x * y, shape)
+        data = np.ones(size).reshape(shape)
+        tensor = Tensor(array=data)
+
+        # ------ tests that should FAIL for new mode index being incorrectly defined for renaming
+        with pytest.raises(ValueError):
+            # too many lists of indices provided
+            mode_index = {i: ["index"] for i in range(len(shape)+1)}
+            tensor.set_mode_index(mode_index=mode_index)
+
+        with pytest.raises(TypeError):
+            # incorrect type of keys (not integers)
+            mode_index = {"index".format(mode): mode for mode in range(true_order)}
+            tensor.set_mode_index(mode_index=mode_index)
+
+        with pytest.raises(ValueError):
+            # key value exceeds the order of a tensor
+            wrong_key = true_order + 1
+            mode_index = {wrong_key : ["idx"]}
+            tensor.set_mode_index(mode_index=mode_index)
+
+        with pytest.raises(ValueError):
+            # key value exceeds the order of a tensor
+            wrong_key = -1
+            mode_index = {wrong_key : ["idx"]}
+            tensor.set_mode_index(mode_index=mode_index)
+
+        with pytest.raises(ValueError):
+            # not enough indices for the length of the mode
+            mode_index = {0: ["idx"]}
+            tensor.set_mode_index(mode_index=mode_index)
+
+    def test_reset_mode_index(self):
+        """ Tests for `reset_mode_index` method """
+        shape = (2, 2, 2)
+        size = reduce(lambda x, y: x * y, shape)
+        data = np.ones(size).reshape(shape)
+        init_names = ["country", "year", "month"]
+        mode_index = {i: ["index" for _ in range(shape[i])] for i in range(len(shape))}
+
+        tensor = Tensor(array=data, mode_names=init_names).set_mode_index(mode_index=mode_index)
+        tensor.reset_mode_index()
+        tensor_true_result = Tensor(array=data, mode_names=init_names)
+        assert tensor == tensor_true_result
+
     def test_describe(self):
         """ Tests for describe function of a Tensor object """
         # TODO: find a better way to test the method that only prints
@@ -166,22 +334,14 @@ class TestTensor:
         sys.stdout = captured_output     # and redirect stdout.
 
         true_shape = (2, 4, 8)
-        true_order = len(true_shape)
         true_size = reduce(lambda x, y: x * y, true_shape)
         true_data = np.ones(true_size).reshape(true_shape)
         true_mode_names = ['time', 'frequency', 'channel']
         tensor = Tensor(array=true_data, mode_names=true_mode_names)
+        tensor_copy = tensor.copy()
         tensor.describe()
         assert captured_output.getvalue() != ''  # to check that something was actually printed
-
-        # check that this function does not change anything in the object
-        np.testing.assert_array_equal(tensor.data, true_data)
-        assert (tensor.frob_norm == 8.0)
-        assert (tensor.shape == true_shape)
-        assert (tensor.ft_shape == true_shape)
-        assert (tensor.order == true_order)
-        assert (tensor.size == true_size)
-        assert (tensor.mode_names == true_mode_names)
+        assert tensor == tensor_copy  # check that this function does not change anything in the object
 
     def test_unfold_fold(self):
         """ Tests for folding and unfolding of a Tensor object """
@@ -239,6 +399,20 @@ class TestTensor:
             assert (tensor_folded.mode_names == orig_mode_names)
             np.testing.assert_array_equal(tensor_folded.data, orig_data)
 
+        # Tests for checking normal state of a tensor
+        with pytest.raises(TypeError):
+            # Should not unfold several times in a row
+            Tensor(array=orig_data).unfold(mode=0, inplace=True).unfold(mode=0, inplace=True)
+
+        with pytest.raises(TypeError):
+            # Should not fold inf it wasn't unfolded before
+            Tensor(array=orig_data).fold(inplace=True)
+
+        with pytest.raises(ValueError):
+            tensor = Tensor(array=orig_data)
+            tensor._state = ["wrong", 1, 2]
+            tensor.in_normal_state
+
     def test_mode_n_product(self):
         """ Tests for mode-n product on an object of Tensor class """
         I, J, K = 5, 6, 7
@@ -281,6 +455,12 @@ class TestTensor:
             np.testing.assert_array_equal(tensor_res.data, true_res)
             # check that the original tensor object has not been modified
             np.testing.assert_array_equal(tensor.data, array_3d)
+
+        # check that mode_n_product can be performed only on a tensor in normal state
+        with pytest.raises(TypeError):
+            tensor = Tensor(array=array_3d).unfold(mode=0, inplace=True)
+            matrix = np.arange(2)
+            tensor.mode_n_product(matrix, mode=0)
 
         # ------  test for changing mode_names correctly
         orig_dim = (5, 6, 7)
@@ -350,6 +530,8 @@ class TestBaseTensorTD:
             tensor_interface._validate_init_data()
         with pytest.raises(NotImplementedError):
             tensor_interface.copy()
+        with pytest.raises(NotImplementedError):
+            tensor_interface.modes
         with pytest.raises(NotImplementedError):
             tensor_interface.order
         with pytest.raises(NotImplementedError):
@@ -534,6 +716,127 @@ class TestTensorCPD:
         assert (tensor_rec.shape == new_shape)
         assert (tensor_rec.mode_names == new_mode_names)
 
+    def test_set_mode_names(self):
+        """ Tests for `set_mode_names` method """
+        ft_shape = (3, 4, 5)  # define shape of the tensor in full form
+        true_order = len(ft_shape)
+        R = 2  # define Kryskal rank of a tensor in CP form
+        core_values = np.ones(R)
+        fmat_list = [np.arange(orig_dim * R).reshape(orig_dim, R) for orig_dim in ft_shape]
+        init_names = ["country", "year", "month"]
+        mode_names = {i: name for i, name in enumerate(init_names)}
+
+        tensor_cpd = TensorCPD(fmat=fmat_list, core_values=core_values)
+        tensor_cpd.set_mode_names(mode_names)
+        tensor_cpd_true = TensorCPD(fmat=fmat_list, core_values=core_values, mode_names=init_names)
+        assert all([tensor_cpd.modes[i].name == tensor_cpd_true.modes[i].name for i in range(tensor_cpd.order)])
+
+        # ------ tests that should FAIL for new mode names being incorrectly defined for renaming
+        with pytest.raises(ValueError):
+            # too many mode names
+            incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(true_order + 1)}
+            tensor_cpd.set_mode_names(mode_names=incorrect_new_mode_names)
+
+        with pytest.raises(TypeError):
+            # incorrect type of keys (not integers)
+            incorrect_new_mode_names = {"{}-mode".format(mode): mode for mode in range(true_order)}
+            tensor_cpd.set_mode_names(mode_names=incorrect_new_mode_names)
+
+        with pytest.raises(ValueError):
+            # key value exceeds the order of a tensor
+            incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(true_order - 2, true_order + 1)}
+            tensor_cpd.set_mode_names(mode_names=incorrect_new_mode_names)
+
+        with pytest.raises(ValueError):
+            # key value is set to be negative
+            incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(-1, true_order - 1)}
+            tensor_cpd.set_mode_names(mode_names=incorrect_new_mode_names)
+
+    def test_reset_mode_name(self):
+        """ Tests for `reset_mode_name` method """
+        ft_shape = (3, 4, 5)  # define shape of the tensor in full form
+        R = 2  # define Kryskal rank of a tensor in CP form
+        core_values = np.ones(R)
+        fmat_list = [np.arange(orig_dim * R).reshape(orig_dim, R) for orig_dim in ft_shape]
+        init_names = ["country", "year", "month"]
+
+        tensor_cpd = TensorCPD(fmat=fmat_list, core_values=core_values, mode_names=init_names)
+        tensor_cpd.reset_mode_name()
+        tensor_cpd_true = TensorCPD(fmat=fmat_list, core_values=core_values)
+        assert all([tensor_cpd.modes[i].name == tensor_cpd_true.modes[i].name for i in range(tensor_cpd.order)])
+
+        tensor_cpd = TensorCPD(fmat=fmat_list, core_values=core_values, mode_names=init_names)
+        tensor_cpd.reset_mode_name(mode=0)
+        init_names = ["mode-0", "year", "month"]
+        tensor_cpd_true = TensorCPD(fmat=fmat_list, core_values=core_values, mode_names=init_names)
+        assert all([tensor_cpd.modes[i].name == tensor_cpd_true.modes[i].name for i in range(tensor_cpd.order)])
+
+    def test_set_mode_index(self):
+        """ Tests for `set_mode_index` method """
+        ft_shape = (2, 3, 4)  # define shape of the tensor in full form
+        true_order = len(ft_shape)
+        R = 2  # define Kryskal rank of a tensor in CP form
+        core_values = np.ones(R)
+        fmat_list = [np.arange(orig_dim * R).reshape(orig_dim, R) for orig_dim in ft_shape]
+
+        tensor_cpd = TensorCPD(fmat=fmat_list, core_values=core_values)
+        mode_index = {0: ["idx1", "idx2"],
+                      1: ["idx1", "idx2", "idx3"],
+                      2: ["idx1", "idx2", "idx3", "idx4"]}
+        tensor_cpd.set_mode_index(mode_index=mode_index)
+        assert all([tensor_cpd.modes[i].index == mode_index[i] for i in range(tensor_cpd.order)])
+
+        # ------ tests that should FAIL for new mode index being incorrectly defined for renaming
+        with pytest.raises(ValueError):
+            # too many lists of indices provided
+            mode_index = {i: ["index"] for i in range(len(ft_shape) + 1)}
+            tensor_cpd.set_mode_index(mode_index=mode_index)
+
+        with pytest.raises(TypeError):
+            # incorrect type of keys (not integers)
+            mode_index = {"index".format(mode): mode for mode in range(true_order)}
+            tensor_cpd.set_mode_index(mode_index=mode_index)
+
+        with pytest.raises(ValueError):
+            # key value exceeds the order of a tensor
+            wrong_key = true_order + 1
+            mode_index = {wrong_key: ["idx"]}
+            tensor_cpd.set_mode_index(mode_index=mode_index)
+
+        with pytest.raises(ValueError):
+            # key value exceeds the order of a tensor
+            wrong_key = -1
+            mode_index = {wrong_key: ["idx"]}
+            tensor_cpd.set_mode_index(mode_index=mode_index)
+
+        with pytest.raises(ValueError):
+            # not enough indices for the length of the mode
+            mode_index = {0: ["idx"]}
+            tensor_cpd.set_mode_index(mode_index=mode_index)
+
+    def test_reset_mode_index(self):
+        """ Tests for `reset_mode_index` method """
+        ft_shape = (2, 3, 4)  # define shape of the tensor in full form
+        R = 2  # define Kryskal rank of a tensor in CP form
+        core_values = np.ones(R)
+        fmat_list = [np.arange(orig_dim * R).reshape(orig_dim, R) for orig_dim in ft_shape]
+
+        tensor_cpd = TensorCPD(fmat=fmat_list, core_values=core_values)
+        mode_index = {0: ["idx1", "idx2"],
+                      1: ["idx1", "idx2", "idx3"],
+                      2: ["idx1", "idx2", "idx3", "idx4"]}
+        tensor_cpd.set_mode_index(mode_index=mode_index)
+        tensor_cpd.reset_mode_index()
+        tensor_cpd_2 = TensorCPD(fmat=fmat_list, core_values=core_values)
+        assert all([tensor_cpd.modes[i].index == tensor_cpd_2.modes[i].index for i in range(tensor_cpd.order)])
+
+        tensor_cpd = TensorCPD(fmat=fmat_list, core_values=core_values)
+        mode_index = {0: ["idx1", "idx2"]}
+        tensor_cpd.set_mode_index(mode_index=mode_index)
+        tensor_cpd.reset_mode_index(mode=0)
+        tensor_cpd_2 = TensorCPD(fmat=fmat_list, core_values=core_values)
+        assert all([tensor_cpd.modes[i].index == tensor_cpd_2.modes[i].index for i in range(tensor_cpd.order)])
+
 
 class TestTensorTKD:
     """ Tests for the TensorTKD class """
@@ -699,6 +1002,88 @@ class TestTensorTKD:
         new_mode_names[mode] = new_name
         assert (tensor_rec.shape == new_shape)
         assert (tensor_rec.mode_names == new_mode_names)
+
+    def test_set_mode_names(self):
+        """ Tests for `set_mode_names` method """
+        ft_shape = (5, 6, 7)  # define shape of the tensor in full form
+        ml_rank = (2, 3, 4)  # define multi-linear rank of a tensor in Tucker form
+        core_size = reduce(lambda x, y: x * y, ml_rank)
+        core_values = np.arange(core_size).reshape(ml_rank)
+        true_orig_fmat_list = [np.arange(ft_shape[mode] * ml_rank[mode]).reshape(ft_shape[mode], ml_rank[mode]) for mode
+                               in range(len(ft_shape))]
+        fmat_list = [fmat.copy() for fmat in true_orig_fmat_list]
+        init_names = ["country", "year", "month"]
+        mode_names = {i: name for i, name in enumerate(init_names)}
+
+        tensor_tkd = TensorTKD(fmat=fmat_list, core_values=core_values)
+        tensor_tkd.set_mode_names(mode_names)
+        tensor_tkd_true = TensorTKD(fmat=fmat_list, core_values=core_values, mode_names=init_names)
+        assert all([tensor_tkd.modes[i].name == tensor_tkd_true.modes[i].name for i in range(tensor_tkd.order)])
+
+    def test_reset_mode_name(self):
+        """ Tests for `reset_mode_name` method """
+        ft_shape = (5, 6, 7)  # define shape of the tensor in full form
+        ml_rank = (2, 3, 4)  # define multi-linear rank of a tensor in Tucker form
+        core_size = reduce(lambda x, y: x * y, ml_rank)
+        core_values = np.arange(core_size).reshape(ml_rank)
+        true_orig_fmat_list = [np.arange(ft_shape[mode] * ml_rank[mode]).reshape(ft_shape[mode], ml_rank[mode]) for mode
+                               in range(len(ft_shape))]
+        fmat_list = [fmat.copy() for fmat in true_orig_fmat_list]
+        init_names = ["country", "year", "month"]
+
+        tensor_tkd = TensorTKD(fmat=fmat_list, core_values=core_values, mode_names=init_names)
+        tensor_tkd.reset_mode_name()
+        tensor_tkd_true = TensorTKD(fmat=fmat_list, core_values=core_values)
+        assert all([tensor_tkd.modes[i].name == tensor_tkd_true.modes[i].name for i in range(tensor_tkd.order)])
+
+        tensor_tkd = TensorTKD(fmat=fmat_list, core_values=core_values, mode_names=init_names)
+        tensor_tkd.reset_mode_name(mode=0)
+        init_names = ["mode-0", "year", "month"]
+        tensor_tkd_true = TensorTKD(fmat=fmat_list, core_values=core_values, mode_names=init_names)
+        assert all([tensor_tkd.modes[i].name == tensor_tkd_true.modes[i].name for i in range(tensor_tkd.order)])
+
+    def test_set_mode_index(self):
+        """ Tests for `set_mode_index` method """
+        ft_shape = (2, 3, 4)  # define shape of the tensor in full form
+        ml_rank = (2, 3, 4)  # define multi-linear rank of a tensor in Tucker form
+        core_size = reduce(lambda x, y: x * y, ml_rank)
+        core_values = np.arange(core_size).reshape(ml_rank)
+        true_orig_fmat_list = [np.arange(ft_shape[mode] * ml_rank[mode]).reshape(ft_shape[mode], ml_rank[mode]) for mode
+                               in range(len(ft_shape))]
+        fmat_list = [fmat.copy() for fmat in true_orig_fmat_list]
+
+        tensor_tkd = TensorTKD(fmat=fmat_list, core_values=core_values)
+        mode_index = {0: ["idx1", "idx2"],
+                      1: ["idx1", "idx2", "idx3"],
+                      2: ["idx1", "idx2", "idx3", "idx4"]}
+        tensor_tkd.set_mode_index(mode_index=mode_index)
+        assert all([tensor_tkd.modes[i].index == mode_index[i] for i in range(tensor_tkd.order)])
+
+    def test_reset_mode_index(self):
+        """ Tests for `reset_mode_index` method """
+        ft_shape = (2, 3, 4)  # define shape of the tensor in full form
+        ml_rank = (2, 3, 4)  # define multi-linear rank of a tensor in Tucker form
+        core_size = reduce(lambda x, y: x * y, ml_rank)
+        core_values = np.arange(core_size).reshape(ml_rank)
+        true_orig_fmat_list = [np.arange(ft_shape[mode] * ml_rank[mode]).reshape(ft_shape[mode], ml_rank[mode]) for mode
+                               in range(len(ft_shape))]
+        fmat_list = [fmat.copy() for fmat in true_orig_fmat_list]
+
+        tensor_tkd = TensorTKD(fmat=fmat_list, core_values=core_values)
+        mode_index = {0: ["idx1", "idx2"],
+                      1: ["idx1", "idx2", "idx3"],
+                      2: ["idx1", "idx2", "idx3", "idx4"]}
+        tensor_tkd.set_mode_index(mode_index=mode_index)
+        tensor_tkd.reset_mode_index()
+        tensor_tkd_2 = TensorTKD(fmat=fmat_list, core_values=core_values)
+        assert all([tensor_tkd.modes[i].index == tensor_tkd_2.modes[i].index for i in range(tensor_tkd.order)])
+
+        tensor_tkd = TensorTKD(fmat=fmat_list, core_values=core_values)
+        mode_index = {0: ["idx1", "idx2"]}
+        tensor_tkd.set_mode_index(mode_index=mode_index)
+        tensor_tkd.reset_mode_index(mode=0)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_list, core_values=core_values)
+        assert all([tensor_tkd.modes[i].index == tensor_tkd_2.modes[i].index for i in range(tensor_tkd.order)])
 
 
 class TestTensorTT:
@@ -951,6 +1336,88 @@ class TestTensorTT:
         tensor_rec = tensor_tt.reconstruct
         assert (tensor_rec.shape == ft_shape)
         assert (tensor_rec.mode_names == true_default_mode_names)
+
+    def test_set_mode_names(self):
+        """ Tests for `set_mode_names` method """
+        r1, r2 = 2, 3
+        I, J, K = 2, 3, 4
+        core_1 = np.arange(I * r1).reshape(I, r1)
+        core_2 = np.arange(r1 * J * r2).reshape(r1, J, r2)
+        core_3 = np.arange(r2 * K).reshape(r2, K)
+        core_values = [core_1, core_2, core_3]
+        ft_shape = (I, J, K)
+        init_names = ["country", "year", "month"]
+        mode_names = {i: name for i, name in enumerate(init_names)}
+
+        tensor_tkd = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tkd.set_mode_names(mode_names)
+        tensor_tkd_true = TensorTT(core_values=core_values, ft_shape=ft_shape, mode_names=init_names)
+        assert all([tensor_tkd.modes[i].name == tensor_tkd_true.modes[i].name for i in range(tensor_tkd.order)])
+
+    def test_reset_mode_name(self):
+        """ Tests for `reset_mode_name` method """
+        r1, r2 = 2, 3
+        I, J, K = 2, 3, 4
+        core_1 = np.arange(I * r1).reshape(I, r1)
+        core_2 = np.arange(r1 * J * r2).reshape(r1, J, r2)
+        core_3 = np.arange(r2 * K).reshape(r2, K)
+        core_values = [core_1, core_2, core_3]
+        ft_shape = (I, J, K)
+        init_names = ["country", "year", "month"]
+
+        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape, mode_names=init_names)
+        tensor_tt.reset_mode_name()
+        tensor_tkd_true = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        assert all([tensor_tt.modes[i].name == tensor_tkd_true.modes[i].name for i in range(tensor_tt.order)])
+
+        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape, mode_names=init_names)
+        tensor_tt.reset_mode_name(mode=0)
+        init_names = ["mode-0", "year", "month"]
+        tensor_tt_true = TensorTT(core_values=core_values, ft_shape=ft_shape, mode_names=init_names)
+        assert all([tensor_tt.modes[i].name == tensor_tt_true.modes[i].name for i in range(tensor_tt.order)])
+
+    def test_set_mode_index(self):
+        """ Tests for `set_mode_index` method """
+        r1, r2 = 2, 3
+        I, J, K = 2, 3, 4
+        core_1 = np.arange(I * r1).reshape(I, r1)
+        core_2 = np.arange(r1 * J * r2).reshape(r1, J, r2)
+        core_3 = np.arange(r2 * K).reshape(r2, K)
+        core_values = [core_1, core_2, core_3]
+        ft_shape = (I, J, K)
+
+        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        mode_index = {0: ["idx1", "idx2"],
+                      1: ["idx1", "idx2", "idx3"],
+                      2: ["idx1", "idx2", "idx3", "idx4"]}
+        tensor_tt.set_mode_index(mode_index=mode_index)
+        assert all([tensor_tt.modes[i].index == mode_index[i] for i in range(tensor_tt.order)])
+
+    def test_reset_mode_index(self):
+        """ Tests for `reset_mode_index` method """
+        r1, r2 = 2, 3
+        I, J, K = 2, 3, 4
+        core_1 = np.arange(I * r1).reshape(I, r1)
+        core_2 = np.arange(r1 * J * r2).reshape(r1, J, r2)
+        core_3 = np.arange(r2 * K).reshape(r2, K)
+        core_values = [core_1, core_2, core_3]
+        ft_shape = (I, J, K)
+
+        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        mode_index = {0: ["idx1", "idx2"],
+                      1: ["idx1", "idx2", "idx3"],
+                      2: ["idx1", "idx2", "idx3", "idx4"]}
+        tensor_tt.set_mode_index(mode_index=mode_index)
+        tensor_tt.reset_mode_index()
+        tensor_tt_2 = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        assert all([tensor_tt.modes[i].index == tensor_tt_2.modes[i].index for i in range(tensor_tt.order)])
+
+        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        mode_index = {0: ["idx1", "idx2"]}
+        tensor_tt.set_mode_index(mode_index=mode_index)
+        tensor_tt.reset_mode_index(mode=0)
+        tensor_tt_2 = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        assert all([tensor_tt.modes[i].index == tensor_tt_2.modes[i].index for i in range(tensor_tt.order)])
 
 
 def test_super_diag_tensor():
