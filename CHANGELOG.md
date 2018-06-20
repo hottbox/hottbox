@@ -21,8 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - [x] Parameter `keep_meta` to `decompose` methods for the cpd and tucker type decompositions.
       Base on its value, meta information of the modes of `tensor` to be decomposed can be extracted
       and assigned to the `TensorCPD` and `TensorTKD` respectively. 
-- [x] Quick construction of generic objects of `Tensor` class
-- [ ] Quick construction of generic objects of `TensorCPD`, `TensorTKD` and `TensorTT` classes
+- [x] Quick construction of generic objects of `Tensor`, `TensorCPD`, `TensorTKD` and `TensorTT` classes
 - [x] Direct summation and comparison of `Tensor` objects (redefined \_\_add\_\_, \_\_eq\_\_)
 - [ ] Vectorisation method for a `Tensor` class 
 - [ ] Describe functions for `TensorCPD`, `TensorTKD` and `TensorTT`
@@ -30,6 +29,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - [x] Restrictions on methods `fold`, `unfold` and `mode_n_product` of `Tensor`.
       Whether they can be called is determined by the current state of the `Tensor` object.
 - [x] Tools to convert multi-index pandas dataframe into a `Tensor` and vise versa 
+- [ ] Kolda folding and unfolding
+- [ ] Modes for core tensors of the `TensorCPD` and `TensorTKD`
 
 
 ### Changed
@@ -40,6 +41,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - [x] Property `reconstruct` of `TensorCPD`, `TensorTKD` and `TensorTT` classes is now a method 
       (should have been in the first place). Also it take optional parameter `keep_mata` for extraction
       of meta information about modes
+- [ ] `describe` functionality is now implemented by `info`. Whereas `describe` should present some
+      statistics of the `Tensor` by analogy with `pandas`
        
 
 ### Removed
