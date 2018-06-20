@@ -1,7 +1,7 @@
 """
 Classes for different tensor representations
 """
-
+import itertools
 import numpy as np
 from functools import reduce
 from .operations import unfold, fold, mode_n_product
@@ -39,7 +39,7 @@ class Tensor(object):
             If nothing is specified then all modes of the created ``Tensor``
             get generic names 'mode-0', 'mode-1' etc.
         """
-        # self._validate_init_data(array=array, mode_names=mode_names, custom_state=custom_state, ft_shape=ft_shape)
+        self._validate_init_data(array=array, mode_names=mode_names, custom_state=custom_state)
         self._data = array.copy()
         self._state, self._modes = self._create_meta(array=array,
                                                      custom_state=custom_state,
@@ -107,41 +107,82 @@ class Tensor(object):
         return str(self)
 
     @staticmethod
-    def _validate_init_data(array, mode_names, custom_state, ft_shape):
+    def _validate_init_data(array, mode_names, custom_state):
         """ Validate data for ``Tensor`` constructor
 
         Parameters
         ----------
         array : np.ndarray
         mode_names : list[str]
-        ft_shape : tuple
+        custom_state : dict
         """
         # validate data array
         if not isinstance(array, np.ndarray):
             raise TypeError('Input data should be a numpy array')
 
+        # validate custom_state if provided
+        if custom_state is not None:
+            if not isinstance(custom_state, dict):
+                raise TypeError("Incorrect type of the parameter `custom_state`!\n"
+                                "It should be `dict`")
+
+            keys_required = ['mode_order', 'normal_shape']
+            keys_presented = list(custom_state.keys())
+            keys_presented.sort()
+            if keys_presented != keys_required:
+                raise ValueError("Some keys missing or extra keys have been provided!!!\n"
+                                 "`custom_state` should have only {} keys".format(keys_required)
+                                 )
+
+            #------------------------------
+            if not isinstance(custom_state['normal_shape'], tuple):
+                raise TypeError("Incorrect type of the parameter `custom_state['normal_shape']`!\n"
+                                "It should be `tuple`")
+
+            normal_shape = custom_state['normal_shape']
+            size = reduce(lambda x, y: x * y, normal_shape)
+            if size != array.size:
+                raise ValueError("Values of `normal_shape` are inconsistent with the provided data array ({} != {})!")
+
+            # ------------------------------
+            if not isinstance(custom_state['mode_order'], list):
+                raise TypeError("Incorrect type of the parameter `custom_state['mode_order']`!\n"
+                                "It should be `list` of lists")
+
+            mode_order = custom_state['mode_order']
+            if not all(isinstance(mode_seq, list) for mode_seq in mode_order):
+                raise TypeError("Incorrect type of the parameter `mode_order[i]`!\n"
+                                "It should be `list` of `int`")
+
+            modes_specified = list(itertools.chain.from_iterable(mode_order))
+            if len(modes_specified) != len(normal_shape):
+                raise ValueError("Number of provided modes is inconsistent with the provided length `normal_shape`!\n"
+                                 "{} != {}".format(len(modes_specified), len(normal_shape))
+                                 )
+
         # validate mode_names if provided
         if mode_names is not None:
             if not isinstance(mode_names, list):
                 raise TypeError("You should use list for mode_names!")
-            if array.ndim != len(mode_names):
-                raise ValueError("Incorrect number of names for the modes of a tensor: {0} != {1} "
-                                 "('array.ndim != len(mode_names)')!\n".format(array.ndim,
-                                                                               len(mode_names)
-                                                                               )
-                                 )
+
             if not all(isinstance(name, str) for name in mode_names):
                 raise TypeError("The list of mode names should contain only strings!")
 
-        # validate ft_shape if provided
-        if ft_shape is not None:
-            if not isinstance(ft_shape, tuple):
-                raise TypeError("Incorrect type of the parameter `ft_shape`!\n"
-                                "It should be tuple")
-            size = reduce(lambda x, y: x * y, ft_shape)
-            if array.size != size:
-                raise ValueError("Values of `ft_shape` are inconsistent with the provided data array ({} != {})!\n"
-                                 "reduce(lambda x, y: x * y, ft_shape) != array.size".format(size, array.size))
+            if custom_state is None:
+                if array.ndim != len(mode_names):
+                    raise ValueError("Incorrect number of names for the modes of a tensor: {0} != {1} "
+                                     "('array.ndim != len(mode_names)')!\n".format(array.ndim,
+                                                                                   len(mode_names)
+                                                                                   )
+                                     )
+            else:
+                normal_shape = custom_state['normal_shape']
+                if len(normal_shape) != len(mode_names):
+                    raise ValueError("Incorrect number of names for the modes of a tensor: {0} != {1} "
+                                     "('len(normal_shape) != len(mode_names)')!\n".format(len(normal_shape),
+                                                                                          len(mode_names)
+                                                                                          )
+                                     )
 
     @staticmethod
     def _create_meta(array, custom_state, mode_names):
@@ -167,7 +208,7 @@ class Tensor(object):
         state = State(**custom_state)
 
         if mode_names is None:
-            mode_names = ["mode-{}".format(i) for i in range(len(state._normal_shape))]
+            mode_names = ["mode-{}".format(i) for i in range(len(state.normal_shape))]
         modes = [Mode(name=name) for name in mode_names]
         return state, modes
 
@@ -291,8 +332,8 @@ class Tensor(object):
             New object of Tensor class with attributes having the same values, but no memory space is shared
         """
         array = self.data
-        custom_state = dict(normal_shape=self.state._normal_shape,
-                            mode_order=self.state._mode_order)
+        custom_state = dict(normal_shape=self.state.normal_shape,
+                            mode_order=self.state.mode_order)
         new_object = Tensor(array=array, custom_state=custom_state)
         # In order to preserved index if it was specified
         new_object.copy_modes(self)

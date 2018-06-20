@@ -22,8 +22,8 @@ class State(object):
         normal_shape : tuple
         mode_order : list[list]
         """
-        self._normal_shape = normal_shape
-        self._mode_order = mode_order
+        self._normal_shape = tuple([i for i in normal_shape])
+        self._mode_order = mode_order.copy()
 
     def __eq__(self, other):
         """
