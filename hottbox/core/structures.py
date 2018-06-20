@@ -5,7 +5,7 @@ Classes for different tensor representations
 import numpy as np
 from functools import reduce
 from .operations import unfold, fold, mode_n_product
-from ._meta import Mode
+from ._meta import Mode, State
 
 
 class Tensor(object):
@@ -17,44 +17,33 @@ class Tensor(object):
     ----------
     _data : np.ndarray
         N-dimensional array.
-    _ft_shape : tuple
-        Shape of a tensor object in normal format (without being in unfolded or folded state).
-        Meta information.
     _modes : list[Mode]
         Description of the tensor modes in form of a list where each element is object of ``Mode`` class.
         Meta information.
-    _state : {list[int], list[list[int]]}
+    _state : State
         List of references to meta information about modes of a tensor.
         Meta information.
-
-    Notes
-    -----
-        It is very likely that _state will be formalised in a separate class!
     """
 
-    def __init__(self, array, mode_names=None, ft_shape=None) -> None:
+    def __init__(self, array, custom_state=None, mode_names=None) -> None:
         """ Create object of ``Tensor`` class
 
         Parameters
         ----------
         array : np.ndarray
             N-dimensional array
+        custom_state : dict
+
         mode_names : list[str]
             Description of the tensor modes.
             If nothing is specified then all modes of the created ``Tensor``
-            get generic names 'mode-0', 'mode-1'
-        ft_shape : tuple
-            Shape of the a tensor in normal format (without being in unfolded or folded state)
-
-        Notes
-        -----
-            In most cases use the default settings for `ft_shape`, because it affects folding, unfolding etc.
+            get generic names 'mode-0', 'mode-1' etc.
         """
-        self._validate_init_data(array=array, mode_names=mode_names, ft_shape=ft_shape)
+        # self._validate_init_data(array=array, mode_names=mode_names, custom_state=custom_state, ft_shape=ft_shape)
         self._data = array.copy()
-        self._ft_shape = self._create_ft_shape(array=array, ft_shape=ft_shape)
-        self._modes = self._create_modes(array=array, mode_names=mode_names)
-        self._state = self._create_state(array=array)
+        self._state, self._modes = self._create_meta(array=array,
+                                                     custom_state=custom_state,
+                                                     mode_names=mode_names)
 
     def __eq__(self, other):
         """
@@ -70,7 +59,7 @@ class Tensor(object):
         if isinstance(self, other.__class__):
             if self.shape == other.shape:
                 data_equal = np.allclose(self.data, other.data,  rtol=1e-05, atol=1e-08, equal_nan=True)
-                state_equal = self.current_state == other.current_state
+                state_equal = self.state == other.state
                 modes_equal = all([self.modes[i] == other.modes[i] for i in range(self.order)])
                 equal = data_equal and state_equal and modes_equal
 
@@ -94,7 +83,7 @@ class Tensor(object):
         if not isinstance(self, other.__class__):
             raise TypeError("Don't know how to sum object of {} class "
                             "with an object of {} class!".format(self.__class__.__name__,
-                                                                other.__class__.__name__))
+                                                                 other.__class__.__name__))
         if not all([self.in_normal_state, other.in_normal_state]):
             raise ValueError("Both tensors should be in normal state!")
         if self.shape != other.shape:
@@ -108,8 +97,17 @@ class Tensor(object):
                 tensor.reset_mode_name(mode=i)
         return tensor
 
+    def __str__(self):
+        """ Provides general information about this instance."""
+        return "This tensor is of order {} and consists of {} elements.\n" \
+               "Sizes and names of its modes are {} and {} respectively.".format(self.order, self.size,
+                                                                                 self.shape, self.mode_names)
+
+    def __repr__(self):
+        return str(self)
+
     @staticmethod
-    def _validate_init_data(array, mode_names, ft_shape):
+    def _validate_init_data(array, mode_names, custom_state, ft_shape):
         """ Validate data for ``Tensor`` constructor
 
         Parameters
@@ -146,57 +144,32 @@ class Tensor(object):
                                  "reduce(lambda x, y: x * y, ft_shape) != array.size".format(size, array.size))
 
     @staticmethod
-    def _create_ft_shape(array, ft_shape):
-        """ Generate shape for a normal format of a tensor (without being in unfolded or folded state)
+    def _create_meta(array, custom_state, mode_names):
+        """ Create meta data for the tensor
 
         Parameters
         ----------
         array : np.ndarray
-            N-dimensional array
-        ft_shape : tuple
-            Shape for a normal format of a tensor
-        Returns
-        -------
-        shape : tuple
-        """
-        if ft_shape is None:
-            shape = tuple([mode_size for mode_size in array.shape])
-        else:
-            shape = tuple([mode_size for mode_size in ft_shape])
-        return shape
-
-    @staticmethod
-    def _create_modes(array, mode_names):
-        """ Create meta data for modes of the tensor
-
-        Parameters
-        ----------
-        array : np.ndarray
+        custom_state : dict
         mode_names : list[str]
 
         Returns
         -------
+        state : State
+            Meta information related to reshaping of the tensor
         modes : list[Mode]
+            Meta information related to modes of the tensor
         """
+
+        if custom_state is None:
+            custom_state = dict(normal_shape=tuple([mode_size for mode_size in array.shape]),
+                                mode_order=[[i] for i in range(array.ndim)])
+        state = State(**custom_state)
+
         if mode_names is None:
-            mode_names = ["mode-{}".format(i) for i in range(array.ndim)]
+            mode_names = ["mode-{}".format(i) for i in range(len(state._normal_shape))]
         modes = [Mode(name=name) for name in mode_names]
-        return modes
-
-    @staticmethod
-    def _create_state(array):
-        """ Create state for the tensor
-
-        Parameters
-        ----------
-        array
-
-        Returns
-        -------
-        state : list[int]
-        """
-        state = [i for i in range(array.ndim)]
-        return state
+        return state, modes
 
     @property
     def data(self):
@@ -217,8 +190,12 @@ class Tensor(object):
         -------
         shape : tuple
         """
-        shape = self._ft_shape
+        shape = self.state.normal_shape
         return shape
+
+    @property
+    def state(self):
+        return self._state
 
     @property
     def modes(self):
@@ -240,22 +217,7 @@ class Tensor(object):
             If True, then can call `unfold` and `mode_n_product`
             If False, then can call `fold`
         """
-        if isinstance(self.current_state[0], int):
-            return True
-        elif isinstance(self.current_state[0], list):
-            return False
-        else:
-            raise ValueError("Undefined state of the tensor!")
-
-    @property
-    def current_state(self):
-        """ Defines relation between modes of a tensor
-
-        Returns
-        -------
-        {list[int], list[list[int]]}
-        """
-        return self._state
+        return self.state.is_normal()
 
     @property
     def mode_names(self):
@@ -265,13 +227,13 @@ class Tensor(object):
         -------
         names : list[str]
         """
-        if self._ft_shape == self.shape:
+        if self.in_normal_state:
             # if tensor in the original
             names = [mode.name for mode in self.modes]
         else:
             # if tensor is in unfolded state
-            state_0 = self.current_state[0]
-            state_1 = self.current_state[1]
+            state_0 = self.state.mode_order[0]
+            state_1 = self.state.mode_order[1]
             name_0 = self.modes[state_0[0]].name
             name_2 = [self.modes[i].name for i in state_1]
             name_1 = '_'.join(name_2)
@@ -327,17 +289,13 @@ class Tensor(object):
         -------
         new_object : Tensor
             New object of Tensor class with attributes having the same values, but no memory space is shared
-
-        Notes
-        -----
-            Attribute `_ft_shape` is assigned during object creation based on the shape of data array.
-            In order to preserve the original values without sharing memory space, need to redefine them manually.
         """
         array = self.data
-        ft_shape = self.ft_shape
-        new_object = Tensor(array=array, ft_shape=ft_shape)
+        custom_state = dict(normal_shape=self.state._normal_shape,
+                            mode_order=self.state._mode_order)
+        new_object = Tensor(array=array, custom_state=custom_state)
+        # In order to preserved index if it was specified
         new_object.copy_modes(self)
-        new_object._state = self.current_state.copy()
         return new_object
 
     def copy_modes(self, tensor):
@@ -363,9 +321,7 @@ class Tensor(object):
         """
         default_mode_names = ["mode-{}".format(i) for i in range(self.data.ndim)]
         self._modes = [Mode(name=name) for name in default_mode_names]
-        self._state = [i for i in range(self.data.ndim)]
-        self._ft_shape = self.data.shape
-
+        self._state.reset()
         return self
 
     def set_mode_names(self, mode_names):
@@ -469,10 +425,8 @@ class Tensor(object):
         return self
 
     def describe(self):
-        """ Provides general information about this instance."""
-        print("This tensor is of order {} and consists of {} elements.\n"
-              "Sizes and names of its modes are {} and {} respectively.".format(self.order, self.size,
-                                                                                self.shape, self.mode_names))
+        """ Provides some statistics of data for this instance."""
+        pass
 
     def unfold(self, mode, inplace=True):
         """ Perform mode-n unfolding to a matrix
@@ -492,7 +446,7 @@ class Tensor(object):
 
         Notes
         -----
-            Unfolding operation does not change `_ft_shape` and `_modes` attributes but changes `_state` attribute
+            Unfolding operation does not change `_modes` attribute but changes `_state._mode_order` attribute
         """
         if not self.in_normal_state:
             raise TypeError("The tensor is not in the original form")
@@ -500,19 +454,13 @@ class Tensor(object):
         # Unfold data
         data_unfolded = unfold(self.data, mode)
 
-        # Unfold state
-        state_1 = [self.current_state[mode]]
-        state_2 = [self.current_state[i] for i in range(self.order) if i != mode]
-        state_unfolded = [state_1, state_2]
-
         if inplace:
             tensor = self
         else:
             tensor = self.copy()
 
         tensor._data = data_unfolded
-        tensor._state = state_unfolded
-
+        tensor.state.unfold(mode=mode)
         return tensor
 
     def fold(self, inplace=True):
@@ -531,20 +479,16 @@ class Tensor(object):
 
         Notes
         -----
-            Folding operation does not change `_ft_shape` and `_modes` attributes but changes `_state` attribute
+            Folding operation does not change `_modes` attribute but changes `_state._mode_order` attribute
         """
         # Do not do anything if the tensor is in the normal form (hadn't been unfolded before)
         if self.in_normal_state:
             raise TypeError("The tensor hadn't bee unfolded before")
 
         # Fold data
-        temp = np.array(self.current_state[0])
+        temp = self.state._mode_order[0]
         folding_mode = temp[0]
         data_folded = fold(matrix=self.data, mode=folding_mode, shape=self.ft_shape)
-
-        # Fold state
-        state_folded = [*self.current_state[0], *self.current_state[1]]
-        state_folded.sort()
 
         if inplace:
             tensor = self
@@ -552,7 +496,7 @@ class Tensor(object):
             tensor = self.copy()
 
         tensor._data = data_folded
-        tensor._state = state_folded
+        tensor.state.fold()
         return tensor
 
     def mode_n_product(self, matrix, mode, new_name=None, inplace=True):
@@ -578,7 +522,7 @@ class Tensor(object):
 
         Notes
         -------
-            1. Mode-n product operation changes the `_ft_shape` attribute
+            1. Mode-n product operation changes the `_state._normal_shape` attribute
             2. Remember that mode-n product changes the shape of the tensor. Presumably, it also changes
                the interpretation of that mode depending on the matrix
             3. If `matrix` is an object of `Tensor` class then you shouldn't specify `new_name`, since
@@ -603,13 +547,13 @@ class Tensor(object):
             new_name = matrix.mode_names[0]
 
         new_data = mode_n_product(tensor=self.data, matrix=matrix.data, mode=mode)
-        new_ft_shape = new_data.shape
+        new_normal_shape = new_data.shape
         if inplace:
             tensor = self
         else:
             tensor = self.copy()
         tensor._data = new_data
-        tensor._ft_shape = new_ft_shape
+        tensor.state.set_normal_shape(new_normal_shape=new_normal_shape)
         tensor.reset_mode_index(mode=mode)
 
         # The only one case when mode name won't be changed

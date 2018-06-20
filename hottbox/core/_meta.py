@@ -1,10 +1,101 @@
 """
-Classes that bring interoperability into tensor representations
+Classes that bring interpretability into tensor representations
 """
+import itertools
+
+
+class State(object):
+    """ This class describes state of the ``Tensor`` and tracks reshaping modifications
+
+    Attributes
+    ----------
+    _normal_shape : tuple
+        Shape of a tensor object in normal format (without being in unfolded or folded state).
+    _mode_order : list[list]
+    """
+
+    def __init__(self, normal_shape, mode_order) -> None:
+        """
+
+        Parameters
+        ----------
+        normal_shape : tuple
+        mode_order : list[list]
+        """
+        self._normal_shape = normal_shape
+        self._mode_order = mode_order
+
+    def __eq__(self, other):
+        """
+        Returns
+        -------
+        bool
+        """
+        if isinstance(self, other.__class__):
+            return self.__dict__ == other.__dict__
+        return False
+
+    def __str__(self):
+        self_as_string = "{}(normal_shape={}, mode_order={})".format(self.__class__.__name__,
+                                                                     self._normal_shape,
+                                                                     self._mode_order)
+        return self_as_string
+
+    def __repr__(self):
+        return str(self)
+
+    @property
+    def normal_shape(self):
+        return self._normal_shape
+
+    @property
+    def mode_order(self):
+        return self._mode_order
+
+    def copy(self):
+        """ Produces a copy of itself as a new object
+
+        Returns
+        -------
+        new_object : Mode
+        """
+        normal_shape = self.normal_shape
+        mode_order = self.mode_order
+        new_object = State(normal_shape=normal_shape,
+                           mode_order=mode_order)
+        return new_object
+
+    def is_normal(self):
+        return len(self.normal_shape) == len(self.mode_order)
+
+    def set_mode_order(self, new_mode_order):
+        self._mode_order = new_mode_order
+
+    def set_normal_shape(self, new_normal_shape):
+        self._normal_shape = new_normal_shape
+
+    def reset_mode_order(self):
+        pass
+
+    def unfold(self, mode):
+        first_mode = self.mode_order.pop(mode)
+        other_modes = list(itertools.chain.from_iterable(self.mode_order))
+        self.set_mode_order([first_mode, other_modes])
+
+    def fold(self):
+        new_mode_order = [*self.mode_order[0], *self.mode_order[1]]
+        new_mode_order.sort()
+        self.set_mode_order([[i] for i in new_mode_order])
+
+    def rotate(self):
+        pass
+
+    def reset(self):
+        pass
 
 
 class Mode(object):
-    """ This class describe mode of the Tensor
+    """ This class describes mode of the ``Tensor``
 
     Attributes
     ----------
