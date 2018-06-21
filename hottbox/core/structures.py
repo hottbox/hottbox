@@ -127,7 +127,7 @@ class Tensor(object):
                 raise TypeError("Incorrect type of the parameter `custom_state`!\n"
                                 "It should be `dict`")
 
-            keys_required = ['mode_order', 'normal_shape', 'reshaping']
+            keys_required = ['mode_order', 'normal_shape', 'rtype']
             keys_presented = list(custom_state.keys())
             keys_presented.sort()
             if keys_presented != keys_required:
@@ -270,17 +270,14 @@ class Tensor(object):
         names : list[str]
         """
         if self.in_normal_state:
-            # if tensor in the original
-            names = [mode.name for mode in self.modes]
+            all_names = [mode.name for mode in self.modes]
         else:
             # if tensor is in unfolded state
-            state_0 = self._state.mode_order[0]
-            state_1 = self._state.mode_order[1]
-            name_0 = self.modes[state_0[0]].name
-            name_2 = [self.modes[i].name for i in state_1]
-            name_1 = '_'.join(name_2)
-            names = [name_0, name_1]
-        return names
+            all_names = []
+            for mode_order in self._state.mode_order:
+                names = [self.modes[i].name for i in mode_order]
+                all_names.append("_".join(names))
+        return all_names
 
     @property
     def frob_norm(self):
@@ -342,8 +339,9 @@ class Tensor(object):
 
         else:
             custom_state = dict(normal_shape=self._state.normal_shape,
-                                mode_order=self._state.mode_order,
-                                reshaping=self._state.reshaping)
+                                rtype=self._state.rtype,
+                                mode_order=self._state.mode_order
+                                )
             new_object = Tensor(array=array, custom_state=custom_state)
         # In order to preserved index if it was specified
         new_object.copy_modes(self)
@@ -506,7 +504,7 @@ class Tensor(object):
         elif rtype is "K":
             unfold_function = kolda_unfold
         else:
-            raise ValueError("Unknown type of unfolding! Available options are {\"T\", \"K\"}.")
+            raise ValueError("Unknown type of unfolding! Parameter `rtype` should be one of {\"T\", \"K\"}.")
         data_unfolded = unfold_function(self.data, mode)
 
         if inplace:
@@ -516,6 +514,28 @@ class Tensor(object):
 
         tensor._data = data_unfolded
         tensor._state.unfold(mode=mode, rtype=rtype)
+        return tensor
+
+    def vectorise(self, rtype="T", inplace=True):
+        if not self.in_normal_state:
+            raise TypeError("The tensor is not in the original form")
+
+        # Unfold data
+        if rtype is "T":
+            order = "C"
+        elif rtype is "K":
+            order = "F"
+        else:
+            raise ValueError("Unknown type of vectorisation! Parameter `rtype` should be on of {\"T\", \"K\"}.")
+        data_vectorised = np.ravel(self.data, order=order)
+
+        if inplace:
+            tensor = self
+        else:
+            tensor = self.copy()
+
+        tensor._data = data_vectorised
+        tensor._state.vectorise(rtype=rtype)
         return tensor
 
     def fold(self, inplace=True):
@@ -539,7 +559,7 @@ class Tensor(object):
         # Fold data
         temp = self._state.mode_order[0]
         folding_mode = temp[0]
-        if self._state.reshaping is "T":
+        if self._state.rtype is "T":
             fold_function = fold
         else:
             fold_function = kolda_fold

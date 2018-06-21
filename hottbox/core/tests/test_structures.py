@@ -42,7 +42,7 @@ class TestTensor:
         true_mode_order = [[0], [1], [2]]
         custom_state = dict(normal_shape=true_ft_shape,
                             mode_order=true_mode_order,
-                            reshaping=None)
+                            rtype=None)
         tensor = Tensor(array=true_data, custom_state=custom_state)
         assert (tensor.ft_shape == true_ft_shape)       # check that values are the same
         # assert (tensor._state.normal_shape is not true_ft_shape)  # check that not a reference
@@ -54,7 +54,7 @@ class TestTensor:
         true_mode_order = [[0], [1, 2]]
         custom_state = dict(normal_shape=true_ft_shape,
                             mode_order=true_mode_order,
-                            reshaping="T")
+                            rtype="T")
         tensor = Tensor(array=true_data, custom_state=custom_state)
         assert (tensor.ft_shape == true_ft_shape)  # check that values are the same
         # assert (tensor._ft_shape is not true_ft_shape)  # check that not a reference

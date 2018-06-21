@@ -13,28 +13,28 @@ class State(object):
         Shape of a `Tensor` object in normal format (without being in unfolded or folded state).
     _transformations : list[tuple]
         List of transformations applied to ``Tensor``. Starts with the default `(None, [[0], [1], ..., [N-1]])`.
-        Each transformation is defined by the type of reshaping ("T", "K") and order of the modes (list of lists).
+        Each transformation is defined by the reshaping type ("T", "K") and order of the modes (list of lists).
         Each transformation is represented as a tuple of length 2.
         The first element specifies type of reshaping ("T", "K").
         The second element specifies order of the tensor modes in form of list of lists.
     """
 
-    def __init__(self, normal_shape, mode_order=None, reshaping=None) -> None:
+    def __init__(self, normal_shape, rtype=None, mode_order=None) -> None:
         """
 
         Parameters
         ----------
         normal_shape : tuple
         mode_order : list[list]
-        reshaping : str
+        rtype : str
             Type of reshaping: {"T", "K"}
         """
         normal_mode_order_ = [[i] for i in range(len(normal_shape))]
         self._transformations = [("Init", normal_mode_order_)]
         self._normal_shape = tuple([i for i in normal_shape])
 
-        if mode_order is not None and reshaping is not None:
-            transformation = (reshaping, mode_order.copy())
+        if mode_order is not None and rtype is not None:
+            transformation = (rtype, mode_order.copy())
             self._transformations.append(transformation)
 
     def __eq__(self, other):
@@ -48,10 +48,10 @@ class State(object):
         return False
 
     def __str__(self):
-        self_as_string = "{}(normal_shape={}, mode_order={}, reshaping='{}')".format(self.__class__.__name__,
-                                                                                     self.normal_shape,
-                                                                                     self.mode_order,
-                                                                                     self.reshaping)
+        self_as_string = "{}(normal_shape={}, rtype='{}', mode_order={})".format(self.__class__.__name__,
+                                                                                 self.normal_shape,
+                                                                                 self.rtype,
+                                                                                 self.mode_order)
         return self_as_string
 
     def __repr__(self):
@@ -105,7 +105,7 @@ class State(object):
         return self.last_transformation[1].copy()
 
     @property
-    def reshaping(self):
+    def rtype(self):
         """ Type of the last reshaping applied to a `Tensor` object
 
         Returns
@@ -123,13 +123,13 @@ class State(object):
         """
         return self.mode_order == self.normal_mode_order
 
-    def add_transformation(self, new_mode_order, rtype):
+    def add_transformation(self, rtype, new_mode_order):
         """ Add transformation applied to `Tensor` object
 
         Parameters
         ----------
-        new_mode_order : list[list]
         rtype : str
+        new_mode_order : list[list]
         """
         transformation = (rtype, new_mode_order)
         self._transformations.append(transformation)
@@ -140,7 +140,7 @@ class State(object):
             del self._transformations[-1]
 
     def unfold(self, mode, rtype):
-        """ Registers an unfolding operation applied to a `Tensor` object
+        """ Register an unfolding operation applied to a `Tensor` object
 
         Parameters
         ----------
@@ -151,7 +151,17 @@ class State(object):
         first_mode = current_mode_order.pop(mode)
         other_modes = list(itertools.chain.from_iterable(current_mode_order))
         new_mode_order = [first_mode, other_modes]
-        self.add_transformation(new_mode_order=new_mode_order, rtype=rtype)
+        self.add_transformation(rtype=rtype, new_mode_order=new_mode_order)
+
+    def vectorise(self, rtype):
+        """ Register a vectorisation operation applied to a `Tensor` object
+
+        Parameters
+        ----------
+        rtype : str
+        """
+        new_mode_order = [list(itertools.chain.from_iterable(self.mode_order))]
+        self.add_transformation(rtype=rtype, new_mode_order=new_mode_order)
 
     def fold(self):
         """ Register a folding operation applied to a `Tensor` object (reverts unfolding) """

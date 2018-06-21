@@ -204,13 +204,6 @@ def kolda_fold(matrix, mode, shape):
     return tensor
 
 
-def kolda_vectorise(tensor):
-    """Returns the `vectorized version' of a tensor (pass tensor.data to it)
-    """
-    indices = list(range(tensor.ndim))
-    return np.squeeze(np.transpose(tensor, indices[::-1] ).reshape(1,-1))
-
-
 def mode_n_product(tensor, matrix, mode):
     """ Mode-n product of a N-dimensional array with a matrix.
 
