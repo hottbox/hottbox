@@ -10,20 +10,32 @@ class State(object):
     Attributes
     ----------
     _normal_shape : tuple
-        Shape of a tensor object in normal format (without being in unfolded or folded state).
-    _mode_order : list[list]
+        Shape of a `Tensor` object in normal format (without being in unfolded or folded state).
+    _transformations : list[tuple]
+        List of transformations applied to ``Tensor``. Starts with the default `(None, [[0], [1], ..., [N-1]])`.
+        Each transformation is defined by the type of reshaping ("T", "K") and order of the modes (list of lists).
+        Each transformation is represented as a tuple of length 2.
+        The first element specifies type of reshaping ("T", "K").
+        The second element specifies order of the tensor modes in form of list of lists.
     """
 
-    def __init__(self, normal_shape, mode_order) -> None:
+    def __init__(self, normal_shape, mode_order=None, reshaping=None) -> None:
         """
 
         Parameters
         ----------
         normal_shape : tuple
         mode_order : list[list]
+        reshaping : str
+            Type of reshaping: {"T", "K"}
         """
+        normal_mode_order_ = [[i] for i in range(len(normal_shape))]
+        self._transformations = [("Init", normal_mode_order_)]
         self._normal_shape = tuple([i for i in normal_shape])
-        self._mode_order = mode_order.copy()
+
+        if mode_order is not None and reshaping is not None:
+            transformation = (reshaping, mode_order.copy())
+            self._transformations.append(transformation)
 
     def __eq__(self, other):
         """
@@ -36,9 +48,10 @@ class State(object):
         return False
 
     def __str__(self):
-        self_as_string = "{}(normal_shape={}, mode_order={})".format(self.__class__.__name__,
-                                                                     self._normal_shape,
-                                                                     self._mode_order)
+        self_as_string = "{}(normal_shape={}, mode_order={}, reshaping='{}')".format(self.__class__.__name__,
+                                                                                     self.normal_shape,
+                                                                                     self.mode_order,
+                                                                                     self.reshaping)
         return self_as_string
 
     def __repr__(self):
@@ -46,49 +59,103 @@ class State(object):
 
     @property
     def normal_shape(self):
-        return self._normal_shape
-
-    @property
-    def mode_order(self):
-        return self._mode_order
-
-    def copy(self):
-        """ Produces a copy of itself as a new object
+        """ Shape of a `Tensor` object in normal state (without being in unfolded or folded).
 
         Returns
         -------
-        new_object : Mode
+        tuple
         """
-        normal_shape = self.normal_shape
-        mode_order = self.mode_order
-        new_object = State(normal_shape=normal_shape,
-                           mode_order=mode_order)
-        return new_object
+        return self._normal_shape
 
-    def is_normal(self):
-        return len(self.normal_shape) == len(self.mode_order)
+    def change_normal_shape(self, new_normal_shape):
+        """ Change shape of a `Tensor` object in normal format dut to mode-n product or contraction
 
-    def set_mode_order(self, new_mode_order):
-        self._mode_order = new_mode_order
-
-    def set_normal_shape(self, new_normal_shape):
+        Parameters
+        ----------
+        new_normal_shape : tuple
+        """
         self._normal_shape = new_normal_shape
 
-    def reset_mode_order(self):
-        pass
+    @property
+    def normal_mode_order(self):
+        """ Order of the modes of a `Tensor` object in normal state (without being in unfolded or folded).
 
-    def unfold(self, mode):
-        first_mode = self.mode_order.pop(mode)
-        other_modes = list(itertools.chain.from_iterable(self.mode_order))
-        self.set_mode_order([first_mode, other_modes])
+        Returns
+        -------
+        list[list]
+            This list takes form ``[[0], [1], ..., [N-1]]`` where N is the
+            order of the `Tensor` in the normal state
+        """
+        normal_form = self._transformations[0]
+        return normal_form[1]
+
+    @property
+    def last_transformation(self):
+        """ Last transformation applied to `Tensor` object """
+        return self._transformations[-1]
+
+    @property
+    def mode_order(self):
+        """ Order of the modes of a `Tensor` object after the last transformation
+
+        Returns
+        -------
+        list[list]
+        """
+        return self.last_transformation[1].copy()
+
+    @property
+    def reshaping(self):
+        """ Type of the last reshaping applied to a `Tensor` object
+
+        Returns
+        -------
+        str
+        """
+        return self.last_transformation[0]
+
+    def is_normal(self):
+        """ Checks if a `Tensor` object in normal state
+
+        Returns
+        -------
+        bool
+        """
+        return self.mode_order == self.normal_mode_order
+
+    def add_transformation(self, new_mode_order, rtype):
+        """ Add transformation applied to `Tensor` object
+
+        Parameters
+        ----------
+        new_mode_order : list[list]
+        rtype : str
+        """
+        transformation = (rtype, new_mode_order)
+        self._transformations.append(transformation)
+
+    def remove_transformation(self):
+        """ Remove the last transformation applied to `Tensor` object """
+        if len(self._transformations) > 1:
+            del self._transformations[-1]
+
+    def unfold(self, mode, rtype):
+        """ Registers an unfolding operation applied to a `Tensor` object
+
+        Parameters
+        ----------
+        mode : int
+        rtype : str
+        """
+        current_mode_order = self.mode_order
+        first_mode = current_mode_order.pop(mode)
+        other_modes = list(itertools.chain.from_iterable(current_mode_order))
+        new_mode_order = [first_mode, other_modes]
+        self.add_transformation(new_mode_order=new_mode_order, rtype=rtype)
 
     def fold(self):
-        new_mode_order = [*self.mode_order[0], *self.mode_order[1]]
-        new_mode_order.sort()
-        self.set_mode_order([[i] for i in new_mode_order])
-
-    def rotate(self):
-        pass
+        """ Register a folding operation applied to a `Tensor` object (reverts unfolding) """
+        self.remove_transformation()
 
     def reset(self):
         pass
@@ -189,7 +256,7 @@ class Mode(object):
         """
         if not isinstance(name, str):
             raise TypeError("Parameter `name` should be a string!")
-        self._name = name
+        self._name = name.strip().replace("_", "-")
         return self
 
     def set_index(self, index):

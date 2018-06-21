@@ -26,7 +26,7 @@ class TestTensor:
         assert (tensor.order == true_order)
         assert (tensor.size == true_size)
         assert (tensor.mode_names == true_default_mode_names)
-        assert (tensor.state.mode_order == [[0], [1], [2]])
+        assert (tensor._state.mode_order == [[0], [1], [2]])
         assert (tensor._data is not true_data)          # check that is not a reference
 
         # ------ tests for creating a Tensor object with custom mode names
@@ -35,15 +35,17 @@ class TestTensor:
         assert (tensor.mode_names == true_custom_mode_names)        # check that values are the same
 
         # ------ tests for creating a Tensor object with custom_state
+        # TODO: need to modify this part.
         I, J, K = 2, 4, 8
         true_data = np.ones(I * J * K).reshape(I, J, K)
         true_ft_shape = (I, J, K)
         true_mode_order = [[0], [1], [2]]
         custom_state = dict(normal_shape=true_ft_shape,
-                            mode_order=true_mode_order)
+                            mode_order=true_mode_order,
+                            reshaping=None)
         tensor = Tensor(array=true_data, custom_state=custom_state)
         assert (tensor.ft_shape == true_ft_shape)       # check that values are the same
-        # assert (tensor.state.normal_shape is not true_ft_shape)  # check that not a reference
+        # assert (tensor._state.normal_shape is not true_ft_shape)  # check that not a reference
 
         # check when ft_shape is correct but do not correspond to the shape of data array
         I, J, K = 2, 4, 8
@@ -51,7 +53,8 @@ class TestTensor:
         true_ft_shape = (I, J, K)
         true_mode_order = [[0], [1, 2]]
         custom_state = dict(normal_shape=true_ft_shape,
-                            mode_order=true_mode_order)
+                            mode_order=true_mode_order,
+                            reshaping="T")
         tensor = Tensor(array=true_data, custom_state=custom_state)
         assert (tensor.ft_shape == true_ft_shape)  # check that values are the same
         # assert (tensor._ft_shape is not true_ft_shape)  # check that not a reference
@@ -242,8 +245,8 @@ class TestTensor:
         true_size = reduce(lambda x, y: x * y, true_shape)
         true_order = len(true_shape)
         true_data = np.ones(true_size).reshape(true_shape)
-        true_new_mode_names = {0: 'pixel_x',
-                               1: 'pixel_y',
+        true_new_mode_names = {0: 'pixel-x',
+                               1: 'pixel-y',
                                2: 'color'
                                }
         tensor = Tensor(array=true_data)
@@ -382,12 +385,12 @@ class TestTensor:
         # --------- tests for folding and unfolding INPLACE=TRUE
         for mode in range(len(shape)):
             tensor.unfold(mode=mode, inplace=True)
-            assert tensor.state.mode_order == unfolded_state[mode]
+            assert tensor._state.mode_order == unfolded_state[mode]
             np.testing.assert_array_equal(tensor.data, unfolded_data[mode])
             assert (tensor.mode_names == unfolded_mode_names[mode])
 
             tensor.fold(inplace=True)
-            assert tensor.state.mode_order == orig_state
+            assert tensor._state.mode_order == orig_state
             np.testing.assert_array_equal(tensor.data, orig_data)
             assert (tensor.mode_names == orig_mode_names)
 
@@ -399,15 +402,15 @@ class TestTensor:
             assert tensor_unfolded is not tensor
             assert tensor_folded is not tensor_unfolded
 
-            assert tensor.state.mode_order == orig_state
+            assert tensor._state.mode_order == orig_state
             assert (tensor.mode_names == orig_mode_names)
             np.testing.assert_array_equal(tensor.data, orig_data)
 
-            assert tensor_unfolded.state.mode_order == unfolded_state[mode]
+            assert tensor_unfolded._state.mode_order == unfolded_state[mode]
             assert (tensor_unfolded.mode_names == unfolded_mode_names[mode])
             np.testing.assert_array_equal(tensor_unfolded.data, unfolded_data[mode])
 
-            assert tensor_folded.state.mode_order == orig_state
+            assert tensor_folded._state.mode_order == orig_state
             assert (tensor_folded.mode_names == orig_mode_names)
             np.testing.assert_array_equal(tensor_folded.data, orig_data)
 

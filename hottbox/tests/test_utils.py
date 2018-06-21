@@ -23,7 +23,7 @@ def test_quick_tensor():
     tensor = quick_tensor(shape=shape, base='arange')
     np.testing.assert_array_equal(tensor.data, true_data_arange)
     assert tensor.mode_names == true_mode_names
-    assert tensor.state.mode_order == true_state
+    assert tensor._state.mode_order == true_state
     for mode in tensor.modes:
         assert mode.index is true_mode_index
 
