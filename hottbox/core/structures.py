@@ -21,7 +21,7 @@ class Tensor(object):
         Description of the tensor modes in form of a list where each element is object of ``Mode`` class.
         Meta information.
     _state : State
-        Reference to meta information about modes of a tensor.
+        Reference to meta information about transformations applied to a tensor, such as unfolding, vectorising etc.
         Meta information.
     """
 
@@ -34,7 +34,10 @@ class Tensor(object):
             N-dimensional array
         custom_state : dict
             Provides flexibility to create a ``Tensor`` object in folded, unfolded or rotated state. Use with caution.
-            If provided, then should include only the following keys: 'mode_order', 'normal_shape', 'reshaping'
+            If provided, then should include only the following keys:
+                'mode_order' -> tuple of lists
+                'normal_shape' -> tuple
+                'rtype' -> str
         mode_names : list[str]
             Description of the tensor modes.
             If nothing is specified then all modes of the created ``Tensor``
@@ -146,16 +149,16 @@ class Tensor(object):
                 raise ValueError("Values of `normal_shape` are inconsistent with the provided data array ({} != {})!")
 
             # ------------------------------
-            if not isinstance(custom_state['mode_order'], list):
+            mode_order_ = custom_state['mode_order']
+            if not isinstance(mode_order_, tuple):
                 raise TypeError("Incorrect type of the parameter `custom_state['mode_order']`!\n"
-                                "It should be `list` of lists")
+                                "It should be `tuple` of lists")
 
-            mode_order = custom_state['mode_order']
-            if not all(isinstance(mode_seq, list) for mode_seq in mode_order):
+            if not all(isinstance(mode_seq, list) for mode_seq in mode_order_):
                 raise TypeError("Incorrect type of the parameter `mode_order[i]`!\n"
                                 "It should be `list` of `int`")
 
-            modes_specified = list(itertools.chain.from_iterable(mode_order))
+            modes_specified = list(itertools.chain.from_iterable(mode_order_))
             if len(modes_specified) != len(normal_shape):
                 raise ValueError("Number of provided modes is inconsistent with the provided length `normal_shape`!\n"
                                  "{} != {}".format(len(modes_specified), len(normal_shape))
@@ -204,7 +207,7 @@ class Tensor(object):
         """
 
         if custom_state is None:
-            state = State(normal_shape=tuple([mode_size for mode_size in array.shape]))
+            state = State(normal_shape=tuple(mode_size for mode_size in array.shape))
         else:
             state = State(**custom_state)
 
@@ -1140,7 +1143,7 @@ class TensorTKD(BaseTensorTD):
         if len(fmat) != order:
             raise ValueError("Not enough or too many factor matrices for the specified core tensor!\n"
                              "{}!={} (`len(fmat) != core_values.ndim`)".format(len(fmat), order))
-        mat_shapes = tuple([mat.shape[1] for mat in fmat])
+        mat_shapes = tuple(mat.shape[1] for mat in fmat)
         if not all([mat_shapes[i] == ml_rank[i] for i in range(order)]):
             raise ValueError("Dimension mismatch between the factor matrices and the core tensor!\n"
                              "The number of columns of a factor matrix should match the corresponding "
@@ -1216,7 +1219,7 @@ class TensorTKD(BaseTensorTD):
         -----
         Most often referred to as the Tucker rank
         """
-        rank = tuple([fmat.shape[1] for fmat in self.fmat])
+        rank = tuple(fmat.shape[1] for fmat in self.fmat)
         return rank
 
     def reconstruct(self, keep_meta=0):
@@ -1371,7 +1374,7 @@ class TensorTT(BaseTensorTD):
         super(TensorTT, self).__init__()
         self._validate_init_data(core_values=core_values, ft_shape=ft_shape)
         self._core_values = [core.copy() for core in core_values]
-        self._ft_shape = tuple([mode_size for mode_size in ft_shape])
+        self._ft_shape = tuple(mode_size for mode_size in ft_shape)
         self._modes = self._create_modes(mode_names=mode_names)
 
     def _validate_init_data(self, core_values, ft_shape):
@@ -1515,7 +1518,7 @@ class TensorTT(BaseTensorTD):
         -----
         Most often referred to as the TT rank
         """
-        return tuple([core_values.shape[-1] for core_values in self._core_values[:-1]])
+        return tuple(core_values.shape[-1] for core_values in self._core_values[:-1])
 
     def reconstruct(self, keep_meta=0):
         """ Converts the TT representation of a tensor into a full tensor

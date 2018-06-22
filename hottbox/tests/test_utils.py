@@ -18,7 +18,7 @@ def test_quick_tensor():
 
     true_mode_names = ["mode-{}".format(i) for i in range(len(shape))]
     true_mode_index = None
-    true_state = [[0], [1], [2]]
+    true_state = ([0], [1], [2])
 
     tensor = quick_tensor(shape=shape, base='arange')
     np.testing.assert_array_equal(tensor.data, true_data_arange)

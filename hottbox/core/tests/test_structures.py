@@ -26,7 +26,7 @@ class TestTensor:
         assert (tensor.order == true_order)
         assert (tensor.size == true_size)
         assert (tensor.mode_names == true_default_mode_names)
-        assert (tensor._state.mode_order == [[0], [1], [2]])
+        assert (tensor._state.mode_order == ([0], [1], [2]))
         assert (tensor._data is not true_data)          # check that is not a reference
 
         # ------ tests for creating a Tensor object with custom mode names
@@ -39,7 +39,7 @@ class TestTensor:
         I, J, K = 2, 4, 8
         true_data = np.ones(I * J * K).reshape(I, J, K)
         true_ft_shape = (I, J, K)
-        true_mode_order = [[0], [1], [2]]
+        true_mode_order = ([0], [1], [2])
         custom_state = dict(normal_shape=true_ft_shape,
                             mode_order=true_mode_order,
                             rtype=None)
@@ -51,7 +51,7 @@ class TestTensor:
         I, J, K = 2, 4, 8
         true_data = np.ones(I * J * K).reshape(I, J*K)
         true_ft_shape = (I, J, K)
-        true_mode_order = [[0], [1, 2]]
+        true_mode_order = ([0], [1, 2])
         custom_state = dict(normal_shape=true_ft_shape,
                             mode_order=true_mode_order,
                             rtype="T")
@@ -373,11 +373,12 @@ class TestTensor:
             ['person', 'time_frequency']
         ]
 
-        orig_state = [[i] for i in range(len(shape))]
+
+        orig_state = tuple([i] for i in range(len(shape)))
         unfolded_state = [
-            [[0], [1, 2]],
-            [[1], [0, 2]],
-            [[2], [0, 1]]
+            ([0], [1, 2]),
+            ([1], [0, 2]),
+            ([2], [0, 1])
         ]
 
         tensor = Tensor(array=orig_data, mode_names=orig_mode_names)
