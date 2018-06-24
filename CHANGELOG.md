@@ -13,33 +13,32 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- [x] Tools to convert multi-index pandas dataframe into a `Tensor` and vise versa.
+- [x] Quick construction of generic objects of `Tensor`, `TensorCPD`, `TensorTKD` and `TensorTT` classes.
+- [x] Input validation for all constructors can be skipped.
 
 - [x] Class `Mode` for meta information about data modes of for tensor representations.
       It is stored in `_modes` as list.
+- [x] Class `State` that tracks data manipulation operation applied to `Tensor`.
+      It is stored in `_state`.
+      
+- [x] Option for creating a `Tensor` in the unfolded form.
 - [x] Methods for (re)setting mode names and the corresponding indices for `Tensor`
 - [x] Mode description (and the corresponding methods) for `TensorCPD`, `TensorTKD` and `TensorTT` classes 
       by analogy with the `Tensor` class
 - [x] Parameter `keep_meta` to `decompose` methods for the cpd and tucker type decompositions.
-      Base on its value, meta information of the modes of `tensor` to be decomposed can be extracted
+      Based on its value, meta information of the modes of `tensor` to be decomposed can be extracted
       and assigned to the `TensorCPD` and `TensorTKD` respectively. 
-      
-- [ ] Class `State` that tracks data manipulation operation applied to `Tensor`.
-      It is stored in `_state`.
-- [x] Option for creating a `Tensor` in the unfolded form.
 
-- [x] Quick construction of generic objects of `Tensor`, `TensorCPD`, `TensorTKD` and `TensorTT` classes
-- [x] Direct summation and comparison of `Tensor`,`TensorCPD` and `TensorTKD` objects
-      (redefined `__add__`, `__eq__`)
+- [x] Direct summation and comparison of `Tensor` objects (redefined `__add__`, `__eq__`)
+- [ ] Direct summation and comparison of `TensorCPD` and `TensorTKD` object (redefined `__add__`, `__eq__`)      
 - [ ] Defined `__str__` and `__repr__` for  `Tensor`, `TensorCPD`, `TensorTKD` and `TensorTT`
 
-- [ ] Option for sorting vectors for the `CPD`
+- [x] Kolda folding and unfolding
+- [x] Vectorisation method for a `Tensor` class
 - [x] Restrictions on methods `fold`, `unfold` and `mode_n_product` of `Tensor`.
       Whether they can be called is determined by the current state of the `Tensor` object.
-
-- [ ] Kolda folding and unfolding
-- [ ] Vectorisation method for a `Tensor` class
-
-- [x] Tools to convert multi-index pandas dataframe into a `Tensor` and vise versa 
+- [ ] Option for sorting vectors for the `CPD`
 
 
 ### Changed
@@ -50,7 +49,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - [x] Property `reconstruct` of `TensorCPD`, `TensorTKD` and `TensorTT` classes is now a method 
       (should have been in the first place). Also it take optional parameter `keep_mata` for extraction
       of meta information about modes
-- [ ] `describe` functionality is now implemented by `__str__`. Instead, `describe` provides some
+- [x] `describe` functionality is now implemented by `__str__`. Instead, `describe` provides some
       statistics of the `Tensor` by analogy with `pandas`
        
 
@@ -65,7 +64,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - [ ] Index change for during `mode_n_product`
-- [ ] Fix copy methods for `TensorCPD` and `TensorTKD` due to new attributes
+- [x] Fix copy methods for `TensorCPD` and `TensorTKD` due to new attributes
 
 
 
