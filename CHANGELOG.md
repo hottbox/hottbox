@@ -31,8 +31,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
       and assigned to the `TensorCPD` and `TensorTKD` respectively. 
 
 - [x] Direct summation and comparison of `Tensor` objects (redefined `__add__`, `__eq__`)
-- [ ] Direct summation and comparison of `TensorCPD` and `TensorTKD` object (redefined `__add__`, `__eq__`)      
-- [ ] Defined `__str__` and `__repr__` for  `Tensor`, `TensorCPD`, `TensorTKD` and `TensorTT`
+- [x] Direct summation and comparison of `TensorCPD` and `TensorTKD` object (redefined `__add__`, `__eq__`)      
+- [x] Defined `__str__` and `__repr__` for  `Tensor`, `TensorCPD`, `TensorTKD` and `TensorTT`
+- [x] Defined `__repr__` for tensor decomposition algorithms.
 
 - [x] Kolda folding and unfolding
 - [x] Vectorisation method for a `Tensor` class

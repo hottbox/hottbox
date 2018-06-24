@@ -54,25 +54,32 @@ class Tensor(object):
 
     def __eq__(self, other):
         """
+        Parameters
+        ----------
+        other : Tensor
+
         Returns
         -------
-        bool
+        equal : bool
 
         Notes
         -----
-        Tensors are equal when everything is the same.
+            Tensors are equal when everything is the same.
         """
         equal = False
         if isinstance(self, other.__class__):
-            if self.shape == other.shape:
+            if self.shape == other.shape and self._state == other._state:
                 data_equal = np.allclose(self.data, other.data,  rtol=1e-05, atol=1e-08, equal_nan=True)
-                state_equal = self._state == other._state
-                modes_equal = all([self.modes[i] == other.modes[i] for i in range(self.order)])
-                equal = data_equal and state_equal and modes_equal
+                modes_equal = all([mode == other.modes[i] for i, mode in enumerate(self.modes)])
+                equal = data_equal and modes_equal
         return equal
 
     def __add__(self, other):
         """ Summation of objects of ``Tensor`` class
+
+        Parameters
+        ----------
+        other : Tensor
 
         Returns
         -------
@@ -479,7 +486,7 @@ class Tensor(object):
         return self
 
     def describe(self):
-        """ Provides some statistics of data for this instance."""
+        """ Expose some metrics """
         print("In the future this call will print out some statistics about the tensor")
 
     def unfold(self, mode, rtype="T", inplace=True):
@@ -700,6 +707,16 @@ class BaseTensorTD(object):
     def frob_norm(self):
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
 
+    @property
+    def mode_names(self):
+        """ Description of the modes for a current representation of a tensor
+
+        Returns
+        -------
+        list[str]
+        """
+        return [mode.name for mode in self.modes]
+
     def reconstruct(self):
         """ Convert to the full tensor as an object of Tensor class """
         raise NotImplementedError('Not implemented in base (BaseTensorTD) class')
@@ -862,16 +879,66 @@ class TensorCPD(BaseTensorTD):
         self._core_values = core_values.copy()
         self._modes = self._create_modes(mode_names=mode_names)
 
+    def __eq__(self, other):
+        """
+        Parameters
+        ----------
+        other : TensorCPD
+
+        Returns
+        -------
+        equal : bool
+
+        Notes
+        -----
+            If dimensionality check fails then ``TensorCPD`` objects cannot be equal by definition.
+        """
+        equal = False
+        if isinstance(self, other.__class__):
+            if self.ft_shape == other.ft_shape and self.rank == other.rank:
+                data_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True) for i, fmat in enumerate(self.fmat)])
+                modes_equal = all([mode == other.modes[i] for i, mode in enumerate(self.modes)])
+                equal = data_equal and modes_equal
+        return equal
+
+    def __add__(self, other):
+        """ Summation of objects of ``TensorCPD`` class
+
+        Parameters
+        ----------
+        other : TensorCPD
+
+        Returns
+        -------
+        tensor_cpd : TensorCPD
+        """
+        if not isinstance(self, other.__class__):
+            raise TypeError("Don't know how to sum object of {} class "
+                            "with an object of {} class!".format(self.__class__.__name__,
+                                                                 other.__class__.__name__))
+        if self.ft_shape != other.ft_shape:
+            raise ValueError("Both objects should have the same topology!\n"
+                             "{}!={} (`self.ft_shape != other.ft_shape`)".format(self.ft_shape,
+                                                                                 other.ft_shape))
+        if not all([self.modes[i].index == other.modes[i].index for i in range(self.order)]):
+            raise ValueError("Both tensors should have the same indices!")
+
+        core_values = np.concatenate((self._core_values, other._core_values))
+        fmat_list = [np.concatenate((fmat, other.fmat[i]), axis=1) for i, fmat in enumerate(self.fmat)]
+        tensor_cpd = TensorCPD(fmat=fmat_list, core_values=core_values).copy_modes(self)
+        if self.mode_names != other.mode_names:
+            for i in range(tensor_cpd.order):
+                tensor_cpd.reset_mode_name(mode=i)
+        return tensor_cpd
+
     def __str__(self):
         """ Provides general information about this instance."""
-        full_shape = tuple(fmat.shape[0] for fmat in self.fmat)
-        all_names = [mode.name for mode in self.modes]
         return "'{}' representation of a tensor with a kruskal rank={}.\n" \
                "Factor matrices represent properties: {}\n" \
                "With corresponding latent components described by {} features respectively.".format(self.__class__.__name__,
                                                                                                     self.rank,
-                                                                                                    all_names,
-                                                                                                    full_shape)
+                                                                                                    self.mode_names,
+                                                                                                    self.ft_shape)
 
     def __repr__(self):
         return str(self)
@@ -975,6 +1042,27 @@ class TensorCPD(BaseTensorTD):
         fmat = self.fmat[0]
         rank = (fmat.shape[1],)
         return rank
+
+    @property
+    def ft_shape(self):
+        """ Shape of a ``TensorCPD`` in the full format
+
+        Returns
+        -------
+        full_shape : tuple
+        """
+        full_shape = tuple(fmat.shape[0] for fmat in self.fmat)
+        return full_shape
+
+    @property
+    def mode_names(self):
+        """ Description of the physical modes for a ``TensorCPD``
+
+        Returns
+        -------
+        list[str]
+        """
+        return super(TensorCPD, self).mode_names
 
     def reconstruct(self, keep_meta=0):
         """ Converts the CP representation of a tensor into a full tensor
@@ -1135,16 +1223,88 @@ class TensorTKD(BaseTensorTD):
         self._core_values = core_values.copy()
         self._modes = self._create_modes(mode_names=mode_names)
 
+    def __eq__(self, other):
+        """
+        Parameters
+        ----------
+        other : TensorTKD
+
+        Returns
+        -------
+        equal : bool
+
+        Notes
+        -----
+            If dimensionality check fails then ``TensorTKD`` objects cannot be equal by definition.
+        """
+        equal = False
+        if isinstance(self, other.__class__):
+            if self.ft_shape == other.ft_shape and self.rank == other.rank:
+                data_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True) for i, fmat in enumerate(self.fmat)])
+                modes_equal = all([mode == other.modes[i] for i, mode in enumerate(self.modes)])
+                equal = data_equal and modes_equal
+        return equal
+
+    def __add__(self, other):
+        """ Summation of objects of ``TensorTKD`` class
+
+        Parameters
+        ----------
+        other : TensorTKD
+
+        Returns
+        -------
+        tensor_tkd : TensorTKD
+
+        Notes
+        -----
+        Block-wise assignment of values from the core tensors via generating
+        list of indices for blocks whose values will be reassigned
+        ``https://stackoverflow.com/questions/44357591/assigning-values-to-a-block-in-a-numpy-array``
+
+        This implementation seems quit quick for the core tensors with relatively small sizes:
+
+        8.42 ms ± 126 µs per loop (mean ± std. dev. of 7 runs, 100 loops each) for mlrank = (10, 10, 10, 10, 10)
+        """
+        if not isinstance(self, other.__class__):
+            raise TypeError("Don't know how to sum object of {} class "
+                            "with an object of {} class!".format(self.__class__.__name__,
+                                                                 other.__class__.__name__))
+        if self.ft_shape != other.ft_shape:
+            raise ValueError("Both objects should have the same topology!\n"
+                             "{}!={} (`self.ft_shape != other.ft_shape`)".format(self.ft_shape,
+                                                                                 other.ft_shape))
+        if not all([self.modes[i].index == other.modes[i].index for i in range(self.order)]):
+            raise ValueError("Both tensors should have the same indices!")
+
+        # Stack core tensors along main diagonal.
+        # Block-wise assignment of values from the core tensors
+        # via generating list of indices for blocks whose values will be reassigned
+        # https://stackoverflow.com/questions/44357591/assigning-values-to-a-block-in-a-numpy-array
+
+        new_core_shape = tuple(sum(dims) for dims in zip(self.rank, other.rank))
+        core_values = np.zeros(new_core_shape)  # has to be np.zeros. Don't use np.empty
+
+        idx_list_1 = [[r for r in range(rank)] for rank in self.rank]
+        idx_list_2 = [[r + self.rank[i] for r in range(rank)] for i, rank in enumerate(other.rank)]
+
+        core_values[np.ix_(*idx_list_1)] = self._core_values
+        core_values[np.ix_(*idx_list_2)] = other._core_values
+        fmat_list = [np.concatenate((fmat, other.fmat[i]), axis=1) for i, fmat in enumerate(self.fmat)]
+        tensor_tkd = TensorTKD(fmat=fmat_list, core_values=core_values).copy_modes(self)
+        if self.mode_names != other.mode_names:
+            for i in range(tensor_tkd.order):
+                tensor_tkd.reset_mode_name(mode=i)
+        return tensor_tkd
+
     def __str__(self):
         """ Provides general information about this instance."""
-        full_shape = tuple(fmat.shape[0] for fmat in self.fmat)
-        all_names = [mode.name for mode in self.modes]
         return "'{}' representation of a tensor with a multi-linear rank={}.\n" \
                "Factor matrices represent properties: {}\n" \
                "With corresponding latent components described by {} features respectively.".format(self.__class__.__name__,
                                                                                                     self.rank,
-                                                                                                    all_names,
-                                                                                                    full_shape)
+                                                                                                    self.mode_names,
+                                                                                                    self.ft_shape)
 
     def __repr__(self):
         return str(self)
@@ -1253,6 +1413,27 @@ class TensorTKD(BaseTensorTD):
         """
         rank = tuple(fmat.shape[1] for fmat in self.fmat)
         return rank
+
+    @property
+    def ft_shape(self):
+        """ Shape of a ``TensorTKD`` in the full format
+
+        Returns
+        -------
+        full_shape : tuple
+        """
+        full_shape = tuple(fmat.shape[0] for fmat in self.fmat)
+        return full_shape
+
+    @property
+    def mode_names(self):
+        """ Description of the physical modes for a ``TensorTKD``
+
+        Returns
+        -------
+        list[str]
+        """
+        return super(TensorTKD, self).mode_names
 
     def reconstruct(self, keep_meta=0):
         """ Converts the Tucker representation of a tensor into a full tensor
@@ -1404,22 +1585,39 @@ class TensorTT(BaseTensorTD):
         self._core_values = [core.copy() for core in core_values]
         self._modes = self._create_modes(mode_names=mode_names)
 
+    def __eq__(self, other):
+        """
+        Parameters
+        ----------
+        other : TensorTT
 
+        Returns
+        -------
+        equal : bool
 
-    # def __str__(self):
-    #     """ Provides general information about this instance."""
-    #     full_shape = tuple(fmat.shape[0] for fmat in self.fmat)
-    #     all_names = [mode.name for mode in self.modes]
-    #     return "'{}' representation of a tensor with a multi-linear rank={}.\n" \
-    #            "Factor matrices represent properties: {}\n" \
-    #            "With corresponding latent components described by {} features respectively.".format(
-    #         self.__class__.__name__,
-    #         self.rank,
-    #         all_names,
-    #         full_shape)
-    #
-    # def __repr__(self):
-    #     return str(self)
+        Notes
+        -----
+            If dimensionality check fails then ``TensorTT`` objects cannot be equal by definition.
+        """
+        equal = False
+        if isinstance(self, other.__class__):
+            if self.ft_shape == other.ft_shape and self.rank == other.rank:
+                cores_equal = all([core == other.core(i) for i, core in enumerate(self.cores)])
+                modes_equal = all([mode == other.modes[i] for i, mode in enumerate(self.modes)])
+                equal = cores_equal and modes_equal
+        return equal
+
+    def __str__(self):
+        """ Provides general information about this instance."""
+        return "'{}' representation of a tensor with a tt-rank={}.\n" \
+               "Shape of this representation in the full format is {}.\n" \
+               "Physical modes of its cores represent properties: {}\n".format(self.__class__.__name__,
+                                                                               self.rank,
+                                                                               self.ft_shape,
+                                                                               self.mode_names)
+
+    def __repr__(self):
+        return str(self)
 
     def _validate_init_data(self, core_values):
         """ Validate data for the TensorTT constructor
@@ -1437,7 +1635,7 @@ class TensorTT(BaseTensorTD):
                 raise TypeError("Each element from `core_values` should be a numpy array!")
 
         # validate sizes of the cores
-        if ((core_values[0].ndim != 2) or (core_values[-1].ndim != 2)):
+        if (core_values[0].ndim != 2) or (core_values[-1].ndim != 2):
             raise ValueError("The first and the last elements of the `core_values` "
                              "should be 2-dimensional numpy arrays!")
         for i in range(1, len(core_values) - 1):
@@ -1542,7 +1740,7 @@ class TensorTT(BaseTensorTD):
 
     @property
     def ft_shape(self):
-        """ Shape of the a tensor in normal format
+        """ Shape of a ``TensorTT`` in the full format
 
         Returns
         -------
@@ -1554,6 +1752,16 @@ class TensorTT(BaseTensorTD):
         for i in range(1, len(self.cores) - 1):
             full_shape[i] = self.cores[i].shape[1]
         return tuple(full_shape)
+
+    @property
+    def mode_names(self):
+        """ Description of the physical modes for a ``TensorTT``
+
+        Returns
+        -------
+        list[str]
+        """
+        return super(TensorTT, self).mode_names
 
     def reconstruct(self, keep_meta=0):
         """ Converts the TT representation of a tensor into a full tensor
@@ -1701,7 +1909,6 @@ def super_diag_tensor(shape, values=None):
             raise TypeError("Parameter `shape` should be passed as a tuple!")
         if not all(mode_size == shape[0] for mode_size in shape):
             raise ValueError("All values in `shape` should have the same value!")
-
 
         if values is None:
             values = np.ones(rank)  # set default values
