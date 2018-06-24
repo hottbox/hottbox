@@ -1167,10 +1167,10 @@ class TestTensorTT:
         true_default_mode_names_2d = ['mode-0', 'mode-1']
         true_default_mode_names_3d = ['mode-0', 'mode-1', 'mode-2']
 
-        tensor_tt = TensorTT(core_values=core_values, ft_shape=true_ft_shape)
+        tensor_tt = TensorTT(core_values=core_values)
         # ------ tests for types of data being correct
         assert isinstance(tensor_tt._core_values, list)
-        assert isinstance(tensor_tt._ft_shape, tuple)
+        assert isinstance(tensor_tt.ft_shape, tuple)
         assert isinstance(tensor_tt.cores, list)
         assert isinstance(tensor_tt.rank, tuple)
         for i, core in enumerate(tensor_tt.cores):
@@ -1183,8 +1183,8 @@ class TestTensorTT:
         assert (tensor_tt.order == true_order)
 
         # check that values are the same but they are not a references
-        assert (tensor_tt._ft_shape == true_ft_shape)
-        assert tensor_tt._ft_shape is not true_ft_shape
+        assert (tensor_tt.ft_shape == true_ft_shape)
+        assert tensor_tt.ft_shape is not true_ft_shape
         for i, core in enumerate(tensor_tt.cores):
             np.testing.assert_array_equal(core.data, core_values[i])
             np.testing.assert_array_equal(tensor_tt._core_values[i], core_values[i])
@@ -1221,48 +1221,39 @@ class TestTensorTT:
         correct_core_values = [correct_core_1, correct_core_2, correct_core_3]
         correct_ft_shape = (I, J, K)
 
-        # ft_shape should be a tuple
-        with pytest.raises(TypeError):
-            incorrect_ft_shape = list(correct_ft_shape)
-            TensorTT(core_values=correct_core_values, ft_shape=incorrect_ft_shape)
 
         # core_values should be a list of numpy arrays
         with pytest.raises(TypeError):
             incorrect_core_values = np.arange(5)
-            TensorTT(core_values=incorrect_core_values, ft_shape=correct_ft_shape)
+            TensorTT(core_values=incorrect_core_values)
 
         # all elements in core_values should be numpy arrays
         with pytest.raises(TypeError):
             incorrect_core_values = [[1], [2], [3]]
-            TensorTT(core_values=incorrect_core_values, ft_shape=correct_ft_shape)
+            TensorTT(core_values=incorrect_core_values)
 
         # not enough elements in core_values for the specified ft_shape
         with pytest.raises(ValueError):
             incorrect_core_values = [correct_core_1, correct_core_2]
-            TensorTT(core_values=incorrect_core_values, ft_shape=correct_ft_shape)
+            TensorTT(core_values=incorrect_core_values)
 
         # first and last element of core_values should be 2-dimensional arrays
         with pytest.raises(ValueError):
             shape = (2, 2, 2)
             incorrect_core_values = [np.ones(shape) for _ in range(len(correct_ft_shape))]
-            TensorTT(core_values=incorrect_core_values, ft_shape=correct_ft_shape)
+            TensorTT(core_values=incorrect_core_values)
 
         # All but first and last element of core_values should be 3-dimensional arrays
         with pytest.raises(ValueError):
             shape = (2, 2)
             incorrect_core_values = [np.ones(shape) for _ in range(len(correct_ft_shape))]
-            TensorTT(core_values=incorrect_core_values, ft_shape=correct_ft_shape)
+            TensorTT(core_values=incorrect_core_values)
 
         # Last dimension of core_values[i] should be the same as the first dimension of core_values[i+1]
         with pytest.raises(ValueError):
             incorrect_core_values = [np.ones((2, 3)), np.ones((3, 4, 5)), np.ones((6, 8))]
-            TensorTT(core_values=incorrect_core_values, ft_shape=correct_ft_shape)
+            TensorTT(core_values=incorrect_core_values)
 
-        # incorrect shape of the cores for the specified ft_shape
-        with pytest.raises(ValueError):
-            correct_ft_shape = (4, 5, 6)
-            incorrect_core_values = [np.ones((4, 2)), np.ones((2, 10, 3)), np.ones((3, 6))]
-            TensorTT(core_values=incorrect_core_values, ft_shape=correct_ft_shape)
 
     def test_copy(self):
         """ Tests for creation a copy of TensorTT object """
@@ -1273,14 +1264,14 @@ class TestTensorTT:
         core_3 = np.arange(r2 * K).reshape(r2, K)
         core_values = [core_1, core_2, core_3]
         ft_shape = (I, J, K)
-        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tt = TensorTT(core_values=core_values)
 
         tensor_tt_copy = tensor_tt.copy()
 
         # tests that the values are the same but not a reference
         assert tensor_tt_copy is not tensor_tt
-        assert tensor_tt_copy._ft_shape is not tensor_tt._ft_shape
-        assert tensor_tt_copy._ft_shape == tensor_tt._ft_shape
+        assert tensor_tt_copy.ft_shape is not tensor_tt.ft_shape
+        assert tensor_tt_copy.ft_shape == tensor_tt.ft_shape
         assert tensor_tt_copy.rank == tensor_tt.rank
         assert tensor_tt_copy.order == tensor_tt.order
 
@@ -1327,7 +1318,7 @@ class TestTensorTT:
                                [4386, 5091, 5796, 6501, 7206, 7911],
                                [5088, 5910, 6732, 7554, 8376, 9198]]])
         true_default_mode_names = ['mode-0', 'mode-1', 'mode-2']
-        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tt = TensorTT(core_values=core_values)
 
         # ------ basic tests on getting correct results after reconstruction
         tensor_rec = tensor_tt.reconstruct()
@@ -1378,7 +1369,7 @@ class TestTensorTT:
         core_4 = np.arange(r3 * L).reshape(r3, L)
         core_values = [core_1, core_2, core_3, core_4]
         ft_shape = (I, J, K, L)
-        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tt = TensorTT(core_values=core_values)
         tensor_rec = tensor_tt.reconstruct()
         assert (tensor_rec.shape == ft_shape)
         assert (tensor_rec.mode_names == true_default_mode_names)
@@ -1395,7 +1386,7 @@ class TestTensorTT:
         core_5 = np.arange(r4 * M).reshape(r4, M)
         core_values = [core_1, core_2, core_3, core_4, core_5]
         ft_shape = (I, J, K, L, M)
-        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tt = TensorTT(core_values=core_values)
         tensor_rec = tensor_tt.reconstruct()
         assert (tensor_rec.shape == ft_shape)
         assert (tensor_rec.mode_names == true_default_mode_names)
@@ -1413,7 +1404,7 @@ class TestTensorTT:
         mode_index ={0: ['UK', 'RUS'],
                      1: [2005, 2015, 2010],
                      2: ['Jan', 'Feb', 'Mar', 'Apr']}
-        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape, mode_names=mode_names)
+        tensor_tt = TensorTT(core_values=core_values, mode_names=mode_names)
         tensor_tt.set_mode_index(mode_index=mode_index)
 
         tensor = tensor_tt.reconstruct(keep_meta=2)
@@ -1440,9 +1431,9 @@ class TestTensorTT:
         init_names = ["country", "year", "month"]
         mode_names = {i: name for i, name in enumerate(init_names)}
 
-        tensor_tkd = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tkd = TensorTT(core_values=core_values)
         tensor_tkd.set_mode_names(mode_names)
-        tensor_tkd_true = TensorTT(core_values=core_values, ft_shape=ft_shape, mode_names=init_names)
+        tensor_tkd_true = TensorTT(core_values=core_values, mode_names=init_names)
         assert all([tensor_tkd.modes[i].name == tensor_tkd_true.modes[i].name for i in range(tensor_tkd.order)])
 
     def test_reset_mode_name(self):
@@ -1456,15 +1447,15 @@ class TestTensorTT:
         ft_shape = (I, J, K)
         init_names = ["country", "year", "month"]
 
-        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape, mode_names=init_names)
+        tensor_tt = TensorTT(core_values=core_values, mode_names=init_names)
         tensor_tt.reset_mode_name()
-        tensor_tkd_true = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tkd_true = TensorTT(core_values=core_values)
         assert all([tensor_tt.modes[i].name == tensor_tkd_true.modes[i].name for i in range(tensor_tt.order)])
 
-        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape, mode_names=init_names)
+        tensor_tt = TensorTT(core_values=core_values, mode_names=init_names)
         tensor_tt.reset_mode_name(mode=0)
         init_names = ["mode-0", "year", "month"]
-        tensor_tt_true = TensorTT(core_values=core_values, ft_shape=ft_shape, mode_names=init_names)
+        tensor_tt_true = TensorTT(core_values=core_values, mode_names=init_names)
         assert all([tensor_tt.modes[i].name == tensor_tt_true.modes[i].name for i in range(tensor_tt.order)])
 
     def test_set_mode_index(self):
@@ -1477,7 +1468,7 @@ class TestTensorTT:
         core_values = [core_1, core_2, core_3]
         ft_shape = (I, J, K)
 
-        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tt = TensorTT(core_values=core_values)
         mode_index = {0: ["idx1", "idx2"],
                       1: ["idx1", "idx2", "idx3"],
                       2: ["idx1", "idx2", "idx3", "idx4"]}
@@ -1494,20 +1485,20 @@ class TestTensorTT:
         core_values = [core_1, core_2, core_3]
         ft_shape = (I, J, K)
 
-        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tt = TensorTT(core_values=core_values)
         mode_index = {0: ["idx1", "idx2"],
                       1: ["idx1", "idx2", "idx3"],
                       2: ["idx1", "idx2", "idx3", "idx4"]}
         tensor_tt.set_mode_index(mode_index=mode_index)
         tensor_tt.reset_mode_index()
-        tensor_tt_2 = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tt_2 = TensorTT(core_values=core_values)
         assert all([tensor_tt.modes[i].index == tensor_tt_2.modes[i].index for i in range(tensor_tt.order)])
 
-        tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tt = TensorTT(core_values=core_values)
         mode_index = {0: ["idx1", "idx2"]}
         tensor_tt.set_mode_index(mode_index=mode_index)
         tensor_tt.reset_mode_index(mode=0)
-        tensor_tt_2 = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        tensor_tt_2 = TensorTT(core_values=core_values)
         assert all([tensor_tt.modes[i].index == tensor_tt_2.modes[i].index for i in range(tensor_tt.order)])
 
 
@@ -1673,7 +1664,7 @@ def test_residual_tensor():
     core_3 = np.arange(r2 * K).reshape(r2, K)
     core_values = [core_1, core_2, core_3]
     ft_shape = (I, J, K)
-    tensor_tt = TensorTT(core_values=core_values, ft_shape=ft_shape)
+    tensor_tt = TensorTT(core_values=core_values)
     residual = residual_tensor(tensor_orig=tensor, tensor_approx=tensor_tt)
     assert isinstance(residual, Tensor)
     assert (residual.mode_names == true_default_mode_names)

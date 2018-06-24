@@ -69,7 +69,6 @@ class Tensor(object):
                 state_equal = self._state == other._state
                 modes_equal = all([self.modes[i] == other.modes[i] for i in range(self.order)])
                 equal = data_equal and state_equal and modes_equal
-
         return equal
 
     def __add__(self, other):
@@ -800,7 +799,7 @@ class BaseTensorTD(object):
         if not all(mode >= 0 for mode in mode_index.keys()):
             raise ValueError("All specified mode keys should be non-negative!")
         if isinstance(self, TensorTT):
-            index_long_enough = all([len(index) == self._ft_shape[mode] for mode, index in mode_index.items()])
+            index_long_enough = all([len(index) == self.ft_shape[mode] for mode, index in mode_index.items()])
         else:
             index_long_enough = all([len(index) == self.fmat[mode].shape[0] for mode, index in mode_index.items()])
         if not index_long_enough:
@@ -862,6 +861,20 @@ class TensorCPD(BaseTensorTD):
         self._fmat = [mat.copy() for mat in fmat]
         self._core_values = core_values.copy()
         self._modes = self._create_modes(mode_names=mode_names)
+
+    def __str__(self):
+        """ Provides general information about this instance."""
+        full_shape = tuple(fmat.shape[0] for fmat in self.fmat)
+        all_names = [mode.name for mode in self.modes]
+        return "'{}' representation of a tensor with a kruskal rank={}.\n" \
+               "Factor matrices represent properties: {}\n" \
+               "With corresponding latent components described by {} features respectively.".format(self.__class__.__name__,
+                                                                                                    self.rank,
+                                                                                                    all_names,
+                                                                                                    full_shape)
+
+    def __repr__(self):
+        return str(self)
 
     @staticmethod
     def _validate_init_data(fmat, core_values):
@@ -1122,6 +1135,20 @@ class TensorTKD(BaseTensorTD):
         self._core_values = core_values.copy()
         self._modes = self._create_modes(mode_names=mode_names)
 
+    def __str__(self):
+        """ Provides general information about this instance."""
+        full_shape = tuple(fmat.shape[0] for fmat in self.fmat)
+        all_names = [mode.name for mode in self.modes]
+        return "'{}' representation of a tensor with a multi-linear rank={}.\n" \
+               "Factor matrices represent properties: {}\n" \
+               "With corresponding latent components described by {} features respectively.".format(self.__class__.__name__,
+                                                                                                    self.rank,
+                                                                                                    all_names,
+                                                                                                    full_shape)
+
+    def __repr__(self):
+        return str(self)
+
     @staticmethod
     def _validate_init_data(fmat, core_values):
         """ Validate data for the TensorTKD constructor
@@ -1362,52 +1389,52 @@ class TensorTT(BaseTensorTD):
     ----------
     _core_values : list[np.ndarray]
         Placeholder for a list of cores for the Tensor Train representation of a tensor.
-    _ft_shape : tuple
-        Placeholder for a shape of the full tensor (``TensorTT.reconstruct.shape``).
-        Makes the reconstruction process easier.
     """
-    def __init__(self, core_values, ft_shape, mode_names=None):
+    def __init__(self, core_values, mode_names=None):
         """
         
         Parameters
         ----------
         core_values : list[np.ndarray]
             List of cores for the Tensor Train representation of a tensor.
-        ft_shape : tuple
-            Shape of the full tensor (``TensorTT.reconstruct.shape``). Makes the reconstruction process easier.
         """
         super(TensorTT, self).__init__()
         if _PERFORM_VALIDATION:
-            self._validate_init_data(core_values=core_values, ft_shape=ft_shape)
+            self._validate_init_data(core_values=core_values)
         self._core_values = [core.copy() for core in core_values]
-        self._ft_shape = tuple(mode_size for mode_size in ft_shape)
         self._modes = self._create_modes(mode_names=mode_names)
 
-    def _validate_init_data(self, core_values, ft_shape):
+
+
+    # def __str__(self):
+    #     """ Provides general information about this instance."""
+    #     full_shape = tuple(fmat.shape[0] for fmat in self.fmat)
+    #     all_names = [mode.name for mode in self.modes]
+    #     return "'{}' representation of a tensor with a multi-linear rank={}.\n" \
+    #            "Factor matrices represent properties: {}\n" \
+    #            "With corresponding latent components described by {} features respectively.".format(
+    #         self.__class__.__name__,
+    #         self.rank,
+    #         all_names,
+    #         full_shape)
+    #
+    # def __repr__(self):
+    #     return str(self)
+
+    def _validate_init_data(self, core_values):
         """ Validate data for the TensorTT constructor
 
         Parameters
         ----------
         core_values : list[np.ndarray]
             List of cores for the Tensor Train representation of a tensor.
-        ft_shape : tuple
-            Shape of the full tensor (``TensorTT.reconstruct.shape``). Makes the reconstruction process easier.
         """
         # validate types of the input data
-        if not isinstance(ft_shape, tuple):
-            raise TypeError("The parameter `ft_shape` should be passed as tuple!")
         if not isinstance(core_values, list):
             raise TypeError("The parameter `core_values` should be passed as list!")
         for core in core_values:
             if not isinstance(core, np.ndarray):
                 raise TypeError("Each element from `core_values` should be a numpy array!")
-
-        # validate the shape of the tensor in full format
-        # TODO: remove this validation when `self._ft_shape` will be removed
-        if len(core_values) != len(ft_shape):
-            # raise ValueError("Inconsistent shape of the tensor in full form!")
-            raise ValueError("Not enough or too many cores for the specified shape of the tensor in full form:\n"
-                             "{} != {} (len(core_values) != len(ft_shape))".format(len(core_values), len(ft_shape)))
 
         # validate sizes of the cores
         if ((core_values[0].ndim != 2) or (core_values[-1].ndim != 2)):
@@ -1422,18 +1449,6 @@ class TensorTT(BaseTensorTD):
                 raise ValueError("Dimension mismatch for the specified cores:\n"
                                  "Last dimension of core_values[{}] should be the same as the "
                                  "first dimension of core_values[{}]".format(i, i+1))
-
-        # validate the shape of the tensor in full format
-        # TODO: remove this validation when `self._ft_shape` will be removed
-        extracted_full_shape = [None] * len(core_values)
-        extracted_full_shape[0] = core_values[0].shape[0]
-        extracted_full_shape[-1] = core_values[-1].shape[1]
-        for i in range(1, len(core_values)-1):
-            extracted_full_shape[i] = core_values[i].shape[1]
-
-        if tuple(extracted_full_shape) != ft_shape:
-            raise ValueError("Inconsistent shape of the tensor in full form:\n"
-                             "{} != {} (extracted_full_shape != ft_shape)".format(extracted_full_shape, ft_shape))
 
     def _create_modes(self, mode_names):
         """ Create meta data for each factor matrix
@@ -1457,8 +1472,7 @@ class TensorTT(BaseTensorTD):
         new_object : TensorTT
         """
         core_values = self._core_values
-        ft_shape = self._ft_shape
-        new_object = TensorTT(core_values=core_values, ft_shape=ft_shape)
+        new_object = TensorTT(core_values=core_values)
         new_object.copy_modes(self)
         return new_object
 
@@ -1526,6 +1540,21 @@ class TensorTT(BaseTensorTD):
         """
         return tuple(core_values.shape[-1] for core_values in self._core_values[:-1])
 
+    @property
+    def ft_shape(self):
+        """ Shape of the a tensor in normal format
+
+        Returns
+        -------
+        full_shape : tuple
+        """
+        full_shape = [None] * len(self.cores)
+        full_shape[0] = self.cores[0].shape[0]
+        full_shape[-1] = self.cores[-1].shape[1]
+        for i in range(1, len(self.cores) - 1):
+            full_shape[i] = self.cores[i].shape[1]
+        return tuple(full_shape)
+
     def reconstruct(self, keep_meta=0):
         """ Converts the TT representation of a tensor into a full tensor
 
@@ -1545,11 +1574,11 @@ class TensorTT(BaseTensorTD):
         core = self.cores[0]
         data = core.data
         for i, core in enumerate(self.cores[1:]):
-            shape_2d = [rank[i], rank[i+1] * self._ft_shape[i + 1]]
+            shape_2d = [rank[i], rank[i+1] * self.ft_shape[i + 1]]
             core_flat = np.reshape(core.data, shape_2d, order='F')
             data = np.reshape(data, [-1, rank[i]], order='F')
             data = np.dot(data, core_flat)
-        data = np.reshape(data, self._ft_shape, order='F')
+        data = np.reshape(data, self.ft_shape, order='F')
         tensor = Tensor(data)
 
         if keep_meta == 1:

@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Removed
 
-- [ ] Parameter `ft_shape` from the `TensorTT` constructor
+- [x] Parameter `ft_shape` from the `TensorTT` constructor
 - [x] Parameter `ft_shape` and the corresponding attribute from the `Tensor` constructor.
 - [x] Parameter `mode_description` from constructors for all tensor decomposition algorithms
 - [x] Attribute `_mode_names` from the `Tensor`
