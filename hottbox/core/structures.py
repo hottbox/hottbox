@@ -37,8 +37,8 @@ class Tensor(object):
         custom_state : dict
             Provides flexibility to create a ``Tensor`` object in folded, unfolded or rotated state. Use with caution.
             If provided, then should include only the following keys:
-                'mode_order' -> tuple of lists
-                'normal_shape' -> tuple
+                'mode_order' -> tuple of lists \n
+                'normal_shape' -> tuple \n
                 'rtype' -> str
         mode_names : list[str]
             Description of the tensor modes.
@@ -538,7 +538,7 @@ class Tensor(object):
         elif rtype is "K":
             order = "F"
         else:
-            raise ValueError("Unknown type of vectorisation! Parameter `rtype` should be on of {\"T\", \"K\"}.")
+            raise ValueError("Unknown type of vectorisation! Parameter `rtype` should be one of {\"T\", \"K\"}.")
         data_vectorised = np.ravel(self.data, order=order)
 
         if inplace:
@@ -551,7 +551,7 @@ class Tensor(object):
         return tensor
 
     def fold(self, inplace=True):
-        """ Fold to the original shape (undo self.unfold)
+        """ Fold to the original shape
 
         Parameters
         ----------
@@ -562,7 +562,11 @@ class Tensor(object):
         Returns
         ----------
         tensor : Tensor
-            Tensor of original shape (self._state.normal_shape)
+            Tensor of original shape (self.ft_shape)
+
+        Notes
+        -----
+        Basically, this method can be called in order to undo both ``self.unfold`` and ``self.vectorise``
         """
         # Do not do anything if the tensor is in the normal form (hadn't been unfolded before)
         if self.in_normal_state:
@@ -571,11 +575,20 @@ class Tensor(object):
         # Fold data
         temp = self._state.mode_order[0]
         folding_mode = temp[0]
-        if self._state.rtype is "T":
-            fold_function = fold
+        if len(self._state.mode_order) == 1:
+            # Undo vectorisation
+            if self._state.rtype is "T":
+                order = "C"
+            else:
+                order = "F"
+            data_folded = np.reshape(self.data, self.ft_shape, order=order)
         else:
-            fold_function = kolda_fold
-        data_folded = fold_function(matrix=self.data, mode=folding_mode, shape=self.ft_shape)
+            # Undo matricization (unfolding)
+            if self._state.rtype is "T":
+                fold_function = fold
+            else:
+                fold_function = kolda_fold
+            data_folded = fold_function(matrix=self.data, mode=folding_mode, shape=self.ft_shape)
 
         if inplace:
             tensor = self

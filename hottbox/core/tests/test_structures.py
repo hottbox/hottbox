@@ -3,8 +3,9 @@ import sys
 import io
 import numpy as np
 from functools import reduce
-from collections import OrderedDict
 from ..structures import *
+from ..operations import unfold, kolda_unfold
+from .._meta import State
 
 
 class TestTensor:
@@ -18,6 +19,7 @@ class TestTensor:
         true_order = len(true_shape)
         true_data = np.ones(true_size).reshape(true_shape)
         true_default_mode_names = ['mode-0', 'mode-1', 'mode-2']
+        true_default_state = State(normal_shape=true_shape)
         tensor = Tensor(array=true_data)
         np.testing.assert_array_equal(tensor.data, true_data)
         assert (tensor.frob_norm == 8.0)
@@ -26,38 +28,40 @@ class TestTensor:
         assert (tensor.order == true_order)
         assert (tensor.size == true_size)
         assert (tensor.mode_names == true_default_mode_names)
-        assert (tensor._state.mode_order == ([0], [1], [2]))
+        assert (tensor._state == true_default_state)
         assert (tensor._data is not true_data)          # check that is not a reference
 
         # ------ tests for creating a Tensor object with custom mode names
         true_custom_mode_names = ['time', 'frequency', 'channel']
         tensor = Tensor(array=true_data, mode_names=true_custom_mode_names)
-        assert (tensor.mode_names == true_custom_mode_names)        # check that values are the same
+        assert (tensor.mode_names == true_custom_mode_names)
 
-        # ------ tests for creating a Tensor object with custom_state
-        # TODO: need to modify this part.
-        I, J, K = 2, 4, 8
-        true_data = np.ones(I * J * K).reshape(I, J, K)
-        true_ft_shape = (I, J, K)
-        true_mode_order = ([0], [1], [2])
-        custom_state = dict(normal_shape=true_ft_shape,
-                            mode_order=true_mode_order,
-                            rtype=None)
-        tensor = Tensor(array=true_data, custom_state=custom_state)
-        assert (tensor.ft_shape == true_ft_shape)       # check that values are the same
-        # assert (tensor._state.normal_shape is not true_ft_shape)  # check that not a reference
-
-        # check when ft_shape is correct but do not correspond to the shape of data array
+        # ------ tests for creating a Tensor object in custom state
         I, J, K = 2, 4, 8
         true_data = np.ones(I * J * K).reshape(I, J*K)
         true_ft_shape = (I, J, K)
         true_mode_order = ([0], [1, 2])
+        true_mode_names = ["mode-0", "mode-1_mode-2"]
         custom_state = dict(normal_shape=true_ft_shape,
                             mode_order=true_mode_order,
                             rtype="T")
         tensor = Tensor(array=true_data, custom_state=custom_state)
-        assert (tensor.ft_shape == true_ft_shape)  # check that values are the same
-        # assert (tensor._ft_shape is not true_ft_shape)  # check that not a reference
+        assert (tensor.ft_shape == true_ft_shape)
+        assert (tensor.mode_names == true_mode_names)
+
+        # ------ tests for creating a Tensor object with in custom state and with custom mode names
+        I, J, K = 2, 4, 8
+        true_data = np.ones(I * J * K).reshape(I, J * K)
+        true_ft_shape = (I, J, K)
+        true_mode_order = ([0], [1, 2])
+        custom_mode_names = ["time", "frequency", "channel"]
+        true_custom_mode_names = ["time", "frequency_channel"]
+        custom_state = dict(normal_shape=true_ft_shape,
+                            mode_order=true_mode_order,
+                            rtype="T")
+        tensor = Tensor(array=true_data, custom_state=custom_state, mode_names=custom_mode_names)
+        assert (tensor.ft_shape == true_ft_shape)
+        assert (tensor.mode_names == true_custom_mode_names)
 
     def test_init_fail(self):
         """ Tests for incorrect input data for the Tensor constructor """
@@ -100,31 +104,109 @@ class TestTensor:
             incorrect_mode_names[0] = 0
             Tensor(array=correct_data, mode_names=incorrect_mode_names)
 
-        # ------ tests for custom ft_shape being incorrectly defined
-        # # should of of tuple type
-        # with pytest.raises(TypeError):
-        #     incorrect_ft_shape = list(correct_shape)
-        #     Tensor(array=correct_data, ft_shape=incorrect_ft_shape)
+        # ------ tests for custom state being incorrectly defined
+        # custom state should be passed as a dict
+        with pytest.raises(TypeError):
+            I, J, K = 2, 4, 8
+            correct_data = np.ones(I * J * K).reshape(I, J, K)
+            correct_normal_shape = (I, J, K)
+            correct_mode_order = ([0], [1], [2])
+            correct_rtype = "T"
 
-        # shape does not match the number of elements
+            incorrect_custom_state = [correct_normal_shape,
+                                      correct_mode_order,
+                                      correct_rtype]
+            Tensor(array=correct_data, custom_state=incorrect_custom_state)
+
+        # custom state not fully defined
         with pytest.raises(ValueError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
-            incorrect_ft_shape = (I + 1, J, K)
-            true_mode_order = [[0], [1], [2]]
-            custom_state = dict(normal_shape=incorrect_ft_shape,
-                                mode_order=true_mode_order)
-            Tensor(array=correct_data, custom_state=custom_state)
+            correct_normal_shape = (I, J, K)
+            correct_mode_order = ([0], [1], [2])
+            correct_rtype = "T"
 
-        # shape does not match the number of elements
+            incorrect_custom_state = dict(normal_shape=correct_normal_shape,
+                                          mode_order=correct_mode_order)
+            Tensor(array=correct_data, custom_state=incorrect_custom_state)
+
+        # normal shape of custom state should be a tuple
+        with pytest.raises(TypeError):
+            I, J, K = 2, 4, 8
+            correct_data = np.ones(I * J * K).reshape(I, J, K)
+            incorrect_normal_shape = [I, J, K]
+            correct_mode_order = ([0], [1], [2])
+            correct_rtype = "T"
+
+            incorrect_custom_state = dict(normal_shape=incorrect_normal_shape,
+                                          mode_order=correct_mode_order,
+                                          rtype=correct_rtype)
+            Tensor(array=correct_data, custom_state=incorrect_custom_state)
+
+        # normal shape of custom state is inconsistent with the shape of provided data
         with pytest.raises(ValueError):
             I, J, K = 2, 4, 8
-            correct_data = np.ones(I * J * K).reshape(I, J * K)
-            incorrect_ft_shape = (I + 1, J, K)
-            true_mode_order = [[0], [1], [2]]
-            custom_state = dict(normal_shape=incorrect_ft_shape,
-                                mode_order=true_mode_order)
-            Tensor(array=correct_data, custom_state=custom_state)
+            correct_data = np.ones(I * J * K).reshape(I, J, K)
+            incorrect_normal_shape = (I+1, J, K)
+            correct_mode_order = ([0], [1], [2])
+            correct_rtype = "T"
+
+            incorrect_custom_state = dict(normal_shape=incorrect_normal_shape,
+                                          mode_order=correct_mode_order,
+                                          rtype=correct_rtype)
+            Tensor(array=correct_data, custom_state=incorrect_custom_state)
+
+        # mode order of custom state should be a tuple of lists
+        with pytest.raises(TypeError):
+            I, J, K = 2, 4, 8
+            correct_data = np.ones(I * J * K).reshape(I, J, K)
+            correct_normal_shape = (I, J, K)
+            incorrect_mode_order = [[0], [1], [2]]
+            correct_rtype = "T"
+
+            incorrect_custom_state = dict(normal_shape=correct_normal_shape,
+                                          mode_order=incorrect_mode_order,
+                                          rtype=correct_rtype)
+            Tensor(array=correct_data, custom_state=incorrect_custom_state)
+
+        # mode order of custom state should be a tuple of lists
+        with pytest.raises(TypeError):
+            I, J, K = 2, 4, 8
+            correct_data = np.ones(I * J * K).reshape(I, J, K)
+            correct_normal_shape = (I, J, K)
+            incorrect_mode_order = (0, 1, 2)
+            correct_rtype = "T"
+
+            incorrect_custom_state = dict(normal_shape=correct_normal_shape,
+                                          mode_order=incorrect_mode_order,
+                                          rtype=correct_rtype)
+            Tensor(array=correct_data, custom_state=incorrect_custom_state)
+
+        # length of mode order of custom state is inconsistent with the normal shape
+        with pytest.raises(ValueError):
+            I, J, K = 2, 4, 8
+            correct_data = np.ones(I * J * K).reshape(I, J, K)
+            correct_normal_shape = (I, J, K)
+            incorrect_mode_order = ([0], [1], [2], [3])
+            correct_rtype = "T"
+
+            incorrect_custom_state = dict(normal_shape=correct_normal_shape,
+                                          mode_order=incorrect_mode_order,
+                                          rtype=correct_rtype)
+            Tensor(array=correct_data, custom_state=incorrect_custom_state)
+
+        # length of normal shape of custom state is inconsistent with the length of provided mode names
+        with pytest.raises(ValueError):
+            I, J, K = 2, 4, 8
+            correct_data = np.ones(I * J * K).reshape(I, J, K)
+            correct_normal_shape = (I, J, K)
+            correct_mode_order = ([0], [1], [2])
+            correct_rtype = "T"
+            correct_custom_state = dict(normal_shape=correct_normal_shape,
+                                          mode_order=correct_mode_order,
+                                          rtype=correct_rtype)
+            incorrect_mode_names = ["frequency", "time"]
+            Tensor(array=correct_data, custom_state=correct_custom_state, mode_names=incorrect_mode_names)
 
     def test_equal(self):
         """ Test for tensors being equal """
@@ -134,7 +216,7 @@ class TestTensor:
         data_2 = np.ones(size).reshape(shape)
         data_3 = np.arange(size).reshape(shape)
         init_names = ["country", "year", "month"]
-        new_mode_names = {i: "mode" for i in range(len(shape))}
+        new_mode_names = {i: "mode-{}".format(i) for i in range(len(shape))}
         new_mode_index = {i: ["index" for _ in range(shape[i])] for i in range(len(shape))}
 
         tensor_1 = Tensor(data_1)
@@ -149,10 +231,10 @@ class TestTensor:
         tensor_2 = Tensor(array=data_2).set_mode_index(mode_index=new_mode_index)
         assert tensor_1 == tensor_2
 
-        # TODO: make this test to pass!!!
-        # tensor_1 = Tensor(array=data_1, mode_names=init_names)
-        # tensor_2 = Tensor(array=data_2).set_mode_names(mode_names=new_mode_names)
-        # assert tensor_1 == tensor_2
+        tensor_1 = Tensor(array=data_1, mode_names=init_names)
+        tensor_2 = Tensor(array=data_2)
+        tensor_1.set_mode_names(mode_names=new_mode_names)
+        assert tensor_1 == tensor_2
 
         tensor_1 = Tensor(array=data_1)
         tensor_2 = Tensor(array=data_3)
@@ -211,6 +293,25 @@ class TestTensor:
             tensor_1 = Tensor(array=data_1)
             tensor_2 = Tensor(array=data_2)
             assert tensor_1 + tensor_2
+
+    def test_repr(self):
+        # TODO: find a better way to test the method that only prints
+        array = np.arange(2*3*4).reshape(2,3,4)
+        tensor = Tensor(array=array)
+        captured_output = io.StringIO()  # Create StringIO object
+        sys.stdout = captured_output     # and redirect stdout.
+        print(repr(tensor))
+        assert captured_output.getvalue() != ''  # to check that something was actually printed
+
+    def test_show_state(self):
+        """ Tests for `show_state` method """
+        # TODO: find a better way to test the method that only prints
+        array = np.arange(2 * 3 * 4).reshape(2, 3, 4)
+        tensor = Tensor(array=array)
+        captured_output = io.StringIO()  # Create StringIO object
+        sys.stdout = captured_output  # and redirect stdout.
+        tensor.show_state()
+        assert captured_output.getvalue() != ''  # to check that something was actually printed
 
     def test_copy(self):
         """ Tests for creation a copy of a Tensor object """
@@ -342,21 +443,15 @@ class TestTensor:
         tensor_true_result = Tensor(array=data, mode_names=init_names)
         assert tensor == tensor_true_result
 
-    # def test_describe(self):
-    #     """ Tests for describe function of a Tensor object """
-    #     # TODO: find a better way to test the method that only prints
-    #     captured_output = io.StringIO()  # Create StringIO object
-    #     sys.stdout = captured_output     # and redirect stdout.
-    #
-    #     true_shape = (2, 4, 8)
-    #     true_size = reduce(lambda x, y: x * y, true_shape)
-    #     true_data = np.ones(true_size).reshape(true_shape)
-    #     true_mode_names = ['time', 'frequency', 'channel']
-    #     tensor = Tensor(array=true_data, mode_names=true_mode_names)
-    #     tensor_copy = tensor.copy()
-    #     tensor.describe()
-    #     assert captured_output.getvalue() != ''  # to check that something was actually printed
-    #     assert tensor == tensor_copy  # check that this function does not change anything in the object
+    def test_describe(self):
+        """ Tests for describe function of a Tensor object """
+        # TODO: find a better way to test the method that only prints
+        array = np.arange(2 * 3 * 4).reshape(2, 3, 4)
+        tensor = Tensor(array=array)
+        captured_output = io.StringIO()  # Create StringIO object
+        sys.stdout = captured_output  # and redirect stdout.
+        tensor.describe()
+        assert captured_output.getvalue() != ''  # to check that something was actually printed
 
     def test_unfold_fold(self):
         """ Tests for folding and unfolding of a Tensor object """
@@ -365,6 +460,7 @@ class TestTensor:
 
         orig_data = np.arange(size).reshape(shape)
         unfolded_data = [unfold(tensor=orig_data, mode=mode) for mode in range(len(shape))]
+        kolda_unfolded_data = [kolda_unfold(tensor=orig_data, mode=mode) for mode in range(len(shape))]
 
         orig_mode_names = ['time', 'frequency', 'person']
         unfolded_mode_names = [
@@ -373,29 +469,45 @@ class TestTensor:
             ['person', 'time_frequency']
         ]
 
-
-        orig_state = tuple([i] for i in range(len(shape)))
+        orig_state = State(normal_shape=shape)
         unfolded_state = [
-            ([0], [1, 2]),
-            ([1], [0, 2]),
-            ([2], [0, 1])
+            State(normal_shape=shape, rtype="T", mode_order=([0], [1, 2])),
+            State(normal_shape=shape, rtype="T", mode_order=([1], [0, 2])),
+            State(normal_shape=shape, rtype="T", mode_order=([2], [0, 1])),
+        ]
+        unfolded_state_kolda = [
+            State(normal_shape=shape, rtype="K", mode_order=([0], [1, 2])),
+            State(normal_shape=shape, rtype="K", mode_order=([1], [0, 2])),
+            State(normal_shape=shape, rtype="K", mode_order=([2], [0, 1])),
         ]
 
         tensor = Tensor(array=orig_data, mode_names=orig_mode_names)
 
-        # --------- tests for folding and unfolding INPLACE=TRUE
+        # --------- tests for unfolding and folding INPLACE=TRUE
         for mode in range(len(shape)):
             tensor.unfold(mode=mode, inplace=True)
-            assert tensor._state.mode_order == unfolded_state[mode]
+            assert tensor._state == unfolded_state[mode]
             np.testing.assert_array_equal(tensor.data, unfolded_data[mode])
             assert (tensor.mode_names == unfolded_mode_names[mode])
 
             tensor.fold(inplace=True)
-            assert tensor._state.mode_order == orig_state
+            assert tensor._state == orig_state
             np.testing.assert_array_equal(tensor.data, orig_data)
             assert (tensor.mode_names == orig_mode_names)
 
-        # --------- tests for folding and unfolding INPLACE=FALSE
+        # --------- tests for kolda unfolding and folding INPLACE=TRUE
+        for mode in range(len(shape)):
+            tensor.unfold(mode=mode, rtype="K", inplace=True)
+            assert tensor._state == unfolded_state_kolda[mode]
+            np.testing.assert_array_equal(tensor.data, kolda_unfolded_data[mode])
+            assert (tensor.mode_names == unfolded_mode_names[mode])
+
+            tensor.fold(inplace=True)
+            assert tensor._state == orig_state
+            np.testing.assert_array_equal(tensor.data, orig_data)
+            assert (tensor.mode_names == orig_mode_names)
+
+        # --------- tests for unfolding and folding INPLACE=FALSE
         for mode in range(len(shape)):
             tensor_unfolded = tensor.unfold(mode=mode, inplace=False)
             tensor_folded = tensor_unfolded.fold(inplace=False)
@@ -403,17 +515,22 @@ class TestTensor:
             assert tensor_unfolded is not tensor
             assert tensor_folded is not tensor_unfolded
 
-            assert tensor._state.mode_order == orig_state
+            assert tensor._state == orig_state
             assert (tensor.mode_names == orig_mode_names)
             np.testing.assert_array_equal(tensor.data, orig_data)
 
-            assert tensor_unfolded._state.mode_order == unfolded_state[mode]
+            assert tensor_unfolded._state == unfolded_state[mode]
             assert (tensor_unfolded.mode_names == unfolded_mode_names[mode])
             np.testing.assert_array_equal(tensor_unfolded.data, unfolded_data[mode])
 
-            assert tensor_folded._state.mode_order == orig_state
+            assert tensor_folded._state == orig_state
             assert (tensor_folded.mode_names == orig_mode_names)
             np.testing.assert_array_equal(tensor_folded.data, orig_data)
+
+        # --------- tests that should fail
+        with pytest.raises(ValueError):
+            # Unknown convention for unfolding
+            Tensor(array=orig_data).unfold(mode=0, rtype="dummy", inplace=True)
 
         # Tests for checking normal state of a tensor
         with pytest.raises(TypeError):
@@ -424,6 +541,66 @@ class TestTensor:
             # Should not fold inf it wasn't unfolded before
             Tensor(array=orig_data).fold(inplace=True)
 
+    def test_vectorise(self):
+        """ Tests for `vectorise` method """
+        shape = (2, 3, 4)
+        size = reduce(lambda x, y: x * y, shape)
+
+        orig_data = np.arange(size).reshape(shape)
+
+        orig_mode_names = ['time', 'frequency', 'person']
+        vectorised_mode_names = ['time_frequency_person']
+
+        orig_state = State(normal_shape=shape)
+        vectorised_state = State(normal_shape=shape, rtype="T", mode_order=([0, 1, 2], ))
+        vectorised_state_kolda = State(normal_shape=shape, rtype="K", mode_order=([0, 1, 2], ))
+
+        tensor = Tensor(array=orig_data, mode_names=orig_mode_names)
+
+        # --------- tests for vectorising and folding INPLACE=TRUE
+        tensor.vectorise(inplace=True)
+        assert tensor._state == vectorised_state
+        assert (tensor.mode_names == vectorised_mode_names)
+        tensor.fold(inplace=True)
+        assert tensor._state == orig_state
+        np.testing.assert_array_equal(tensor.data, orig_data)
+        assert (tensor.mode_names == orig_mode_names)
+
+        tensor.vectorise(rtype="K", inplace=True)
+        assert tensor._state == vectorised_state_kolda
+        assert (tensor.mode_names == vectorised_mode_names)
+        tensor.fold(inplace=True)
+        assert tensor._state == orig_state
+        np.testing.assert_array_equal(tensor.data, orig_data)
+        assert (tensor.mode_names == orig_mode_names)
+
+        # --------- tests for vectorising and folding INPLACE=FALSE
+        tensor_vectorised = tensor.vectorise(inplace=False)
+        tensor_folded = tensor_vectorised.fold(inplace=False)
+
+        assert tensor_vectorised is not tensor
+        assert tensor_folded is not tensor_vectorised
+
+        assert tensor._state == orig_state
+        assert (tensor.mode_names == orig_mode_names)
+        np.testing.assert_array_equal(tensor.data, orig_data)
+
+        assert tensor_vectorised._state == vectorised_state
+        assert (tensor_vectorised.mode_names == vectorised_mode_names)
+
+        assert tensor_folded._state == orig_state
+        assert (tensor_folded.mode_names == orig_mode_names)
+        np.testing.assert_array_equal(tensor_folded.data, orig_data)
+
+        # --------- tests that should fail
+        with pytest.raises(ValueError):
+            # Unknown convention for vectorisation
+            Tensor(array=orig_data).vectorise(rtype="dummy", inplace=True)
+
+        # Tests for checking normal state of a tensor
+        with pytest.raises(TypeError):
+            # Should vectorise a tensor only if it was in normal state
+            Tensor(array=orig_data).unfold(mode=0, inplace=True).vectorise(inplace=True)
 
     def test_mode_n_product(self):
         """ Tests for mode-n product on an object of Tensor class """
