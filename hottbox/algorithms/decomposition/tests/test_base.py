@@ -23,6 +23,19 @@ class TestDecomposition:
         with pytest.raises(NotImplementedError):
             decomposition_interface._init_fmat()
 
+        # Dummy test for __repr__
+        # TODO: find a proper way to implement this test
+        decomposition_interface.dummy_init = "_".join(np.linspace(0, 1, 1000, dtype=str))
+        decomposition_interface.dummy_max_iter = 50
+        decomposition_interface.dummy_epsilon = 10e-3
+        decomposition_interface.dummy_tol = 10e-5
+        decomposition_interface.dummy_random_state = None
+        decomposition_interface.dummy_verbose = False
+        captured_output = io.StringIO()  # Create StringIO object
+        sys.stdout = captured_output  # and redirect stdout.
+        print(repr(decomposition_interface))
+        assert captured_output.getvalue() != ''  # to check that something was actually printed
+
 
 def test_svd():
     """ Tests for svd function """
@@ -56,4 +69,3 @@ def test_svd():
     assert result[0].shape == (matrix.shape[0], rank)
     assert result[1].shape == (rank, )
     assert result[2].shape == (rank, matrix.shape[1])
-
