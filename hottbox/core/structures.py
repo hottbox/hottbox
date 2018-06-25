@@ -640,7 +640,7 @@ class Tensor(object):
         else:
             tensor = self.copy()
         tensor._data = new_data
-        tensor._state.change_normal_shape(new_normal_shape=new_normal_shape)
+        tensor._state.change_normal_shape(normal_shape=new_normal_shape)
         tensor.reset_mode_index(mode=mode)
 
         # The only one case when mode name won't be changed
