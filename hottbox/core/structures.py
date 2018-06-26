@@ -7,8 +7,6 @@ from functools import reduce
 from .operations import unfold, kolda_unfold, fold, kolda_fold, mode_n_product
 from ._meta import Mode, State
 
-from .. import _PERFORM_VALIDATION
-
 
 class Tensor(object):
     """ This class describes multidimensional data.
@@ -45,8 +43,9 @@ class Tensor(object):
             If nothing is specified then all modes of the created ``Tensor``
             get generic names 'mode-0', 'mode-1' etc.
         """
-        if _PERFORM_VALIDATION:
-            self._validate_init_data(array=array, mode_names=mode_names, custom_state=custom_state)
+        # if _PERFORM_VALIDATION:
+        #     self._validate_init_data(array=array, mode_names=mode_names, custom_state=custom_state)
+        self._validate_init_data(array=array, mode_names=mode_names, custom_state=custom_state)
         self._data = array.copy()
         self._state, self._modes = self._create_meta(array=array,
                                                      custom_state=custom_state,
@@ -886,8 +885,7 @@ class TensorCPD(BaseTensorTD):
             List of names for the factor matrices
         """
         super(TensorCPD, self).__init__()
-        if _PERFORM_VALIDATION:
-            self._validate_init_data(fmat=fmat, core_values=core_values)
+        self._validate_init_data(fmat=fmat, core_values=core_values)
         self._fmat = [mat.copy() for mat in fmat]
         self._core_values = core_values.copy()
         self._modes = self._create_modes(mode_names=mode_names)
@@ -1231,8 +1229,7 @@ class TensorTKD(BaseTensorTD):
             List of names for the factor matrices
         """
         super(TensorTKD, self).__init__()
-        if _PERFORM_VALIDATION:
-            self._validate_init_data(fmat=fmat, core_values=core_values)
+        self._validate_init_data(fmat=fmat, core_values=core_values)
         self._fmat = [mat.copy() for mat in fmat]
         self._core_values = core_values.copy()
         self._modes = self._create_modes(mode_names=mode_names)
@@ -1595,8 +1592,7 @@ class TensorTT(BaseTensorTD):
             List of cores for the Tensor Train representation of a tensor.
         """
         super(TensorTT, self).__init__()
-        if _PERFORM_VALIDATION:
-            self._validate_init_data(core_values=core_values)
+        self._validate_init_data(core_values=core_values)
         self._core_values = [core.copy() for core in core_values]
         self._modes = self._create_modes(mode_names=mode_names)
 
@@ -1919,22 +1915,21 @@ def super_diag_tensor(shape, values=None):
     order = len(shape)
     rank = shape[0]
 
-    if _PERFORM_VALIDATION:
-        if not isinstance(shape, tuple):
-            raise TypeError("Parameter `shape` should be passed as a tuple!")
-        if not all(mode_size == shape[0] for mode_size in shape):
-            raise ValueError("All values in `shape` should have the same value!")
+    if not isinstance(shape, tuple):
+        raise TypeError("Parameter `shape` should be passed as a tuple!")
+    if not all(mode_size == shape[0] for mode_size in shape):
+        raise ValueError("All values in `shape` should have the same value!")
 
-        if values is None:
-            values = np.ones(rank)  # set default values
-        elif isinstance(values, np.ndarray):
-            if values.ndim != 1:
-                raise ValueError("The `values` should be 1-dimensional numpy array!")
-            if values.size != rank:
-                raise ValueError("Dimension mismatch! Not enough or too many `values` for the specified `shape`:\n"
-                                 "{} != {} (values.size != shape[0])".format(values.size, rank))
-        else:
-            raise TypeError("The `values` should be passed as a numpy array!")
+    if values is None:
+        values = np.ones(rank)  # set default values
+    elif isinstance(values, np.ndarray):
+        if values.ndim != 1:
+            raise ValueError("The `values` should be 1-dimensional numpy array!")
+        if values.size != rank:
+            raise ValueError("Dimension mismatch! Not enough or too many `values` for the specified `shape`:\n"
+                             "{} != {} (values.size != shape[0])".format(values.size, rank))
+    else:
+        raise TypeError("The `values` should be passed as a numpy array!")
 
     core = np.zeros(shape)
     core[np.diag_indices(rank, ndim=order)] = values

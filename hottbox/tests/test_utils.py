@@ -2,7 +2,6 @@ from ..version import __version__
 from ..utils import *
 from ..core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
 from ..core._meta import State
-from .. import perform_input_validation
 
 
 def test_version():
@@ -65,7 +64,6 @@ def test_quick_tensortt():
 
 def test_quick_tensor():
     """ Tests for `quick_tensor` function """
-    perform_input_validation(False)
     shape = (2, 3, 4)
     true_mode_names = ["mode-{}".format(i) for i in range(len(shape))]
     true_mode_index = None

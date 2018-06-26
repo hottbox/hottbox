@@ -1756,12 +1756,6 @@ class TestTensorTT:
             incorrect_core_values = [np.ones((2, 3)), np.ones((3, 4, 5)), np.ones((6, 8))]
             TensorTT(core_values=incorrect_core_values)
 
-
-
-
-
-
-
     def test_equal(self):
         """ Test for tensors in tensor train form being equal """
         r1, r2 = 2, 3
@@ -1816,22 +1810,22 @@ class TestTensorTT:
         tensor_tt_2.set_mode_index(mode_index=new_mode_index)
         assert tensor_tt_1 != tensor_tt_2
 
-
         # --------------------- Not equal because of TT-Rank
         core_values_2 = [core.copy() for core in core_values_1]
+        r1, J, r2 = core_values_2[1].shape
+        core_values_2[0] = np.arange(I * (r1+1)).reshape(I, (r1+1))
+        core_values_2[1] = np.arange((r1+1) * J * r2).reshape((r1+1), J, r2)
         tensor_tt_1 = TensorTT(core_values=core_values_1)
         tensor_tt_2 = TensorTT(core_values=core_values_2)
-        # changing its tt-rank via changing size of connection between cores
-        # tensor_tt_2.core(i=1).mode_n_product()
-        # assert tensor_tt_1 != tensor_tt_2
+        assert tensor_tt_1 != tensor_tt_2
 
         # --------------------- Not equal because of ft_shape
         core_values_2 = [core.copy() for core in core_values_1]
+        r1, J, r2 = core_values_2[1].shape
+        core_values_2[1] = np.arange(r1 * (J+1) * r2).reshape(r1, (J+1), r2)
         tensor_tt_1 = TensorTT(core_values=core_values_1)
         tensor_tt_2 = TensorTT(core_values=core_values_2)
-        # changing its ft_shape via changing size of physical mode
-        # tensor_tt_2.core(i=1).mode_n_product()
-        # assert tensor_tt_1 != tensor_tt_2
+        assert tensor_tt_1 != tensor_tt_2
 
         # --------------------- Not equal to the because it is an instance of another class
         core_values_2 = [core.copy() for core in core_values_1]
@@ -1839,17 +1833,6 @@ class TestTensorTT:
         tensor_tt_2 = TensorTT(core_values=core_values_2)
         tensor_full = tensor_tt_2.reconstruct()
         assert tensor_tt_1 != tensor_full
-
-
-
-
-
-
-
-
-
-
-
 
     def test_repr(self):
         r1, r2 = 2, 3

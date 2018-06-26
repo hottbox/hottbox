@@ -15,31 +15,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - [x] Tools to convert multi-index pandas dataframe into a `Tensor` and vise versa.
 - [x] Quick construction of generic objects of `Tensor`, `TensorCPD`, `TensorTKD` and `TensorTT` classes.
-- [x] Input validation for all constructors can be skipped.
-
 - [x] Class `Mode` for meta information about data modes of for tensor representations.
       It is stored in `_modes` as list.
 - [x] Class `State` that tracks data manipulation operation applied to `Tensor`.
-      It is stored in `_state`.
-      
+      It is stored in `_state`.      
 - [x] Option for creating a `Tensor` in the unfolded form.
 - [x] Methods for (re)setting mode names and the corresponding indices for `Tensor`
 - [x] Mode description (and the corresponding methods) for `TensorCPD`, `TensorTKD` and `TensorTT` classes 
       by analogy with the `Tensor` class
 - [x] Parameter `keep_meta` to `decompose` methods for the cpd and tucker type decompositions.
       Based on its value, meta information of the modes of `tensor` to be decomposed can be extracted
-      and assigned to the `TensorCPD` and `TensorTKD` respectively. 
-
+      and assigned to the `TensorCPD` and `TensorTKD` respectively.
 - [x] Direct summation and comparison of `Tensor` objects (redefined `__add__`, `__eq__`)
 - [x] Direct summation and comparison of `TensorCPD` and `TensorTKD` object (redefined `__add__`, `__eq__`)      
 - [x] Defined `__str__` and `__repr__` for  `Tensor`, `TensorCPD`, `TensorTKD` and `TensorTT`
 - [x] Defined `__repr__` for tensor decomposition algorithms.
-
 - [x] Kolda folding and unfolding
 - [x] Vectorisation method for a `Tensor` class
 - [x] Restrictions on methods `fold`, `unfold` and `mode_n_product` of `Tensor`.
       Whether they can be called is determined by the current state of the `Tensor` object.
-- [ ] Option for sorting vectors for the `CPD`
 
 
 ### Changed
@@ -64,7 +58,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-- [ ] Index change for during `mode_n_product`
 - [x] Fix copy methods for `TensorCPD` and `TensorTKD` due to new attributes
 
 
