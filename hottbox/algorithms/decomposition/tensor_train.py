@@ -130,7 +130,7 @@ class TTSVD(BaseTensorTrain):
             C = np.dot(V, np.diag(S)).T
         new_core = C
         cores.append(new_core)
-        tensor_tt = TensorTT(core_values=cores, ft_shape=tensor.shape)
+        tensor_tt = TensorTT(core_values=cores)
         if self.verbose:
             residual = residual_tensor(tensor, tensor_tt)
             print('Relative error of approximation = {}'.format(abs(residual.frob_norm / tensor.frob_norm)))

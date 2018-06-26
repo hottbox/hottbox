@@ -7,8 +7,8 @@ from functools import reduce
 from .core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
 
 
-def select_base_function(base):
-    """ Util for creating arrays
+def _select_base_function(base):
+    """ Utility for creating arrays
 
     Parameters
     ----------
@@ -42,7 +42,7 @@ def quick_tensor(shape, base="arange"):
     tensor : Tensor
     """
     size = reduce(lambda x, y: x * y, shape)
-    create_ndarray = select_base_function(base)
+    create_ndarray = _select_base_function(base)
     array = np.reshape(create_ndarray(size), shape)
     tensor = Tensor(array=array)
     return tensor
@@ -67,7 +67,7 @@ def quick_tensorcpd(full_shape, rank, base="arange"):
     -------
     tensor_cpd : TensorCPD
     """
-    create_ndarray = select_base_function(base)
+    create_ndarray = _select_base_function(base)
     fmat_shapes = zip(full_shape, [rank[0] for _ in range(len(full_shape))])
     core_values = np.ones(rank[0])
     fmat = []
@@ -97,7 +97,7 @@ def quick_tensortkd(full_shape, rank, base="arange"):
     -------
     tensor_tkd : TensorTKD
     """
-    create_ndarray = select_base_function(base)
+    create_ndarray = _select_base_function(base)
     fmat_shapes = zip(full_shape, rank)
     core_values = np.ones(rank)
     fmat = []
@@ -125,7 +125,7 @@ def quick_tensortt(full_shape, rank, base="arange"):
     -------
     tensor_tt : TensorTT
     """
-    create_ndarray = select_base_function(base)
+    create_ndarray = _select_base_function(base)
     tt_ranks_l = rank[:-1]
     tt_ranks_r = rank[1:]
     number_of_middle_cores = len(tt_ranks_l)
@@ -137,5 +137,5 @@ def quick_tensortt(full_shape, rank, base="arange"):
     for shape in core_shapes:
         size = reduce(lambda x, y: x * y, shape)
         core_values.append(np.reshape(create_ndarray(size), shape))
-    tensor_tt = TensorTT(core_values=core_values, ft_shape=full_shape)
+    tensor_tt = TensorTT(core_values=core_values)
     return tensor_tt
