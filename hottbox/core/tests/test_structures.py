@@ -8,6 +8,7 @@ from ..operations import unfold, kolda_unfold
 from .._meta import State
 
 
+# TODO: find a better way to test the methods that only prints and for __repr__ and __str__
 class TestTensor:
     """ Tests for Tensor class """
 
@@ -216,7 +217,7 @@ class TestTensor:
         data_2 = np.ones(size).reshape(shape)
         data_3 = np.arange(size).reshape(shape)
         init_names = ["country", "year", "month"]
-        new_mode_names = {i: "mode-{}".format(i) for i in range(len(shape))}
+        new_mode_names = {i: "{}".format(init_names[i]) for i in range(len(shape))}
         new_mode_index = {i: ["index" for _ in range(shape[i])] for i in range(len(shape))}
 
         tensor_1 = Tensor(data_1)
@@ -233,7 +234,8 @@ class TestTensor:
 
         tensor_1 = Tensor(array=data_1, mode_names=init_names)
         tensor_2 = Tensor(array=data_2)
-        tensor_1.set_mode_names(mode_names=new_mode_names)
+        assert tensor_1 != tensor_2
+        tensor_2.set_mode_names(mode_names=new_mode_names)
         assert tensor_1 == tensor_2
 
         tensor_1 = Tensor(array=data_1)
@@ -255,6 +257,7 @@ class TestTensor:
         assert tensor_1 != data_1
 
     def test_addition(self):
+        """ Test for summation of two tensors """
         shape = (2, 2, 2)
         size = reduce(lambda x, y: x * y, shape)
         data_1 = np.ones(size).reshape(shape)
@@ -295,7 +298,6 @@ class TestTensor:
             assert tensor_1 + tensor_2
 
     def test_repr(self):
-        # TODO: find a better way to test the method that only prints
         array = np.arange(2*3*4).reshape(2,3,4)
         tensor = Tensor(array=array)
         captured_output = io.StringIO()  # Create StringIO object
@@ -305,7 +307,6 @@ class TestTensor:
 
     def test_show_state(self):
         """ Tests for `show_state` method """
-        # TODO: find a better way to test the method that only prints
         array = np.arange(2 * 3 * 4).reshape(2, 3, 4)
         tensor = Tensor(array=array)
         captured_output = io.StringIO()  # Create StringIO object
@@ -445,7 +446,6 @@ class TestTensor:
 
     def test_describe(self):
         """ Tests for describe function of a Tensor object """
-        # TODO: find a better way to test the method that only prints
         array = np.arange(2 * 3 * 4).reshape(2, 3, 4)
         tensor = Tensor(array=array)
         captured_output = io.StringIO()  # Create StringIO object
@@ -749,6 +749,7 @@ class TestTensorCPD:
         core_values = np.ones(R)
         true_orig_fmat_list = [np.arange(orig_dim * R).reshape(orig_dim, R) for orig_dim in ft_shape]
         fmat_list = [fmat.copy() for fmat in true_orig_fmat_list]
+        true_mode_names = ["mode-0", "mode-1", "mode-2"]
 
         tensor_cpd = TensorCPD(fmat=fmat_list, core_values=core_values)
         assert isinstance(tensor_cpd.fmat, list)
@@ -758,6 +759,8 @@ class TestTensorCPD:
         assert isinstance(tensor_cpd._core_values, np.ndarray)
         np.testing.assert_array_equal(tensor_cpd._core_values, core_values)
         assert tensor_cpd._core_values is not core_values
+        assert tensor_cpd.mode_names == true_mode_names
+        assert tensor_cpd.ft_shape == ft_shape
 
         # ------ tests for factor matrices
         for mode, fmat in enumerate(tensor_cpd.fmat):
@@ -822,6 +825,146 @@ class TestTensorCPD:
             incorrect_fmat = [fmat.copy() for fmat in correct_fmat]
             incorrect_fmat[0] = incorrect_fmat[0].T
             TensorCPD(fmat=incorrect_fmat, core_values=correct_core_values)
+
+    def test_equal(self):
+        """ Test for tensors in kruskal form being equal """
+        ft_shape_1 = (3, 4, 5)
+        R_1 = 2
+        mode_names_1 = ["frequency", "time", "channel"]
+        new_mode_names = {i: "{}".format(mode_names_1[i]) for i in range(len(ft_shape_1))}
+        new_mode_index = {i: ["index" for _ in range(ft_shape_1[i])] for i in range(len(ft_shape_1))}
+
+        ft_shape_2 = ft_shape_1
+        R_2 = R_1
+        mode_names_2 = [name for name in mode_names_1]
+
+        t_cpd_1 = TensorCPD(fmat=[np.arange(i * R_1).reshape(i, R_1) for i in ft_shape_1], core_values=np.ones(R_1))
+        t_cpd_2 = TensorCPD(fmat=[np.arange(i * R_2).reshape(i, R_2) for i in ft_shape_2], core_values=np.ones(R_2))
+        assert t_cpd_1 == t_cpd_2
+
+        t_cpd_1.set_mode_names(mode_names=new_mode_names)
+        t_cpd_2.set_mode_names(mode_names=new_mode_names)
+        assert t_cpd_1 == t_cpd_2
+
+        t_cpd_1.set_mode_index(mode_index=new_mode_index)
+        t_cpd_2.set_mode_index(mode_index=new_mode_index)
+        assert t_cpd_1 == t_cpd_2
+
+        t_cpd_1 = TensorCPD(fmat=[np.arange(i * R_1).reshape(i, R_1) for i in ft_shape_1], core_values=np.ones(R_1), mode_names=mode_names_1)
+        t_cpd_2 = TensorCPD(fmat=[np.arange(i * R_2).reshape(i, R_2) for i in ft_shape_2], core_values=np.ones(R_2), mode_names=mode_names_2)
+        assert t_cpd_1 == t_cpd_2
+
+        # --------------------- Not equal because of Kruskal Rank
+        ft_shape_2 = ft_shape_1
+        R_2 = R_1 + 1
+        t_cpd_1 = TensorCPD(fmat=[np.arange(i * R_1).reshape(i, R_1) for i in ft_shape_1], core_values=np.ones(R_1))
+        t_cpd_2 = TensorCPD(fmat=[np.arange(i * R_2).reshape(i, R_2) for i in ft_shape_2], core_values=np.ones(R_2))
+        assert t_cpd_1 != t_cpd_2
+
+        # --------------------- Not equal because of ft_shape
+        ft_shape_2 = tuple(i+1 for i in ft_shape_1)
+        R_2 = R_1
+        t_cpd_1 = TensorCPD(fmat=[np.arange(i * R_1).reshape(i, R_1) for i in ft_shape_1], core_values=np.ones(R_1))
+        t_cpd_2 = TensorCPD(fmat=[np.arange(i * R_2).reshape(i, R_2) for i in ft_shape_2], core_values=np.ones(R_2))
+        assert t_cpd_1 != t_cpd_2
+
+        # --------------------- Not equal because of core values
+        ft_shape_2 = ft_shape_1
+        R_2 = R_1
+        t_cpd_1 = TensorCPD(fmat=[np.arange(i * R_1).reshape(i, R_1) for i in ft_shape_1], core_values=np.ones(R_1))
+        t_cpd_2 = TensorCPD(fmat=[np.arange(i * R_2).reshape(i, R_2) for i in ft_shape_2], core_values=np.zeros(R_2))
+        assert t_cpd_1 != t_cpd_2
+
+        # --------------------- Not equal because of fmat values
+        ft_shape_2 = ft_shape_1
+        R_2 = R_1
+        t_cpd_1 = TensorCPD(fmat=[np.arange(i * R_1).reshape(i, R_1) for i in ft_shape_1], core_values=np.ones(R_1))
+        t_cpd_2 = TensorCPD(fmat=[np.ones(i * R_2).reshape(i, R_2) for i in ft_shape_2], core_values=np.ones(R_2))
+        assert t_cpd_1 != t_cpd_2
+
+        # --------------------- Not equal because of mode names
+        ft_shape_2 = ft_shape_1
+        R_2 = R_1
+        mode_names_2 = ["modified-{}".format(name) for name in mode_names_1]
+        t_cpd_1 = TensorCPD(fmat=[np.ones(i * R_1).reshape(i, R_1) for i in ft_shape_1], core_values=np.ones(R_1), mode_names=mode_names_1)
+        t_cpd_2 = TensorCPD(fmat=[np.ones(i * R_2).reshape(i, R_2) for i in ft_shape_2], core_values=np.ones(R_2), mode_names=mode_names_2)
+        assert t_cpd_1 != t_cpd_2
+        t_cpd_2.set_mode_names(mode_names=new_mode_names)
+        assert t_cpd_1 == t_cpd_2
+
+        # --------------------- Not equal to the because of mode index
+        ft_shape_2 = ft_shape_1
+        R_2 = R_1
+        t_cpd_1 = TensorCPD(fmat=[np.ones(i * R_1).reshape(i, R_1) for i in ft_shape_1], core_values=np.ones(R_1))
+        t_cpd_2 = TensorCPD(fmat=[np.ones(i * R_2).reshape(i, R_2) for i in ft_shape_2], core_values=np.ones(R_2))
+        t_cpd_1.set_mode_index(mode_index=new_mode_index)
+        assert t_cpd_1 != t_cpd_2
+
+        # --------------------- Not equal to the because it is an instance of another class
+        ft_shape_2 = ft_shape_1
+        R_2 = R_1
+        t_cpd_1 = TensorCPD(fmat=[np.ones(i * R_1).reshape(i, R_1) for i in ft_shape_1], core_values=np.ones(R_1))
+        t_cpd_2 = TensorCPD(fmat=[np.ones(i * R_2).reshape(i, R_2) for i in ft_shape_2], core_values=np.ones(R_2))
+        tensor_full = t_cpd_1.reconstruct()
+        assert t_cpd_1 != tensor_full
+        tensor_full = t_cpd_2.reconstruct()
+        assert t_cpd_1 != tensor_full
+
+    def test_addition(self):
+        """ Test for summation of tensors in kruskal form """
+        ft_shape = (4, 5, 6)
+        R_1 = 2
+        R_2 = 3
+        mode_names = ["frequency", "time", "channel"]
+        new_mode_index = {i: ["index" for _ in range(ft_shape[i])] for i in range(len(ft_shape))}
+        core_values_1 = np.ones(R_1)
+        core_values_2 = np.ones(R_2) * 2
+        core_values_res = np.concatenate((core_values_1, core_values_2))
+        fmat_1 = [np.arange(i * R_1).reshape(i, R_1) for i in ft_shape]
+        fmat_2 = [np.ones(i * R_2).reshape(i, R_2) for i in ft_shape]
+        fmat_res = [np.concatenate((fmat_1[i], fmat_2[i]), axis=1) for i in range(len(ft_shape))]
+
+        t_cpd_1 = TensorCPD(fmat=fmat_1, core_values=core_values_1)
+        t_cpd_2 = TensorCPD(fmat=fmat_2, core_values=core_values_2)
+        t_cpd_res = TensorCPD(fmat=fmat_res, core_values=core_values_res)
+        t_cpd_sum = t_cpd_1 + t_cpd_2
+        assert t_cpd_sum == t_cpd_res
+
+        t_cpd_1 = TensorCPD(fmat=fmat_1, core_values=core_values_1, mode_names=mode_names)
+        t_cpd_2 = TensorCPD(fmat=fmat_2, core_values=core_values_2)
+        t_cpd_res = TensorCPD(fmat=fmat_res, core_values=core_values_res)
+        t_cpd_sum = t_cpd_1 + t_cpd_2
+        assert t_cpd_sum == t_cpd_res
+
+        #---- Tests that should fail
+        with pytest.raises(TypeError):
+            # wrong data type
+            assert TensorCPD(fmat=fmat_1, core_values=core_values_1) + np.ones(R_2)
+
+        with pytest.raises(ValueError):
+            # wrong topology which is determined by the ft_shape or number of dimensions
+            ft_shape_new = ft_shape + (6,)
+            fmat_2_new = [np.ones(i * R_2).reshape(i, R_2) for i in ft_shape_new]
+            t_cpd_1 = TensorCPD(fmat=fmat_1, core_values=core_values_1)
+            t_cpd_2 = TensorCPD(fmat=fmat_2_new, core_values=core_values_2)
+            assert t_cpd_1 + t_cpd_2
+
+        with pytest.raises(ValueError):
+            # wrong mode index
+            t_cpd_1 = TensorCPD(fmat=fmat_1, core_values=core_values_1)
+            t_cpd_2 = TensorCPD(fmat=fmat_2, core_values=core_values_2).set_mode_index(mode_index=new_mode_index)
+            assert t_cpd_1 + t_cpd_2
+
+    def test_repr(self):
+        ft_shape = (3, 4, 5)
+        R = 2
+        core_values = np.ones(R)
+        fmat = [np.arange(orig_dim * R).reshape(orig_dim, R) for orig_dim in ft_shape]
+        tensor_cpd = TensorCPD(core_values=core_values, fmat=fmat)
+        captured_output = io.StringIO()  # Create StringIO object
+        sys.stdout = captured_output  # and redirect stdout.
+        print(repr(tensor_cpd))
+        assert captured_output.getvalue() != ''  # to check that something was actually printed
 
     def test_copy(self):
         """ Tests for creation a copy of TensorCPD object """
@@ -1131,6 +1274,188 @@ class TestTensorTKD:
             incorrect_fmat[0] = incorrect_fmat[0].T
             TensorTKD(fmat=incorrect_fmat, core_values=correct_core_values)
 
+    def test_equal(self):
+        """ Test for tensors in tucker form being equal """
+        create_fmat = lambda func, shape, R: [func(shape[i] * R[i]).reshape(shape[i], R[i]) for i in range(len(shape))]
+
+        ft_shape = (5, 6, 7)
+        ft_shape_new = tuple(i + 1 for i in ft_shape)
+        ml_rank = (2, 3, 4)
+        ml_rank_new = tuple(i + 1 for i in ml_rank)
+        core_size = reduce(lambda x, y: x * y, ml_rank)
+        core_size_new = reduce(lambda x, y: x * y, ml_rank_new)
+
+        mode_names_1 = ["frequency", "time", "channel"]
+        mode_names_2 = [name for name in mode_names_1]
+        new_mode_names = {i: "{}".format(mode_names_1[i]) for i in range(len(ft_shape))}
+        new_mode_index = {i: ["index" for _ in range(ft_shape[i])] for i in range(len(ft_shape))}
+
+        core_values_1 = np.arange(core_size).reshape(ml_rank)
+        fmat_1 = create_fmat(np.arange, ft_shape, ml_rank)
+
+        core_values_2 = core_values_1.copy()
+        fmat_2 = [fmat.copy() for fmat in fmat_1]
+        tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2)
+        assert tensor_tkd_1 == tensor_tkd_2
+
+        tensor_tkd_1.set_mode_names(mode_names=new_mode_names)
+        tensor_tkd_2.set_mode_names(mode_names=new_mode_names)
+        assert tensor_tkd_1 == tensor_tkd_2
+
+        tensor_tkd_1.set_mode_index(mode_index=new_mode_index)
+        tensor_tkd_2.set_mode_index(mode_index=new_mode_index)
+        assert tensor_tkd_1 == tensor_tkd_2
+
+        tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1, mode_names=mode_names_1)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2, mode_names=mode_names_2)
+        assert tensor_tkd_1 == tensor_tkd_2
+
+        # --------------------- Not equal because of multi-linear Rank
+        core_values_2 = np.arange(core_size_new).reshape(ml_rank_new)
+        fmat_2 = create_fmat(np.arange, ft_shape, ml_rank_new)
+        tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2)
+        assert tensor_tkd_1 != tensor_tkd_2
+
+        # --------------------- Not equal because of ft_shape
+        core_values_2 = core_values_1.copy()
+        fmat_2 = create_fmat(np.arange, ft_shape_new, ml_rank)
+        tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2)
+        assert tensor_tkd_1 != tensor_tkd_2
+
+        # --------------------- Not equal because of core values
+        core_values_2 = core_values_1.copy() * 2
+        fmat_2 = [fmat.copy() for fmat in fmat_1]
+        tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2)
+        assert tensor_tkd_1 != tensor_tkd_2
+
+        # --------------------- Not equal because of fmat values
+        core_values_2 = core_values_1.copy()
+        fmat_2 = [fmat.copy() * 2 for fmat in fmat_1]
+        tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2)
+        assert tensor_tkd_1 != tensor_tkd_2
+
+        # --------------------- Not equal because of mode names
+        mode_names_2 = ["modified-{}".format(name) for name in mode_names_1]
+        core_values_2 = core_values_1.copy()
+        fmat_2 = [fmat.copy() for fmat in fmat_1]
+        tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1, mode_names=mode_names_1)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2, mode_names=mode_names_2)
+        assert tensor_tkd_1 != tensor_tkd_2
+        tensor_tkd_2.set_mode_names(mode_names=new_mode_names)
+        assert tensor_tkd_1 == tensor_tkd_2
+
+        # --------------------- Not equal to the because of mode index
+        core_values_2 = core_values_1.copy()
+        fmat_2 = [fmat.copy() for fmat in fmat_1]
+        tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2)
+        tensor_tkd_1.set_mode_index(mode_index=new_mode_index)
+        assert tensor_tkd_1 != tensor_tkd_2
+
+        # --------------------- Not equal to the because it is an instance of another class
+        core_values_2 = core_values_1.copy()
+        fmat_2 = [fmat.copy() for fmat in fmat_1]
+        tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2)
+        tensor_full = tensor_tkd_2.reconstruct()
+        assert tensor_tkd_1 != tensor_full
+
+    def test_addition(self):
+        """ Test for summation of tensors in tucker form """
+        create_fmat = lambda func, shape, R: [func(shape[i] * R[i]).reshape(shape[i], R[i]) for i in range(len(shape))]
+
+        ft_shape = (4, 5, 6)
+        ml_rank_1 = (2, 2, 2)
+        ml_rank_2 = (3, 3, 3)
+        core_size_1 = reduce(lambda x, y: x * y, ml_rank_1)
+
+        mode_names = ["frequency", "time", "channel"]
+        new_mode_index = {i: ["index" for _ in range(ft_shape[i])] for i in range(len(ft_shape))}
+
+        core_values_1 = np.arange(core_size_1).reshape(ml_rank_1)
+        core_values_2 = np.ones(ml_rank_2) * 2
+        core_values_res = np.array([[[0., 1., 0., 0., 0.],
+                                     [2., 3., 0., 0., 0.],
+                                     [0., 0., 0., 0., 0.],
+                                     [0., 0., 0., 0., 0.],
+                                     [0., 0., 0., 0., 0.]],
+
+                                    [[4., 5., 0., 0., 0.],
+                                     [6., 7., 0., 0., 0.],
+                                     [0., 0., 0., 0., 0.],
+                                     [0., 0., 0., 0., 0.],
+                                     [0., 0., 0., 0., 0.]],
+
+                                    [[0., 0., 0., 0., 0.],
+                                     [0., 0., 0., 0., 0.],
+                                     [0., 0., 2., 2., 2.],
+                                     [0., 0., 2., 2., 2.],
+                                     [0., 0., 2., 2., 2.]],
+
+                                    [[0., 0., 0., 0., 0.],
+                                     [0., 0., 0., 0., 0.],
+                                     [0., 0., 2., 2., 2.],
+                                     [0., 0., 2., 2., 2.],
+                                     [0., 0., 2., 2., 2.]],
+
+                                    [[0., 0., 0., 0., 0.],
+                                     [0., 0., 0., 0., 0.],
+                                     [0., 0., 2., 2., 2.],
+                                     [0., 0., 2., 2., 2.],
+                                     [0., 0., 2., 2., 2.]]])
+
+        fmat_1 = create_fmat(np.arange, ft_shape, ml_rank_1)
+        fmat_2 = create_fmat(np.ones, ft_shape, ml_rank_2)
+        fmat_res = [np.concatenate((fmat_1[i], fmat_2[i]), axis=1) for i in range(len(ft_shape))]
+
+        tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2)
+        tensor_tkd_res = TensorTKD(fmat=fmat_res, core_values=core_values_res)
+        tensor_tkd_sum = tensor_tkd_1 + tensor_tkd_2
+        assert tensor_tkd_sum == tensor_tkd_res
+
+        tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1, mode_names=mode_names)
+        tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2)
+        tensor_tkd_res = TensorTKD(fmat=fmat_res, core_values=core_values_res)
+        tensor_tkd_sum = tensor_tkd_1 + tensor_tkd_2
+        assert tensor_tkd_sum == tensor_tkd_res
+
+        # ---- Tests that should fail
+        with pytest.raises(TypeError):
+            # wrong data type
+            assert TensorTKD(fmat=fmat_1, core_values=core_values_1) + np.ones(ml_rank_1)
+
+        with pytest.raises(ValueError):
+            # wrong topology which is determined by the ft_shape or number of dimensions
+            ft_shape_new = tuple(i + 1 for i in ft_shape)
+            fmat_2_new = create_fmat(np.ones, ft_shape_new, ml_rank_2)
+            tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1)
+            tensor_tkd_2 = TensorTKD(fmat=fmat_2_new, core_values=core_values_2)
+            assert tensor_tkd_1 + tensor_tkd_2
+
+        with pytest.raises(ValueError):
+            # wrong mode index
+            tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1)
+            tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2).set_mode_index(mode_index=new_mode_index)
+            assert tensor_tkd_1 + tensor_tkd_2
+
+    def test_repr(self):
+        shape = (5, 6, 7)
+        rank = (2, 3, 4)
+        core_size = reduce(lambda x, y: x * y, rank)
+        core_values = np.arange(core_size).reshape(rank)
+        fmat = [np.arange(shape[mode] * rank[mode]).reshape(shape[mode], rank[mode]) for mode in range(len(shape))]
+        tensor_tkd = TensorTKD(fmat=fmat, core_values=core_values)
+        captured_output = io.StringIO()  # Create StringIO object
+        sys.stdout = captured_output  # and redirect stdout.
+        print(repr(tensor_tkd))
+        assert captured_output.getvalue() != ''  # to check that something was actually printed
+
     def test_copy(self):
         """ Tests for creation a copy of TensorTKD object """
         ft_shape = (2, 3, 4)    # define shape of the tensor in full form
@@ -1431,6 +1756,113 @@ class TestTensorTT:
             incorrect_core_values = [np.ones((2, 3)), np.ones((3, 4, 5)), np.ones((6, 8))]
             TensorTT(core_values=incorrect_core_values)
 
+
+
+
+
+
+
+    def test_equal(self):
+        """ Test for tensors in tensor train form being equal """
+        r1, r2 = 2, 3
+        I, J, K = 4, 5, 6
+        ft_shape = (I, J, K)
+        core_1 = np.arange(I * r1).reshape(I, r1)
+        core_2 = np.arange(r1 * J * r2).reshape(r1, J, r2)
+        core_3 = np.arange(r2 * K).reshape(r2, K)
+        mode_names_1 = ["frequency", "time", "channel"]
+        mode_names_2 = [name for name in mode_names_1]
+        new_mode_names = {i: "{}".format(mode_names_1[i]) for i in range(len(ft_shape))}
+        new_mode_index = {i: ["index" for _ in range(ft_shape[i])] for i in range(len(ft_shape))}
+
+        core_values_1 = [core_1, core_2, core_3]
+        core_values_2 = [core.copy() for core in core_values_1]
+
+        tensor_tt_1 = TensorTT(core_values=core_values_1)
+        tensor_tt_2 = TensorTT(core_values=core_values_2)
+        assert tensor_tt_1 == tensor_tt_2
+
+        tensor_tt_1.set_mode_names(mode_names=new_mode_names)
+        tensor_tt_2.set_mode_names(mode_names=new_mode_names)
+        assert tensor_tt_1 == tensor_tt_2
+
+        tensor_tt_1.set_mode_index(mode_index=new_mode_index)
+        tensor_tt_2.set_mode_index(mode_index=new_mode_index)
+        assert tensor_tt_1 == tensor_tt_2
+
+        tensor_tt_1 = TensorTT(core_values=core_values_1, mode_names=mode_names_1)
+        tensor_tt_2 = TensorTT(core_values=core_values_2, mode_names=mode_names_2)
+        assert tensor_tt_1 == tensor_tt_2
+
+        # --------------------- Not equal because of core values
+        core_values_2 = [core.copy() * 2 for core in core_values_1]
+        tensor_tt_1 = TensorTT(core_values=core_values_1)
+        tensor_tt_2 = TensorTT(core_values=core_values_2)
+        assert tensor_tt_1 != tensor_tt_2
+
+        # --------------------- Not equal because of mode names
+        mode_names_2 = ["modified-{}".format(name) for name in mode_names_1]
+        core_values_2 = [core.copy() for core in core_values_1]
+        tensor_tt_1 = TensorTT(core_values=core_values_1, mode_names=mode_names_1)
+        tensor_tt_2 = TensorTT(core_values=core_values_2, mode_names=mode_names_2)
+        assert tensor_tt_1 != tensor_tt_2
+        tensor_tt_2.set_mode_names(mode_names=new_mode_names)
+        assert tensor_tt_1 == tensor_tt_2
+
+        # --------------------- Not equal to the because of mode index
+        core_values_2 = [core.copy() for core in core_values_1]
+        tensor_tt_1 = TensorTT(core_values=core_values_1)
+        tensor_tt_2 = TensorTT(core_values=core_values_2)
+        tensor_tt_2.set_mode_index(mode_index=new_mode_index)
+        assert tensor_tt_1 != tensor_tt_2
+
+
+        # --------------------- Not equal because of TT-Rank
+        core_values_2 = [core.copy() for core in core_values_1]
+        tensor_tt_1 = TensorTT(core_values=core_values_1)
+        tensor_tt_2 = TensorTT(core_values=core_values_2)
+        # changing its tt-rank via changing size of connection between cores
+        # tensor_tt_2.core(i=1).mode_n_product()
+        # assert tensor_tt_1 != tensor_tt_2
+
+        # --------------------- Not equal because of ft_shape
+        core_values_2 = [core.copy() for core in core_values_1]
+        tensor_tt_1 = TensorTT(core_values=core_values_1)
+        tensor_tt_2 = TensorTT(core_values=core_values_2)
+        # changing its ft_shape via changing size of physical mode
+        # tensor_tt_2.core(i=1).mode_n_product()
+        # assert tensor_tt_1 != tensor_tt_2
+
+        # --------------------- Not equal to the because it is an instance of another class
+        core_values_2 = [core.copy() for core in core_values_1]
+        tensor_tt_1 = TensorTT(core_values=core_values_1)
+        tensor_tt_2 = TensorTT(core_values=core_values_2)
+        tensor_full = tensor_tt_2.reconstruct()
+        assert tensor_tt_1 != tensor_full
+
+
+
+
+
+
+
+
+
+
+
+
+    def test_repr(self):
+        r1, r2 = 2, 3
+        I, J, K = 4, 5, 6
+        core_1 = np.arange(I * r1).reshape(I, r1)
+        core_2 = np.arange(r1 * J * r2).reshape(r1, J, r2)
+        core_3 = np.arange(r2 * K).reshape(r2, K)
+        core_values = [core_1, core_2, core_3]
+        tensor_tt = TensorTT(core_values=core_values)
+        captured_output = io.StringIO()  # Create StringIO object
+        sys.stdout = captured_output  # and redirect stdout.
+        print(repr(tensor_tt))
+        assert captured_output.getvalue() != ''  # to check that something was actually printed
 
     def test_copy(self):
         """ Tests for creation a copy of TensorTT object """

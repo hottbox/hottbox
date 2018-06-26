@@ -909,9 +909,10 @@ class TensorCPD(BaseTensorTD):
         equal = False
         if isinstance(self, other.__class__):
             if self.ft_shape == other.ft_shape and self.rank == other.rank:
-                data_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True) for i, fmat in enumerate(self.fmat)])
+                fmat_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True) for i, fmat in enumerate(self.fmat)])
+                core_equal = self.core == other.core
                 modes_equal = all([mode == other.modes[i] for i, mode in enumerate(self.modes)])
-                equal = data_equal and modes_equal
+                equal = fmat_equal and core_equal and modes_equal
         return equal
 
     def __add__(self, other):
@@ -1253,9 +1254,10 @@ class TensorTKD(BaseTensorTD):
         equal = False
         if isinstance(self, other.__class__):
             if self.ft_shape == other.ft_shape and self.rank == other.rank:
-                data_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True) for i, fmat in enumerate(self.fmat)])
+                fmat_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True) for i, fmat in enumerate(self.fmat)])
+                core_equal = self.core == other.core
                 modes_equal = all([mode == other.modes[i] for i, mode in enumerate(self.modes)])
-                equal = data_equal and modes_equal
+                equal = fmat_equal and core_equal and modes_equal
         return equal
 
     def __add__(self, other):
