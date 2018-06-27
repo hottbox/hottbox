@@ -157,7 +157,7 @@ class TestTensor:
                                           rtype=correct_rtype)
             Tensor(array=correct_data, custom_state=incorrect_custom_state)
 
-        # mode order of custom state should be a tuple of lists
+        # mode order of custom state should be a !! TUPLE !! of lists
         with pytest.raises(TypeError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
@@ -170,12 +170,36 @@ class TestTensor:
                                           rtype=correct_rtype)
             Tensor(array=correct_data, custom_state=incorrect_custom_state)
 
-        # mode order of custom state should be a tuple of lists
+        # mode order of custom state should be a tuple of !! LISTS !!
         with pytest.raises(TypeError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
             correct_normal_shape = (I, J, K)
             incorrect_mode_order = (0, 1, 2)
+            correct_rtype = "T"
+
+            incorrect_custom_state = dict(normal_shape=correct_normal_shape,
+                                          mode_order=incorrect_mode_order,
+                                          rtype=correct_rtype)
+            Tensor(array=correct_data, custom_state=incorrect_custom_state)
+
+        # number of list in mode order should correspond to the number of dimensions of provided data
+        with pytest.raises(ValueError):
+            I, J, K = 2, 4, 8
+            correct_data = np.ones(I * J * K).reshape(I, J, K)
+            correct_normal_shape = (I, J, K)
+            incorrect_mode_order = ([0], [1, 2])
+            correct_rtype = "T"
+
+            incorrect_custom_state = dict(normal_shape=correct_normal_shape,
+                                          mode_order=incorrect_mode_order,
+                                          rtype=correct_rtype)
+            Tensor(array=correct_data, custom_state=incorrect_custom_state)
+        with pytest.raises(ValueError):
+            I, J, K = 2, 4, 8
+            correct_data = np.ones(I * J * K).reshape(I, J*K)
+            correct_normal_shape = (I, J, K)
+            incorrect_mode_order = ([0], [1], [2])
             correct_rtype = "T"
 
             incorrect_custom_state = dict(normal_shape=correct_normal_shape,

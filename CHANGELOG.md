@@ -12,7 +12,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 [![Coveralls status](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://coveralls.io/github/hottbox/hottbox)
 
 ### Added
-- [ ]
+- [ ] Canonical mode-n unfolding
+- [ ] Sorting and standardising of factor vectors for `TensorCPD`
+- [ ] Custom Exceptions that are more appropriate for the structure of `hottbox`
+- [ ] Raises section in docstrings
+- [ ] More examples in docstrings
 
 
 ### Changed
@@ -20,7 +24,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 ### Removed
-- [ ]
+- [ ] ``copy`` method from decomposition algorithms
+
+
+### Fixed
+- [ ] Change of mode index for mode-n product
+
 
 
 

@@ -42,9 +42,47 @@ class Tensor(object):
             Description of the tensor modes.
             If nothing is specified then all modes of the created ``Tensor``
             get generic names 'mode-0', 'mode-1' etc.
+
+        Examples
+        --------
+        1) Creating a tensor with default parameters for meta data
+
+        >>> import numpy as np
+        >>> from hottbox.core import Tensor
+        >>> data = np.arange(24).reshape(2, 3, 4)
+        >>> tensor = Tensor(data)
+        >>> print(tensor)
+            This tensor is of order 3 and consists of 24 elements.
+            Sizes and names of its modes are (2, 3, 4) and ['mode-0', 'mode-1', 'mode-2'] respectively.
+
+        2) Creating a tensor with custom mode names
+
+        >>> import numpy as np
+        >>> from hottbox.core import Tensor
+        >>> data = np.arange(24).reshape(2, 3, 4)
+        >>> tensor = Tensor(data, mode_names=["Year", "Month", "Day"])
+        >>> print(tensor)
+            This tensor is of order 3 and consists of 24 elements.
+            Sizes and names of its modes are (2, 3, 4) and ['Year', 'Month', 'Day'] respectively.
+
+        3) Creating a tensor in custom state
+
+        >>> import numpy as np
+        >>> from hottbox.core import Tensor
+        >>> data = np.arange(24).reshape(2, 3*4)
+        >>> tensor = Tensor(data, custom_state={"normal_shape": (2, 3, 4),
+        ...                                     "mode_order": ([0], [1, 2]),
+        ...                                     "rtype": "T"}
+        >>> print(data.shape)
+            (2, 12)
+        >>> print(tensor.shape)
+            (2, 12)
+        >>> print(tensor.ft_shape)
+            (2, 3, 4)
+        >>> print(tensor)
+            This tensor is of order 2 and consists of 24 elements.
+            Sizes and names of its modes are (2, 12) and ['mode-0', 'mode-1_mode-2'] respectively.
         """
-        # if _PERFORM_VALIDATION:
-        #     self._validate_init_data(array=array, mode_names=mode_names, custom_state=custom_state)
         self._validate_init_data(array=array, mode_names=mode_names, custom_state=custom_state)
         self._data = array.copy()
         self._state, self._modes = self._create_meta(array=array,
@@ -165,6 +203,11 @@ class Tensor(object):
             if not all(isinstance(mode_seq, list) for mode_seq in mode_order_):
                 raise TypeError("Incorrect type of the parameter `mode_order[i]`!\n"
                                 "It should be `list` of `int`")
+
+            if len(mode_order_) != array.ndim:
+                raise ValueError("Provided `custom_state` does not correspond to the shape of provided data array!\n"
+                                 "{}!={} (len(custom_state['mode_order']) != array.ndim)".format(mode_order_,
+                                                                                                 array.ndim))
 
             modes_specified = list(itertools.chain.from_iterable(mode_order_))
             if len(modes_specified) != len(normal_shape):
@@ -901,6 +944,43 @@ class TensorCPD(BaseTensorTD):
             Array of coefficients on the super-diagonal of a core for the CP representation of a tensor
         mode_names : list[str]
             List of names for the factor matrices
+
+        Examples
+        --------
+        1) Create kruskal representation of a tensor with default meta information
+
+        >>> import numpy as np
+        >>> from hottbox.core import TensorCPD
+        >>> I, J, K = 5, 6, 7  # define shape of the tensor in full form
+        >>> R = 4              # define Kruskal rank of a tensor in CP form
+        >>> A = np.ones((I, R))
+        >>> B = np.ones((J, R))
+        >>> C = np.ones((K, R))
+        >>> fmat = [A, B , C]
+        >>> core_values=np.arange(R)
+        >>> tensor_cpd = TensorCPD(fmat, core_values)
+        >>> print(tensor_cpd)
+            Kruskal representation of a tensor with rank=(4,).
+            Factor matrices represent properties: ['mode-0', 'mode-1', 'mode-2']
+            With corresponding latent components described by (5, 6, 7) features respectively.
+
+        2) Create kruskal representation of a tensor with default meta information
+
+        >>> import numpy as np
+        >>> from hottbox.core import TensorCPD
+        >>> I, J, K = 5, 6, 7  # define shape of the tensor in full form
+        >>> R = 4              # define Kruskal rank of a tensor in CP form
+        >>> A = np.ones((I, R))
+        >>> B = np.ones((J, R))
+        >>> C = np.ones((K, R))
+        >>> fmat = [A, B , C]
+        >>> core_values=np.arange(R)
+        >>> mode_names=["Year", "Month", "Day"]
+        >>> tensor_cpd = TensorCPD(fmat, core_values, mode_names)
+        >>> print(tensor_cpd)
+            Kruskal representation of a tensor with rank=(4,).
+            Factor matrices represent properties: ['Year', 'Month', 'Day']
+            With corresponding latent components described by (5, 6, 7) features respectively.
         """
         super(TensorCPD, self).__init__()
         self._validate_init_data(fmat=fmat, core_values=core_values)

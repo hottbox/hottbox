@@ -32,9 +32,10 @@ copyright = '2017 - {}, {}'.format(year, author)
 # The short X.Y version
 __version__ = None
 exec(open('../../hottbox/version.py').read())
-version = ".".join(__version__.split(".")[:2])
-# The full version, including alpha/beta/rc tags.
-release = __version__
+release = ".".join(__version__.split("."))
+# version = release[:2]
+version = release
+
 
 
 
@@ -50,7 +51,7 @@ release = __version__
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    # 'sphinx.ext.doctest',
+    'sphinx.ext.doctest',
     # 'sphinx.ext.intersphinx',
     # 'sphinx.ext.todo',
     # 'sphinx.ext.coverage',
@@ -91,6 +92,7 @@ pygments_style = 'sphinx'
 ###############################################
 add_function_parentheses = False
 add_module_names = False
+autoclass_content = 'both'
 todo_include_todos = False
 
 
@@ -106,7 +108,7 @@ html_theme_options = {
     'logo_only': True,
 }
 html_static_path = ['_static']
-html_logo = '_static/hottbox_logo_1.png'
+html_logo = '_static/hottbox_logo_2.png'
 
 # The name for this set of Sphinx documents. "<project> v<release> documentation" by default.
 html_title = 'HOTTBOX: Higher Order Tensors ToolBox'
