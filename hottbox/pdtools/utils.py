@@ -16,6 +16,43 @@ def pd_to_tensor(df, keep_index=True):
     Returns
     -------
     tensor : Tensor
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> from hottbox.pdtools import pd_to_tensor
+    >>> data = {'Year': [2005, 2005, 2005, 2005, 2010, 2010, 2010, 2010],
+    ...         'Month': ['Jan', 'Jan', 'Feb', 'Feb', 'Jan', 'Jan', 'Feb', 'Feb'],
+    ...         'Day': ['Mon', 'Wed', 'Mon', 'Wed', 'Mon', 'Wed', 'Mon', 'Wed'],
+    ...         'Population': np.arange(8)
+    ...         }
+    >>> df = pd.DataFrame.from_dict(data)
+    >>> df.set_index(["Year", "Month", "Day"], inplace=True)
+    >>> print(df)
+                        Population
+        Year Month Day
+        2005 Jan   Mon           0
+                   Wed           1
+             Feb   Mon           2
+                   Wed           3
+        2010 Jan   Mon           4
+                   Wed           5
+             Feb   Mon           6
+                   Wed           7
+    >>> tensor = pd_to_tensor(df)
+    >>> print(tensor)
+        This tensor is of order 3 and consists of 8 elements.
+        Sizes and names of its modes are (2, 2, 2) and ['Year', 'Month', 'Day'] respectively.
+    >>> [print(mode) for mode in tensor.modes]
+        Mode(name='Year', index=[2005, 2010])
+        Mode(name='Month', index=['Jan', 'Feb'])
+        Mode(name='Day', index=['Mon', 'Wed'])
+    >>> print(tensor.data)
+        [[[0 1]
+          [2 3]]
+         [[4 5]
+          [6 7]]]
     """
     # TODO: need to think what should we do when multi-index dataframe is composed of several columns
 
@@ -37,7 +74,7 @@ def pd_to_tensor(df, keep_index=True):
             level_index_names = level_index.get_values()
             idx = np.unique(level_index_names, return_index=True)[1]
             index = [level_index_names[j] for j in sorted(idx)]
-            mode_index = {i : index}
+            mode_index = {i: index}
             tensor.set_mode_index(mode_index)
     return tensor
 
@@ -56,6 +93,55 @@ def tensor_to_pd(tensor, col_name=None):
     -------
     df : pd.DataFrame
         Multi-index data frame
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from hottbox.core import Tensor
+    >>> from hottbox.pdtools import tensor_to_pd
+    >>> data = np.arange(8).reshape(2, 2, 2)
+    >>> mode_index = {0: [2005, 2010],
+    ...               1: ["Jan", "Feb"],
+    ...               2: ["Mon", "Wed"],
+    ...              }
+    >>> tensor = Tensor(data, mode_names=["Year", "Month", "Day"])
+    >>> tensor.set_mode_index(mode_index)
+    >>> print(tensor)
+        This tensor is of order 3 and consists of 8 elements.
+        Sizes and names of its modes are (2, 2, 2) and ['Year', 'Month', 'Day'] respectively.
+    >>> [print(mode) for mode in tensor.modes]
+        Mode(name='Year', index=[2005, 2010])
+        Mode(name='Month', index=['Jan', 'Feb'])
+        Mode(name='Day', index=['Mon', 'Wed'])
+    >>> print(tensor.data)
+        [[[0 1]
+          [2 3]]
+         [[4 5]
+          [6 7]]]
+    >>> df = tensor_to_pd(tensor)
+    >>> print(df)
+                          Values
+        Year Month Day
+        2005 Jan   Mon       0
+                   Wed       1
+             Feb   Mon       2
+                   Wed       3
+        2010 Jan   Mon       4
+                   Wed       5
+             Feb   Mon       6
+                   Wed       7
+    >>> df = tensor_to_pd(tensor, col_name="Population")
+    >>> print(df)
+                            Population
+        Year Month Day
+        2005 Jan   Mon           0
+                   Wed           1
+             Feb   Mon           2
+                   Wed           3
+        2010 Jan   Mon           4
+                   Wed           5
+             Feb   Mon           6
+                   Wed           7
     """
     if not tensor.in_normal_state:
         raise TypeError("`tensor` should be in normal state prior this conversion")
@@ -72,7 +158,8 @@ def tensor_to_pd(tensor, col_name=None):
 
     # Vectorise values (!!! keep in mind, tensor should not be modified in anyway !!!)
     # data = tensor.unfold(mode=0, inplace=False).data.ravel()
-    data = tensor.data.ravel()
+    # data = tensor.data.ravel()
+    data = tensor.vectorise(inplace=False).data
 
     # Create dataframe
     if col_name is None:
