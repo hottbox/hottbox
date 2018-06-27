@@ -263,8 +263,11 @@ class Tensor(object):
         Returns
         -------
         bool
-            If True, then can call `unfold` and `mode_n_product`
-            If False, then can call `fold`
+
+        Notes
+        -----
+        If returns `True`, then can call ``unfold`` and ``mode_n_product``.\n
+        If returns `False`, then can call ``fold``
         """
         return self._state.is_normal()
 
@@ -528,6 +531,21 @@ class Tensor(object):
         return tensor
 
     def vectorise(self, rtype="T", inplace=True):
+        """ Perform vectorisation of a tensor
+
+        Parameters
+        ----------
+        rtype : str
+            Defines a vectorisation convention.
+        inplace : bool
+            If True, then modifies itself.
+            If False, then creates new object (copy)
+
+        Returns
+        ----------
+        tensor : Tensor
+            Vectorised version of a tensor
+        """
         if not self.in_normal_state:
             raise TypeError("The tensor is not in the original form")
 
@@ -561,7 +579,7 @@ class Tensor(object):
         Returns
         ----------
         tensor : Tensor
-            Tensor of original shape (self.ft_shape)
+            Tensor of original shape (``self.ft_shape``)
 
         Notes
         -----
@@ -621,12 +639,12 @@ class Tensor(object):
 
         Notes
         -------
-            1. Mode-n product operation changes the `_state._normal_shape` attribute
+            1. Mode-n product operation changes the ``self._state._normal_shape`` attribute
             2. Remember that mode-n product changes the shape of the tensor. Presumably, it also changes
                the interpretation of that mode depending on the matrix
-            3. If `matrix` is an object of `Tensor` class then you shouldn't specify `new_name`, since
-               it will be changed to `matrix.mode_names[0]`
-            4. If `matrix.mode_names[0] == "mode-0"` then no changes to `tensor.mode_names` will be made
+            3. If ``matrix`` is an object of ``Tensor`` class then you shouldn't specify ``new_name``, since
+               it will be changed to ``matrix.mode_names[0]``
+            4. If ``matrix.mode_names[0] == "mode-0"`` then no changes to ``tensor.mode_names`` will be made
         """
         if not self.in_normal_state:
             raise TypeError("The tensor is not in the original form")
@@ -1130,7 +1148,7 @@ class TensorCPD(BaseTensorTD):
 
         Notes
         -----
-            Most of the time this method should only be used by the CPD type algorithm
+            Most of the time this method should only be used by the decomposition algorithms
         """
         # TODO: check for dimensionality
         super(TensorCPD, self).copy_modes(tensor=tensor)
@@ -1368,7 +1386,7 @@ class TensorTKD(BaseTensorTD):
 
     @property
     def core(self):
-        """ Core tensor of the CP representation of a tensor
+        """ Core tensor of the Tucker representation of a tensor
 
         Returns
         -------
@@ -1500,7 +1518,7 @@ class TensorTKD(BaseTensorTD):
 
         Notes
         -----
-            Most of the time this method should only be used by the CPD type algorithm
+            Most of the time this method should only be used by the decomposition algorithms
         """
         # TODO: check for dimensionality
         super(TensorTKD, self).copy_modes(tensor=tensor)
@@ -1820,7 +1838,7 @@ class TensorTT(BaseTensorTD):
 
         Notes
         -----
-            Most of the time this method should only be used by the CPD type algorithm
+            Most of the time this method should only be used by the decomposition algorithms
         """
         # TODO: check for dimensionality
         super(TensorTT, self).copy_modes(tensor=tensor)
@@ -1900,10 +1918,10 @@ def super_diag_tensor(shape, values=None):
     ----------
     shape : tuple
         Desired shape of the tensor.
-        len(shape) defines the order of the tensor, whereas its values specify sizes of dimensions of the tensor.
+        ``len(shape)`` defines the order of the tensor, whereas its values specify sizes of dimensions of the tensor.
     values : np.ndarray
         Array of values on the super-diagonal of a tensor. By default contains only ones.
-        Length of this vector defines Kryskal rank which is equal to `shape[0]`.
+        Length of this vector defines Kryskal rank which is equal to ``shape[0]``.
 
     Returns
     -------

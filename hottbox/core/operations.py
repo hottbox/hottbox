@@ -86,9 +86,9 @@ def kronecker(matrices, skip_matrix=None, reverse=False):
     Returns
     -------
     result : np.ndarray
-        The result of the Kronecker product is a matrix of shape `(prod(n_rows), prod(n_columns)`
-        where `prod(n_rows) = prod([m.shape[0] for m in matrices])`
-        and `prod(n_columns) = prod([m.shape[1] for m in matrices])`
+        The result of the Kronecker product is a matrix of shape ``(prod(n_rows), prod(n_columns)``
+        where ``prod(n_rows) = prod([m.shape[0] for m in matrices])``
+        and ``prod(n_columns) = prod([m.shape[1] for m in matrices])``
     """
     if skip_matrix is not None:
         matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
@@ -137,7 +137,7 @@ def kolda_unfold(tensor, mode):
 
     Notes
     -----
-        Much slower for then `unfold`.
+        Much slower for then ``unfold``.
     """
     matrix = np.transpose(tensor, _kolda_reorder(tensor.ndim, mode)).reshape((tensor.shape[mode], -1))
     return matrix
@@ -162,7 +162,7 @@ def fold(matrix, mode, shape):
 
     Notes
     -----
-        At the moment it reverts unfolding operation (`unfold`). Will be generalised in a future
+        At the moment it reverts unfolding operation (``unfold``). Will be generalised in a future
     """
     full_shape = list(shape)
     mode_dim = full_shape.pop(mode)
@@ -190,8 +190,8 @@ def kolda_fold(matrix, mode, shape):
 
     Notes
     -----
-        1) Much slower then `fold`
-        2) At the moment it reverts unfolding operation (`kolda_unfold`). Will be generalised in a future
+        1) Much slower then ``fold``
+        2) At the moment it reverts unfolding operation (``kolda_unfold``). Will be generalised in a future
     """
 
     unfolded_indices = _kolda_reorder(len(shape), mode)

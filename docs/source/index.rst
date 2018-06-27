@@ -1,7 +1,7 @@
 HOTTBOX: Higher Order Tensors ToolBOX
 =====================================
 
-|Travis|_ |Appveyor|_ |Coveralls|_
+|Travis|_ |Appveyor|_ |Coveralls|_ |PyPi|_
 
 .. |Travis| image:: https://img.shields.io/travis/hottbox/hottbox/master.svg?label=TravisCI
 .. _Travis: https://travis-ci.org/hottbox/hottbox/

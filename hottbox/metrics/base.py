@@ -1,6 +1,6 @@
 import numpy as np
 from math import sqrt
-from ..core.structures import Tensor, TensorCPD, TensorTKD, residual_tensor
+from ..core.structures import Tensor, TensorCPD, TensorTKD, TensorTT, residual_tensor
 
 
 def mse(tensor_true, tensor_pred):
@@ -9,7 +9,7 @@ def mse(tensor_true, tensor_pred):
     Parameters
     ----------
     tensor_true : Tensor
-    tensor_pred : {Tensor, TensorCPD, TensorTKD}
+    tensor_pred : {Tensor, TensorCPD, TensorTKD, TensorTT}
 
     Returns
     -------
@@ -25,7 +25,7 @@ def rmse(tensor_true, tensor_pred):
     Parameters
     ----------
     tensor_true : Tensor
-    tensor_pred : {Tensor, TensorCPD, TensorTKD}
+    tensor_pred : {Tensor, TensorCPD, TensorTKD, TensorTT}
 
     Returns
     -------
@@ -40,7 +40,7 @@ def mape(tensor_true, tensor_pred):
     Parameters
     ----------
     tensor_true : Tensor
-    tensor_pred : {Tensor, TensorCPD, TensorTKD}
+    tensor_pred : {Tensor, TensorCPD, TensorTKD, TensorTT}
 
     Returns
     -------
@@ -57,7 +57,7 @@ def residual_rel_error(tensor_true, tensor_pred):
     Parameters
     ----------
     tensor_true : Tensor
-    tensor_pred : {Tensor, TensorCPD, TensorTKD}
+    tensor_pred : {Tensor, TensorCPD, TensorTKD, TensorTT}
 
     Returns
     -------

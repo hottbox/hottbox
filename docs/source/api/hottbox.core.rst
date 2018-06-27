@@ -17,25 +17,27 @@ Core Structures and Operations
 
 .. currentmodule:: hottbox.core.operations
 .. autosummary:: hottbox.core.operations
+    unfold
+    fold
+    kolda_unfold
+    kolda_fold
+    mode_n_product
     khatri_rao
     kronecker
     hadamard
-    unfold
-    fold
-    mode_n_product
 
-Tensor Structures
------------------
+Tensor Representations
+----------------------
 
 .. automodule:: hottbox.core.structures
     :members: Tensor, TensorCPD, TensorTKD, TensorTT, super_diag_tensor, residual_tensor
     :undoc-members:
     :show-inheritance:
 
-Tensor Operations
------------------
+Multi-linear Operations
+-----------------------
 
 .. automodule:: hottbox.core.operations
-    :members:
+    :members: fold, kolda_fold, unfold, kolda_unfold, mode_n_product, khatri_rao, kronecker, hadamard
     :undoc-members:
     :show-inheritance:

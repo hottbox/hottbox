@@ -10,12 +10,3 @@ HOTTBOX API
     hottbox.utils
     hottbox.metrics
     hottbox.rank
-
-
-Module contents
----------------
-
-.. automodule:: hottbox
-    :members:
-    :undoc-members:
-    :show-inheritance:
