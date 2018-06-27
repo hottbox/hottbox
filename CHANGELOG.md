@@ -4,12 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [HOTTBOX v0.1.3 Unreleased]
+## [HOTTBOX v0.1.4 Unreleased]
 
 ### Package status on branch develop
 [![Travis status](https://img.shields.io/travis/hottbox/hottbox/develop.svg?label=TravisCI)](https://travis-ci.org/hottbox/hottbox/)
 [![Appveyor status](https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/develop?svg=true)](https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a/branch/develop)
 [![Coveralls status](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://coveralls.io/github/hottbox/hottbox)
+
+### Added
+- [ ]
+
+
+### Changed
+- [ ]
+
+
+### Removed
+- [ ]
+
+
+
+## HOTTBOX v0.1.3
 
 ### Added
 

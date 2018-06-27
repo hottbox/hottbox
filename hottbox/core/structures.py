@@ -945,10 +945,9 @@ class TensorCPD(BaseTensorTD):
 
     def __str__(self):
         """ Provides general information about this instance."""
-        return "'{}' representation of a tensor with a kruskal rank={}.\n" \
+        return "Kruskal representation of a tensor with rank={}.\n" \
                "Factor matrices represent properties: {}\n" \
-               "With corresponding latent components described by {} features respectively.".format(self.__class__.__name__,
-                                                                                                    self.rank,
+               "With corresponding latent components described by {} features respectively.".format(self.rank,
                                                                                                     self.mode_names,
                                                                                                     self.ft_shape)
 
@@ -1311,10 +1310,9 @@ class TensorTKD(BaseTensorTD):
 
     def __str__(self):
         """ Provides general information about this instance."""
-        return "'{}' representation of a tensor with a multi-linear rank={}.\n" \
+        return "Tucker representation of a tensor with multi-linear rank={}.\n" \
                "Factor matrices represent properties: {}\n" \
-               "With corresponding latent components described by {} features respectively.".format(self.__class__.__name__,
-                                                                                                    self.rank,
+               "With corresponding latent components described by {} features respectively.".format(self.rank,
                                                                                                     self.mode_names,
                                                                                                     self.ft_shape)
 
@@ -1620,10 +1618,9 @@ class TensorTT(BaseTensorTD):
 
     def __str__(self):
         """ Provides general information about this instance."""
-        return "'{}' representation of a tensor with a tt-rank={}.\n" \
+        return "Tensor train representation of a tensor with tt-rank={}.\n" \
                "Shape of this representation in the full format is {}.\n" \
-               "Physical modes of its cores represent properties: {}\n".format(self.__class__.__name__,
-                                                                               self.rank,
+               "Physical modes of its cores represent properties: {}".format(self.rank,
                                                                                self.ft_shape,
                                                                                self.mode_names)
 
