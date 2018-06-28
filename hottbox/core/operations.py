@@ -1,9 +1,11 @@
 """
 Functions and operations for tensor algebra
+
+Credit to `Jean Kossaifi <http://jeankossaifi.com/>`_.
 """
 
-import numpy as np
 import functools
+import numpy as np
 
 
 # TODO: I think it will be better if the following three operations would have the same signature
@@ -84,9 +86,9 @@ def kronecker(matrices, skip_matrix=None, reverse=False):
     Returns
     -------
     result : np.ndarray
-        The result of the Kronecker product is a matrix of shape `(prod(n_rows), prod(n_columns)`
-        where `prod(n_rows) = prod([m.shape[0] for m in matrices])`
-        and `prod(n_columns) = prod([m.shape[1] for m in matrices])`
+        The result of the Kronecker product is a matrix of shape ``(prod(n_rows), prod(n_columns)``
+        where ``prod(n_rows) = prod([m.shape[0] for m in matrices])``
+        and ``prod(n_columns) = prod([m.shape[1] for m in matrices])``
     """
     if skip_matrix is not None:
         matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
@@ -111,11 +113,34 @@ def unfold(tensor, mode):
 
     Returns
     -------
-    tensor_unfolded : np.ndarray
+    matrix : np.ndarray
         Unfolded version of a `tensor` with a shape ``(tensor.shape[mode], -1)``
     """
-    tensor_unfolded = np.reshape(np.moveaxis(tensor, mode, 0), (tensor.shape[mode], -1))
-    return tensor_unfolded
+    matrix = np.reshape(np.moveaxis(tensor, mode, 0), (tensor.shape[mode], -1))
+    return matrix
+
+
+def kolda_unfold(tensor, mode):
+    """ Unfolds N-dimensional array into a 2D array.
+
+    Parameters
+    ----------
+    tensor : np.ndarray
+        N-dimensional array to be unfolded
+    mode : int
+        Specifies a mode along which a `tensor` will be unfolded
+
+    Returns
+    -------
+    matrix : np.ndarray
+        Unfolded version of a `tensor` with a shape ``(tensor.shape[mode], -1)``
+
+    Notes
+    -----
+        Much slower for then ``unfold``.
+    """
+    matrix = np.transpose(tensor, _kolda_reorder(tensor.ndim, mode)).reshape((tensor.shape[mode], -1))
+    return matrix
 
 
 def fold(matrix, mode, shape):
@@ -132,18 +157,51 @@ def fold(matrix, mode, shape):
 
     Returns
     -------
-    original_tensor : np.ndarray
+    tensor : np.ndarray
         N-dimensional array of the original shape
 
     Notes
     -----
-    At the moment it reverts unfolding operation (`unfold`). Will be generalised in a future
+        At the moment it reverts unfolding operation (``unfold``). Will be generalised in a future
     """
     full_shape = list(shape)
     mode_dim = full_shape.pop(mode)
     full_shape.insert(0, mode_dim)
-    original_tensor = np.moveaxis(np.reshape(matrix, full_shape), 0, mode)
-    return original_tensor
+    tensor = np.moveaxis(np.reshape(matrix, full_shape), 0, mode)
+    return tensor
+
+
+def kolda_fold(matrix, mode, shape):
+    """ Fold a 2D array into a N-dimensional array.
+
+    Parameters
+    ----------
+    matrix : np.ndarray
+        Unfolded version of a tensor
+    mode : int
+        A mode along which original tensor was unfolded into a `matrix`
+    shape : tuple
+        Shape of the original tensor before it was unfolded
+
+    Returns
+    -------
+    tensor : np.ndarray
+        N-dimensional array of the original shape
+
+    Notes
+    -----
+        1) Much slower then ``fold``
+        2) At the moment it reverts unfolding operation (``kolda_unfold``). Will be generalised in a future
+    """
+
+    unfolded_indices = _kolda_reorder(len(shape), mode)
+    original_shape = [shape[i] for i in unfolded_indices]
+    matrix = matrix.reshape(original_shape)
+
+    folded_indices = list(range(len(shape)-1, 0, -1))
+    folded_indices.insert(mode, 0)
+    tensor = np.transpose(matrix, folded_indices)
+    return tensor
 
 
 def mode_n_product(tensor, matrix, mode):
@@ -163,6 +221,11 @@ def mode_n_product(tensor, matrix, mode):
     -------
     result : np.ndarray
         The result of the mode-n product of a `tensor` with a `matrix` along specified `mode`.
+
+    Notes
+    -----
+        Result of mode-n product does not depend on the folding/unfolding convention,
+        as long as folding and unfolding operations belong to the same convention.
     """
     # TODO: Implement mode-n product with a vector
     if matrix.ndim != 2:
@@ -173,3 +236,11 @@ def mode_n_product(tensor, matrix, mode):
     new_shape[mode] = matrix.shape[0]
     result = fold(np.dot(matrix, unfold(tensor, mode)), mode, tuple(new_shape))
     return result
+
+
+def _kolda_reorder(ndim, mode):
+    """Reorders the elements
+    """
+    indices = list(range(ndim))
+    element = indices.pop(mode)
+    return ([element] + indices[::-1])

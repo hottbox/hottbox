@@ -9,7 +9,6 @@ from ..operations import *
 
 def test_mode_n_product():
     """ Tests for the `mode_n_product` function """
-
     I, J, K = 2, 3, 4
     I_new, J_new, K_new = 5, 6, 7
     array_3d = np.arange(I*J*K).reshape((I, J, K))
@@ -75,7 +74,6 @@ def test_mode_n_product():
 
 def test_unfold():
     """ Tests for `unfold` function """
-
     I, J, K = 2, 3, 4
     array_3d = np.arange(I * J * K).reshape((I, J, K))
 
@@ -98,6 +96,38 @@ def test_unfold():
     np.testing.assert_array_equal(true_res_0, res_0)
     np.testing.assert_array_equal(true_res_1, res_1)
     np.testing.assert_array_equal(true_res_2, res_2)
+    assert res_0 is not array_3d  # check that not references
+    assert res_1 is not array_3d  # check that not references
+    assert res_2 is not array_3d  # check that not references
+
+
+def test_kolda_unfold():
+    """ Tests for `kolda_unfold` function """
+    I, J, K = 2, 3, 4
+    array_3d = np.arange(I * J * K).reshape((I, J, K))
+
+    true_res_0 = np.array([[ 0,  4,  8,  1,  5,  9,  2,  6, 10,  3,  7, 11],
+                           [12, 16, 20, 13, 17, 21, 14, 18, 22, 15, 19, 23]])
+
+    true_res_1 = np.array([[ 0, 12,  1, 13,  2, 14,  3, 15],
+                           [ 4, 16,  5, 17,  6, 18,  7, 19],
+                           [ 8, 20,  9, 21, 10, 22, 11, 23]])
+
+    true_res_2 = np.array([[ 0, 12,  4, 16,  8, 20],
+                           [ 1, 13,  5, 17,  9, 21],
+                           [ 2, 14,  6, 18, 10, 22],
+                           [ 3, 15,  7, 19, 11, 23]])
+
+    res_0 = kolda_unfold(tensor=array_3d, mode=0)
+    res_1 = kolda_unfold(tensor=array_3d, mode=1)
+    res_2 = kolda_unfold(tensor=array_3d, mode=2)
+
+    np.testing.assert_array_equal(true_res_0, res_0)
+    np.testing.assert_array_equal(true_res_1, res_1)
+    np.testing.assert_array_equal(true_res_2, res_2)
+    assert res_0 is not array_3d  # check that not references
+    assert res_1 is not array_3d  # check that not references
+    assert res_2 is not array_3d  # check that not references
 
 
 def test_fold():
@@ -129,6 +159,45 @@ def test_fold():
     np.testing.assert_array_equal(true_res, res_0)
     np.testing.assert_array_equal(true_res, res_1)
     np.testing.assert_array_equal(true_res, res_2)
+
+    assert res_0 is not array_0  # check that not references
+    assert res_1 is not array_1  # check that not references
+    assert res_2 is not array_2  # check that not references
+
+
+def test_kolda_fold():
+    """ Test for `kolda_fold` function """
+    array_0 = np.array([[ 0,  4,  8,  1,  5,  9,  2,  6, 10,  3,  7, 11],
+                        [12, 16, 20, 13, 17, 21, 14, 18, 22, 15, 19, 23]])
+
+    array_1 = np.array([[ 0, 12,  1, 13,  2, 14,  3, 15],
+                        [ 4, 16,  5, 17,  6, 18,  7, 19],
+                        [ 8, 20,  9, 21, 10, 22, 11, 23]])
+
+    array_2 = np.array([[ 0, 12,  4, 16,  8, 20],
+                        [ 1, 13,  5, 17,  9, 21],
+                        [ 2, 14,  6, 18, 10, 22],
+                        [ 3, 15,  7, 19, 11, 23]])
+
+    true_shape = (2, 3, 4)
+    n_elements = reduce(lambda x, y: x * y, true_shape)
+    true_res = np.arange(n_elements).reshape(true_shape)
+
+    res_0 = kolda_fold(array_0, 0, true_shape)
+    res_1 = kolda_fold(array_1, 1, true_shape)
+    res_2 = kolda_fold(array_2, 2, true_shape)
+
+    assert (res_0.shape == true_shape)
+    assert (res_1.shape == true_shape)
+    assert (res_2.shape == true_shape)
+
+    np.testing.assert_array_equal(true_res, res_0)
+    np.testing.assert_array_equal(true_res, res_1)
+    np.testing.assert_array_equal(true_res, res_2)
+
+    assert res_0 is not array_0  # check that not references
+    assert res_1 is not array_1  # check that not references
+    assert res_2 is not array_2  # check that not references
 
 
 def test_khatri_rao():

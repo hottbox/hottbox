@@ -1,7 +1,7 @@
 HOTTBOX: Higher Order Tensors ToolBOX
 =====================================
 
-|Travis|_ |Appveyor|_ |Coveralls|_
+|Travis|_ |Appveyor|_ |Coveralls|_ |PyPi|_
 
 .. |Travis| image:: https://img.shields.io/travis/hottbox/hottbox/master.svg?label=TravisCI
 .. _Travis: https://travis-ci.org/hottbox/hottbox/
@@ -12,6 +12,9 @@ HOTTBOX: Higher Order Tensors ToolBOX
 .. |Coveralls| image:: https://img.shields.io/coveralls/github/hottbox/hottbox/master.svg
 .. _Coveralls: https://coveralls.io/github/hottbox/hottbox
 
+.. |PyPi| image:: https://badge.fury.io/py/hottbox.svg
+.. _PyPi: https://badge.fury.io/py/hottbox
+
 Welcome to the toolbox for tensor decompositions, statistical analysis, visualisation, feature extraction,
 regression and non-linear classification of multi-dimensional data.
 
@@ -21,9 +24,9 @@ regression and non-linear classification of multi-dimensional data.
 
    installation
    api/modules
-   development_guide/index
    tutorials
    changelog
+   development_guide/index
    authors
 
 

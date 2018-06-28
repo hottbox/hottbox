@@ -4,19 +4,20 @@ Tests for the tensor train module of decomposition algorithms
 import pytest
 import sys
 import io
+import pandas as pd
 import numpy as np
 from functools import reduce
+from itertools import product
 from ..tensor_train import *
 from ....core.structures import Tensor, TensorTT
+from ....pdtools import pd_to_tensor
 
 
 class TestBaseTensorTrain:
     """ Tests for BaseTensorTrain class """
     def test_init(self):
         """ Tests for constructor of BaseTensorTrain class """
-        default_params = dict(mode_description='mode_description',
-                              verbose=False
-                              )
+        default_params = dict(verbose=False)
 
         # basically for coverage tests object of
         with pytest.raises(NotImplementedError):
@@ -44,13 +45,10 @@ class TestTTSVD:
     """ Tests for TTSVD class """
     def test_init(self):
         """ Tests for the constructor of HOSVD algorithm """
-        mode_description = 'mode_hosvd'
         verbose = False
-        ttsvd = TTSVD(mode_description=mode_description,
-                      verbose=verbose)
+        ttsvd = TTSVD(verbose=verbose)
 
         assert ttsvd.name == TTSVD.__name__
-        assert ttsvd.mode_description == mode_description
         assert ttsvd.verbose == verbose
 
     def test_copy(self):
@@ -60,13 +58,10 @@ class TestTTSVD:
 
         assert ttsvd_copy is not ttsvd
         assert ttsvd_copy.name == ttsvd.name
-        assert ttsvd_copy.mode_description == ttsvd.mode_description
         assert ttsvd_copy.verbose == ttsvd.verbose
 
         ttsvd.process = (1, 2, 3)
-        ttsvd.mode_description = 'qwerty'
         ttsvd.verbose = not ttsvd.verbose
-        assert ttsvd_copy.mode_description != ttsvd.mode_description
         assert ttsvd_copy.verbose != ttsvd.verbose
 
     def test_init_fmat(self):
@@ -174,6 +169,33 @@ class TestTTSVD:
             correct_tensor = Tensor(np.arange(size).reshape(shape))
             incorrect_rank = [correct_tensor.shape[mode] for mode in range(correct_tensor.order-1)]
             ttsvd.decompose(tensor=correct_tensor, rank=tuple(incorrect_rank))
+
+    def test_decompose_with_meta(self):
+        """ Tests for keeping meta data about modes """
+        content = dict(
+            country=['UK', 'RUS'],
+            year=[2005, 2015, 2010],
+            month=['Jan', 'Feb', 'Mar', 'Apr']
+        )
+        data = list(product(*content.values()))
+        columns = list(content.keys())
+        df = pd.DataFrame(data=data, columns=columns)
+        df['population'] = np.arange(df.shape[0], dtype='float32')
+        df_mi = df.set_index(columns)
+        tensor = pd_to_tensor(df=df_mi, keep_index=True)
+        rank = (2,2)
+        ttsvd = TTSVD()
+
+        tensor_tt = ttsvd.decompose(tensor=tensor, rank=rank, keep_meta=2)
+        assert tensor_tt.modes == tensor.modes
+
+        tensor_tt = ttsvd.decompose(tensor=tensor, rank=rank, keep_meta=1)
+        assert all([tensor_tt.modes[i].name == tensor.modes[i].name for i in range(tensor_tt.order)])
+        assert all([tensor_tt.modes[i].index is None for i in range(tensor_tt.order)])
+
+        tensor_tt = ttsvd.decompose(tensor=tensor, rank=rank, keep_meta=0)
+        tensor.reset_meta()
+        assert tensor_tt.modes == tensor.modes
 
     def test_converged(self):
         """ Tests for converged method """

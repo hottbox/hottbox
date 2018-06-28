@@ -1,4 +1,4 @@
-Rank estimation
+Rank Estimation
 ===============
 
 .. automodule:: hottbox.rank

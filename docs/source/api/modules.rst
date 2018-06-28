@@ -2,18 +2,11 @@ HOTTBOX API
 ===========
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   hottbox.core
-   hottbox.algorithms
-   hottbox.metrics
-   hottbox.rank
-
-
-Module contents
----------------
-
-.. automodule:: hottbox
-    :members:
-    :undoc-members:
-    :show-inheritance:
+    hottbox.core
+    hottbox.algorithms
+    hottbox.pdtools
+    hottbox.utils
+    hottbox.metrics
+    hottbox.rank

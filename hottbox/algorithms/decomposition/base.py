@@ -12,6 +12,11 @@ class Decomposition(object):
     def __init__(self):
         pass
 
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        return '%s(%s)' % (class_name, _pprint(self.__dict__,
+                                               offset=len(class_name)+4, ),)
+
     def copy(self):
         """ Copy of the Decomposition as a new object """
         cls = self.__class__
@@ -87,3 +92,55 @@ def svd(matrix, rank=None):
         # WARNING: here, V is still the transpose of what it should be
         U, S, V = U[:, ::-1], S[::-1], V[:, ::-1]
         return U, S, V.T
+
+
+def _pprint(params, offset=0, printer=repr):
+    """ Pretty print the dictionary 'params'
+
+    Parameters
+    ----------
+    params : dict
+        The dictionary to pretty print
+
+    offset : int
+        The offset in characters to add at the begin of each line.
+
+    printer : callable
+        The function to convert entries to strings, typically
+        the builtin str or repr
+
+    Notes
+    -----
+    Implementation is taken from ``sklearn.base._pprint`` with minor modifications
+    to avoid additional dependencies.
+    """
+    # Do a multi-line justified repr:
+    param_names = [p for p in params.keys() if p is not "cost"]
+    param_names.sort()
+
+    params_list = list()
+    this_line_length = offset
+    line_sep = ',\n' + (1 + offset // 2) * ' '
+    for i, name in enumerate(param_names):
+        value = params[name]
+        if type(value) is float:
+            this_repr = '%s=%s' % (name, str(value))
+        else:
+            this_repr = '%s=%s' % (name, printer(value))
+        if len(this_repr) > 500:
+            this_repr = this_repr[:300] + '...' + this_repr[-100:]
+        if i > 0:
+            if (this_line_length + len(this_repr) >= 75 or '\n' in this_repr):
+                params_list.append(line_sep)
+                this_line_length = len(line_sep)
+            else:
+                params_list.append(', ')
+                this_line_length += 2
+        params_list.append(this_repr)
+        this_line_length += len(this_repr)
+    # options = np.get_printoptions()
+    # np.set_printoptions(**options)
+    lines = ''.join(params_list)
+    # Strip trailing space to avoid nightmare in doctests
+    lines = '\n'.join(l.rstrip(' ') for l in lines.split('\n'))
+    return lines

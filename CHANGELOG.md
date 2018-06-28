@@ -4,29 +4,85 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [HOTTBOX v0.1.4 Unreleased]
 
 ### Package status on branch develop
 [![Travis status](https://img.shields.io/travis/hottbox/hottbox/develop.svg?label=TravisCI)](https://travis-ci.org/hottbox/hottbox/)
 [![Appveyor status](https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/develop?svg=true)](https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a/branch/develop)
-[![Coveralls status](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://codecov.io/gh/hottbox/hottbox)
+[![Coveralls status](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://coveralls.io/github/hottbox/hottbox)
+
+### Added
+- [ ] Canonical mode-n unfolding
+- [ ] Sorting and standardising of factor vectors for `TensorCPD`
+- [ ] Custom Exceptions that are more appropriate for the structure of `hottbox`
+- [ ] Raises section in docstrings
+- [ ] More examples in docstrings
+
+
+### Changed
+- [ ]
+
+
+### Removed
+- [ ] ``copy`` method from decomposition algorithms
+
+
+### Fixed
+- [ ] Change of mode index for mode-n product
+
+
+
+
+## HOTTBOX v0.1.3
 
 ### Added
 
--
+- [x] Tools to convert multi-index pandas dataframe into a `Tensor` and vise versa.
+- [x] Quick construction of generic objects of `Tensor`, `TensorCPD`, `TensorTKD` and `TensorTT` classes.
+- [x] Class `Mode` for meta information about data modes of for tensor representations.
+      It is stored in `_modes` as list.
+- [x] Class `State` that tracks data manipulation operation applied to `Tensor`.
+      It is stored in `_state`.      
+- [x] Option for creating a `Tensor` in the unfolded form.
+- [x] Methods for (re)setting mode names and the corresponding indices for `Tensor`
+- [x] Mode description (and the corresponding methods) for `TensorCPD`, `TensorTKD` and `TensorTT` classes 
+      by analogy with the `Tensor` class
+- [x] Parameter `keep_meta` to `decompose` methods for the cpd and tucker type decompositions.
+      Based on its value, meta information of the modes of `tensor` to be decomposed can be extracted
+      and assigned to the `TensorCPD` and `TensorTKD` respectively.
+- [x] Direct summation and comparison of `Tensor` objects (redefined `__add__`, `__eq__`)
+- [x] Direct summation and comparison of `TensorCPD` and `TensorTKD` object (redefined `__add__`, `__eq__`)      
+- [x] Defined `__str__` and `__repr__` for  `Tensor`, `TensorCPD`, `TensorTKD` and `TensorTT`
+- [x] Defined `__repr__` for tensor decomposition algorithms.
+- [x] Kolda folding and unfolding
+- [x] Vectorisation method for a `Tensor` class
+- [x] Restrictions on methods `fold`, `unfold` and `mode_n_product` of `Tensor`.
+      Whether they can be called is determined by the current state of the `Tensor` object.
+
 
 ### Changed
 
--
+- [x] Each mode of a `Tensor` there is characterised by a corresponding `Mode` object with meta information
+- [x] Mode names for the `Tensor` constructor should be passed as list instead of OrderedDict.
+      These names are used to create `Mode` objects which are stored in a  list `Tensor._modes`
+- [x] Property `reconstruct` of `TensorCPD`, `TensorTKD` and `TensorTT` classes is now a method 
+      (should have been in the first place). Also it take optional parameter `keep_mata` for extraction
+      of meta information about modes
+- [x] `describe` functionality is now implemented by `__str__`. Instead, `describe` provides some
+      statistics of the `Tensor` by analogy with `pandas`
+       
 
 ### Removed
 
--
+- [x] Parameter `ft_shape` from the `TensorTT` constructor
+- [x] Parameter `ft_shape` and the corresponding attribute from the `Tensor` constructor.
+- [x] Parameter `mode_description` from constructors for all tensor decomposition algorithms
+- [x] Attribute `_mode_names` from the `Tensor`
 
 
 ### Fixed
 
--
+- [x] Fix copy methods for `TensorCPD` and `TensorTKD` due to new attributes
 
 
 

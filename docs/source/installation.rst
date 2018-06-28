@@ -21,7 +21,9 @@ There are two options available:
 
     This will allow you to modify the source code in the way it will suit your needs. Additionally, you will be
     on top of the latest changes and will be able to start using new stable features which are located on
-    `develop <https://github.com/hottbox/hottbox/tree/develop>`_ branch until the official release.
+    `develop <https://github.com/hottbox/hottbox/tree/develop>`_ branch until the official release. The list
+    of provisional changes for the next release (and the CI status) can be also be found on develop branch
+    in `CHANGELOG <https://github.com/hottbox/hottbox/blob/develop/CHANGELOG.md>`_ file.
 
 
 
@@ -32,7 +34,8 @@ There are two options available:
 Running tests
 -------------
 
-If you have chosen the second installation option, it is advisable to run tests in order to make sure that your
+``hottbox`` is under active development, therefore, if you have chosen the second installation
+option, it is advisable to run tests in order to make sure that your
 current version of ``hottbox`` is stable. First, you will need to install ``pytest`` and ``pytest-cov`` packages: ::
 
     $ pip install pytest pytest-cov

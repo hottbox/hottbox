@@ -1,16 +1,19 @@
-|Travis|_ |Appveyor|_ |Coveralls|_
+HOTTBOX: Higher Order Tensors ToolBOX
+=====================================
+
+|Travis|_ |Appveyor|_ |Coveralls|_ |PyPi|_
 
 .. |Travis| image:: https://img.shields.io/travis/hottbox/hottbox/master.svg?label=TravisCI
 .. _Travis: https://travis-ci.org/hottbox/hottbox/
 
-.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/sh2rk41gpn26h7a7/branch/master?svg=true
+.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/master?svg=true
 .. _Appveyor: https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a
 
 .. |Coveralls| image:: https://img.shields.io/coveralls/github/hottbox/hottbox/master.svg
 .. _Coveralls: https://coveralls.io/github/hottbox/hottbox
 
-Higher Order Tensors ToolBOX (hottbox)
-======================================
+.. |PyPi| image:: https://badge.fury.io/py/hottbox.svg
+.. _PyPi: https://badge.fury.io/py/hottbox
 
 Welcome to the toolbox for tensor decompositions, statistical analysis, visualisation, feature extraction, 
 regression and non-linear classification of multi-dimensional data. 
@@ -38,14 +41,17 @@ There are two options available:
 
     This will allow you to modify the source code in the way it will suit your needs. Additionally, you will be
     on top of the latest changes and will be able to start using new stable features which are located on
-    `develop <https://github.com/hottbox/hottbox/tree/develop>`_ branch until the official release.
+    `develop <https://github.com/hottbox/hottbox/tree/develop>`_ branch until the official release. The list
+    of provisional changes for the next release (and the CI status) can be also be found on develop branch
+    in `CHANGELOG <https://github.com/hottbox/hottbox/blob/develop/CHANGELOG.md>`_ file.
 
 
 
 Running tests
 -------------
 
-If you have chosen the second installation option, it is advisable to run tests in order to make sure that your
+``hottbox`` is under active development, therefore, if you have chosen the second installation
+option, it is advisable to run tests in order to make sure that your
 current version of ``hottbox`` is stable. First, you will need to install ``pytest`` and ``pytest-cov`` packages: ::
 
     $ pip install pytest pytest-cov
