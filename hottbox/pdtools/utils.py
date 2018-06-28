@@ -41,18 +41,23 @@ def pd_to_tensor(df, keep_index=True):
              Feb   Mon           6
                    Wed           7
     >>> tensor = pd_to_tensor(df)
-    >>> print(tensor)
-        This tensor is of order 3 and consists of 8 elements.
-        Sizes and names of its modes are (2, 2, 2) and ['Year', 'Month', 'Day'] respectively.
-    >>> [print(mode) for mode in tensor.modes]
-        Mode(name='Year', index=[2005, 2010])
-        Mode(name='Month', index=['Jan', 'Feb'])
-        Mode(name='Day', index=['Mon', 'Wed'])
     >>> print(tensor.data)
         [[[0 1]
           [2 3]]
          [[4 5]
           [6 7]]]
+    >>> print(tensor)
+        This tensor is of order 3 and consists of 8 elements.
+        Sizes and names of its modes are (2, 2, 2) and ['Year', 'Month', 'Day'] respectively.
+    >>> tensor.modes
+        [Mode(name='Year', index=[2005, 2010]),
+         Mode(name='Month', index=['Jan', 'Feb']),
+         Mode(name='Day', index=['Mon', 'Wed'])]
+    >>> tensor = pd_to_tensor(df, keep_index=False)
+    >>> tensor.modes
+        [Mode(name='Year', index=None),
+         Mode(name='Month', index=None),
+         Mode(name='Day', index=None)]
     """
     # TODO: need to think what should we do when multi-index dataframe is composed of several columns
 
@@ -96,6 +101,67 @@ def tensor_to_pd(tensor, col_name=None):
 
     Examples
     --------
+
+    1) Conversion of a tensor with default meta information
+
+    >>> import numpy as np
+    >>> from hottbox.core import Tensor
+    >>> from hottbox.pdtools import tensor_to_pd
+    >>> data = np.arange(8).reshape(2, 2, 2)
+    >>> tensor = Tensor(data)
+    >>> print(tensor.data)
+        [[[0 1]
+          [2 3]]
+         [[4 5]
+          [6 7]]]
+    >>> tensor.modes
+        [Mode(name='mode-0', index=None),
+         Mode(name='mode-1', index=None),
+         Mode(name='mode-2', index=None)]
+    >>> df = tensor_to_pd(tensor)
+    >>> print(df)
+                                  Values
+        mode-0 mode-1 mode-2
+        0      0      0            0
+                      1            1
+               1      0            2
+                      1            3
+        1      0      0            4
+                      1            5
+               1      0            6
+                      1            7
+
+    2) Conversion of a tensor with specified mode names
+
+    >>> import numpy as np
+    >>> from hottbox.core import Tensor
+    >>> from hottbox.pdtools import tensor_to_pd
+    >>> data = np.arange(8).reshape(2, 2, 2)
+    >>> tensor = Tensor(data, mode_names=["Year", "Month", "Day"])
+    >>> print(tensor.data)
+        [[[0 1]
+          [2 3]]
+         [[4 5]
+          [6 7]]]
+    >>> tensor.modes
+        [Mode(name='Year', index=None),
+         Mode(name='Month', index=None),
+         Mode(name='Day', index=None)]
+    >>> df = tensor_to_pd(tensor)
+    >>> print(df)
+                            Values
+        Year Month Day
+        0    0     0         0
+                   1         1
+             1     0         2
+                   1         3
+        1    0     0         4
+                   1         5
+             1     0         6
+                   1         7
+
+    3) Conversion of a tensor with specified mode names and mode index
+
     >>> import numpy as np
     >>> from hottbox.core import Tensor
     >>> from hottbox.pdtools import tensor_to_pd
@@ -106,18 +172,15 @@ def tensor_to_pd(tensor, col_name=None):
     ...              }
     >>> tensor = Tensor(data, mode_names=["Year", "Month", "Day"])
     >>> tensor.set_mode_index(mode_index)
-    >>> print(tensor)
-        This tensor is of order 3 and consists of 8 elements.
-        Sizes and names of its modes are (2, 2, 2) and ['Year', 'Month', 'Day'] respectively.
-    >>> [print(mode) for mode in tensor.modes]
-        Mode(name='Year', index=[2005, 2010])
-        Mode(name='Month', index=['Jan', 'Feb'])
-        Mode(name='Day', index=['Mon', 'Wed'])
     >>> print(tensor.data)
         [[[0 1]
           [2 3]]
          [[4 5]
           [6 7]]]
+    >>> tensor.modes
+        [Mode(name='Year', index=[2005, 2010]),
+         Mode(name='Month', index=['Jan', 'Feb']),
+         Mode(name='Day', index=['Mon', 'Wed'])]
     >>> df = tensor_to_pd(tensor)
     >>> print(df)
                           Values

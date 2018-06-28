@@ -1,5 +1,5 @@
-Pandas integration
-==================
+Pandas Integration Tools
+========================
 
 .. automodule:: hottbox.pdtools
     :members:

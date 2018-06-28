@@ -212,7 +212,7 @@ class TestTensor:
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
             correct_normal_shape = (I, J, K)
-            incorrect_mode_order = ([0], [1], [2], [3])
+            incorrect_mode_order = ([0], [1], [2, 3])
             correct_rtype = "T"
 
             incorrect_custom_state = dict(normal_shape=correct_normal_shape,

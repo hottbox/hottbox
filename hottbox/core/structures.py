@@ -61,6 +61,8 @@ class Tensor(object):
         >>> from hottbox.core import Tensor
         >>> data = np.arange(24).reshape(2, 3, 4)
         >>> tensor = Tensor(data, mode_names=["Year", "Month", "Day"])
+        >>> tensor.show_state()
+            State(normal_shape=(2, 3, 4), rtype='Init', mode_order=([0], [1], [2]))
         >>> print(tensor)
             This tensor is of order 3 and consists of 24 elements.
             Sizes and names of its modes are (2, 3, 4) and ['Year', 'Month', 'Day'] respectively.
@@ -73,12 +75,12 @@ class Tensor(object):
         >>> tensor = Tensor(data, custom_state={"normal_shape": (2, 3, 4),
         ...                                     "mode_order": ([0], [1, 2]),
         ...                                     "rtype": "T"}
-        >>> print(data.shape)
+        >>> data.shape
             (2, 12)
-        >>> print(tensor.shape)
+        >>> tensor.shape
             (2, 12)
-        >>> print(tensor.ft_shape)
-            (2, 3, 4)
+        >>> tensor.show_state()
+            State(normal_shape=(2, 3, 4), rtype='T', mode_order=([0], [1, 2]))
         >>> print(tensor)
             This tensor is of order 2 and consists of 24 elements.
             Sizes and names of its modes are (2, 12) and ['mode-0', 'mode-1_mode-2'] respectively.
@@ -423,7 +425,7 @@ class Tensor(object):
 
         Returns
         -------
-        self
+        self : Tensor
         """
         default_mode_names = ["mode-{}".format(i) for i in range(self.data.ndim)]
         self._modes = [Mode(name=name) for name in default_mode_names]
@@ -469,7 +471,7 @@ class Tensor(object):
 
         Returns
         -------
-        self
+        self : Tensor
         """
         if mode is None:
             for i, t_mode in enumerate(self.modes):
@@ -492,7 +494,7 @@ class Tensor(object):
 
         Returns
         -------
-        self
+        self : Tensor
         """
         if len(mode_index.keys()) > self.order:
             raise ValueError("Too many sets of indices have been specified")
@@ -521,7 +523,7 @@ class Tensor(object):
 
         Returns
         -------
-        self
+        self : Tensor
         """
         if mode is None:
             for i in range(self.order):
@@ -922,7 +924,7 @@ class BaseTensorTD(object):
 
 
 class TensorCPD(BaseTensorTD):
-    """ Representation of a tensor in the CPD form.
+    """ Representation of a tensor in the Kruskal (CP) form.
 
     Attributes
     ----------
@@ -951,31 +953,31 @@ class TensorCPD(BaseTensorTD):
 
         >>> import numpy as np
         >>> from hottbox.core import TensorCPD
-        >>> I, J, K = 5, 6, 7  # define shape of the tensor in full form
-        >>> R = 4              # define Kruskal rank of a tensor in CP form
+        >>> I, J, K = 5, 6, 7   # shape of the tensor in full form
+        >>> R = 4               # Kruskal rank
         >>> A = np.ones((I, R))
         >>> B = np.ones((J, R))
         >>> C = np.ones((K, R))
         >>> fmat = [A, B , C]
-        >>> core_values=np.arange(R)
+        >>> core_values = np.arange(R)
         >>> tensor_cpd = TensorCPD(fmat, core_values)
         >>> print(tensor_cpd)
             Kruskal representation of a tensor with rank=(4,).
             Factor matrices represent properties: ['mode-0', 'mode-1', 'mode-2']
             With corresponding latent components described by (5, 6, 7) features respectively.
 
-        2) Create kruskal representation of a tensor with default meta information
+        2) Create kruskal representation of a tensor with custom meta information
 
         >>> import numpy as np
         >>> from hottbox.core import TensorCPD
-        >>> I, J, K = 5, 6, 7  # define shape of the tensor in full form
-        >>> R = 4              # define Kruskal rank of a tensor in CP form
+        >>> I, J, K = 5, 6, 7   # shape of the tensor in full form
+        >>> R = 4               # Kruskal rank
         >>> A = np.ones((I, R))
         >>> B = np.ones((J, R))
         >>> C = np.ones((K, R))
         >>> fmat = [A, B , C]
-        >>> core_values=np.arange(R)
-        >>> mode_names=["Year", "Month", "Day"]
+        >>> core_values = np.arange(R)
+        >>> mode_names = ["Year", "Month", "Day"]
         >>> tensor_cpd = TensorCPD(fmat, core_values, mode_names)
         >>> print(tensor_cpd)
             Kruskal representation of a tensor with rank=(4,).
@@ -1324,6 +1326,44 @@ class TensorTKD(BaseTensorTD):
             Core of the Tucker representation of a tensor
         mode_names : list[str]
             List of names for the factor matrices
+
+        Examples
+        --------
+        1) Create tucker representation of a tensor with default meta information
+
+        >>> import numpy as np
+        >>> from hottbox.core import TensorTKD
+        >>> I, J, K = 5, 6, 7        # shape of the tensor in full form
+        >>> R_1, R_2, R_3 = 2, 3, 4  # multi-linear rank
+        >>> A = np.ones((I, R_1))
+        >>> B = np.ones((J, R_2))
+        >>> C = np.ones((K, R_3))
+        >>> fmat = [A, B , C]
+        >>> core_values = np.ones((R_1, R_2, R_3))
+        >>> tensor_tkd = TensorTKD(fmat, core_values)
+        >>> print(tensor_tkd)
+            Tucker representation of a tensor with multi-linear rank=(2, 3, 4).
+            Factor matrices represent properties: ['mode-0', 'mode-1', 'mode-2']
+            With corresponding latent components described by (5, 6, 7) features respectively.
+
+        2) Create tucker representation of a tensor with custom meta information
+
+        >>> import numpy as np
+        >>> from hottbox.core import TensorTKD
+        >>> I, J, K = 5, 6, 7        # shape of the tensor in full form
+        >>> R_1, R_2, R_3 = 2, 3, 4  # multi-linear rank
+        >>> A = np.ones((I, R_1))
+        >>> B = np.ones((J, R_2))
+        >>> C = np.ones((K, R_3))
+        >>> fmat = [A, B , C]
+        >>> core_values=np.ones((R_1, R_2, R_3))
+        >>> mode_names=["Year", "Month", "Day"]
+        >>> tensor_tkd = TensorTKD(fmat, core_values, mode_names)
+        >>> print(tensor_tkd)
+            Tucker representation of a tensor with multi-linear rank=(2, 3, 4).
+            Factor matrices represent properties: ['Year', 'Month', 'Day']
+            With corresponding latent components described by (5, 6, 7) features respectively.
+
         """
         super(TensorTKD, self).__init__()
         self._validate_init_data(fmat=fmat, core_values=core_values)
@@ -1686,6 +1726,42 @@ class TensorTT(BaseTensorTD):
         ----------
         core_values : list[np.ndarray]
             List of cores for the Tensor Train representation of a tensor.
+
+        Examples
+        --------
+        1) Create tensor train representation of a tensor with default meta information
+
+        >>> import numpy as np
+        >>> from hottbox.core import TensorTT
+        >>> I, J, K = 5, 6, 7          # shape of the tensor in full form
+        >>> R_1, R_2 = 3, 4            # tt-rank
+        >>> core_0 = np.ones((I, R_1))
+        >>> core_1 = np.ones((R1, J, R2))
+        >>> core_2 = np.ones((R2, K))
+        >>> core_values = [core_0, core_1, core_2]
+        >>> tensor_tt = TensorTT(core_values)
+        >>> print(tensor_tt)
+            Tensor train representation of a tensor with tt-rank=(3, 4).
+            Shape of this representation in the full format is (5, 6, 7).
+            Physical modes of its cores represent properties: ['mode-0', 'mode-1', 'mode-2']
+
+        2) Create tensor train representation of a tensor with custom meta information
+
+        >>> import numpy as np
+        >>> from hottbox.core import TensorTT
+        >>> I, J, K = 5, 6, 7  # shape of the tensor in full form
+        >>> R_1, R_2 = 3, 4    # tt-rank
+        >>> core_0 = np.ones((I, R_1))
+        >>> core_1 = np.ones((R_1, J, R_2))
+        >>> core_2 = np.ones((R_2, K))
+        >>> core_values = [core_0, core_1, core_2]
+        >>> mode_names = ["Year", "Month", "Day"]
+        >>> tensor_tt = TensorTT(core_values, mode_names)
+        >>> print(tensor_tt)
+            Tensor train representation of a tensor with tt-rank=(3, 4).
+            Shape of this representation in the full format is (5, 6, 7).
+            Physical modes of its cores represent properties: ['Year', 'Month', 'Day']
+
         """
         super(TensorTT, self).__init__()
         self._validate_init_data(core_values=core_values)

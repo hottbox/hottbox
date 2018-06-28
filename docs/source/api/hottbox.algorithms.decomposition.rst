@@ -45,6 +45,6 @@ Base Interface (For Development)
 --------------------------------
 
 .. automodule:: hottbox.algorithms.decomposition.base
-    :members:
+    :members: Decomposition
     :undoc-members:
     :show-inheritance:
