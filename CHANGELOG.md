@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [HOTTBOX v0.1.4 Unreleased]
 
 ### Package status on branch develop
-[![Travis status](https://img.shields.io/travis/hottbox/hottbox/develop.svg?label=TravisCI)](https://travis-ci.org/hottbox/hottbox/)
+[![Travis status](https://travis-ci.org/hottbox/hottbox.svg?branch=develop)](https://travis-ci.org/hottbox/hottbox/)
 [![Appveyor status](https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/develop?svg=true)](https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a/branch/develop)
-[![Coveralls status](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://coveralls.io/github/hottbox/hottbox)
+[![Coveralls status](https://coveralls.io/repos/github/hottbox/hottbox/badge.svg?branch=develop)](https://coveralls.io/github/hottbox/hottbox?branch=develop)
 
 ### Added
 - [ ] Canonical mode-n unfolding
