@@ -6,6 +6,7 @@ from functools import reduce
 from ..structures import *
 from ..operations import unfold, kolda_unfold
 from .._meta import State
+from ...errors import TensorModeError, TensorShapeError, TensorStateError, TensorTopologyError, ModeError, StateError
 
 
 # TODO: find a better way to test the methods that only prints and for __repr__ and __str__
@@ -85,29 +86,29 @@ class TestTensor:
 
         # ------ tests for custom mode names being incorrectly defined
         # mode names are not of list type
-        with pytest.raises(TypeError):
+        with pytest.raises(ModeError):
             incorrect_mode_names = {mode: "{}-mode".format(mode) for mode in range(order)}
             Tensor(array=correct_data, mode_names=incorrect_mode_names)
 
         # not enough mode names
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             incorrect_mode_names = ["{}-mode".format(mode) for mode in range(order - 1)]
             Tensor(array=correct_data, mode_names=incorrect_mode_names)
 
         # too many mode names
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             incorrect_mode_names = ["{}-mode".format(mode) for mode in range(order + 1)]
             Tensor(array=correct_data, mode_names=incorrect_mode_names)
 
         # all mode names should be strings
-        with pytest.raises(TypeError):
+        with pytest.raises(ModeError):
             incorrect_mode_names = ["{}-mode".format(mode) for mode in range(order)]
             incorrect_mode_names[0] = 0
             Tensor(array=correct_data, mode_names=incorrect_mode_names)
 
         # ------ tests for custom state being incorrectly defined
         # custom state should be passed as a dict
-        with pytest.raises(TypeError):
+        with pytest.raises(StateError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
             correct_normal_shape = (I, J, K)
@@ -120,7 +121,7 @@ class TestTensor:
             Tensor(array=correct_data, custom_state=incorrect_custom_state)
 
         # custom state not fully defined
-        with pytest.raises(ValueError):
+        with pytest.raises(StateError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
             correct_normal_shape = (I, J, K)
@@ -132,7 +133,7 @@ class TestTensor:
             Tensor(array=correct_data, custom_state=incorrect_custom_state)
 
         # normal shape of custom state should be a tuple
-        with pytest.raises(TypeError):
+        with pytest.raises(StateError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
             incorrect_normal_shape = [I, J, K]
@@ -145,7 +146,7 @@ class TestTensor:
             Tensor(array=correct_data, custom_state=incorrect_custom_state)
 
         # normal shape of custom state is inconsistent with the shape of provided data
-        with pytest.raises(ValueError):
+        with pytest.raises(StateError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
             incorrect_normal_shape = (I+1, J, K)
@@ -158,7 +159,7 @@ class TestTensor:
             Tensor(array=correct_data, custom_state=incorrect_custom_state)
 
         # mode order of custom state should be a !! TUPLE !! of lists
-        with pytest.raises(TypeError):
+        with pytest.raises(StateError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
             correct_normal_shape = (I, J, K)
@@ -171,7 +172,7 @@ class TestTensor:
             Tensor(array=correct_data, custom_state=incorrect_custom_state)
 
         # mode order of custom state should be a tuple of !! LISTS !!
-        with pytest.raises(TypeError):
+        with pytest.raises(StateError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
             correct_normal_shape = (I, J, K)
@@ -184,7 +185,7 @@ class TestTensor:
             Tensor(array=correct_data, custom_state=incorrect_custom_state)
 
         # number of list in mode order should correspond to the number of dimensions of provided data
-        with pytest.raises(ValueError):
+        with pytest.raises(StateError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
             correct_normal_shape = (I, J, K)
@@ -195,7 +196,7 @@ class TestTensor:
                                           mode_order=incorrect_mode_order,
                                           rtype=correct_rtype)
             Tensor(array=correct_data, custom_state=incorrect_custom_state)
-        with pytest.raises(ValueError):
+        with pytest.raises(StateError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J*K)
             correct_normal_shape = (I, J, K)
@@ -208,7 +209,7 @@ class TestTensor:
             Tensor(array=correct_data, custom_state=incorrect_custom_state)
 
         # length of mode order of custom state is inconsistent with the normal shape
-        with pytest.raises(ValueError):
+        with pytest.raises(StateError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
             correct_normal_shape = (I, J, K)
@@ -221,7 +222,7 @@ class TestTensor:
             Tensor(array=correct_data, custom_state=incorrect_custom_state)
 
         # length of normal shape of custom state is inconsistent with the length of provided mode names
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             I, J, K = 2, 4, 8
             correct_data = np.ones(I * J * K).reshape(I, J, K)
             correct_normal_shape = (I, J, K)
@@ -304,18 +305,18 @@ class TestTensor:
         with pytest.raises(TypeError):
             assert Tensor(data_1) + data_1
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorStateError):
             tensor_1 = Tensor(array=data_1)
             tensor_2 = Tensor(array=data_2).unfold(mode=0, inplace=True)
             assert tensor_1 + tensor_2
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorModeError):
             mode_index = {0: ["idx1", "idx2"]}
             tensor_1 = Tensor(array=data_1)
             tensor_2 = Tensor(array=data_2).set_mode_index(mode_index=mode_index)
             assert tensor_1 + tensor_2
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorShapeError):
             data_2 = np.arange(2*2).reshape(2,2)
             tensor_1 = Tensor(array=data_1)
             tensor_2 = Tensor(array=data_2)
@@ -380,22 +381,22 @@ class TestTensor:
         assert tensor.mode_names == list(true_new_mode_names.values())
 
         # ------ tests that should FAIL for new mode names being incorrectly defined for renaming
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # too many mode names
             incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(true_order + 1)}
             tensor.set_mode_names(mode_names=incorrect_new_mode_names)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ModeError):
             # incorrect type of keys (not integers)
             incorrect_new_mode_names = {"{}-mode".format(mode): mode for mode in range(true_order)}
             tensor.set_mode_names(mode_names=incorrect_new_mode_names)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # key value exceeds the order of a tensor
             incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(true_order - 2, true_order + 1)}
             tensor.set_mode_names(mode_names=incorrect_new_mode_names)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # key value is set to be negative
             incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(-1, true_order - 1)}
             tensor.set_mode_names(mode_names=incorrect_new_mode_names)
@@ -428,29 +429,29 @@ class TestTensor:
         tensor = Tensor(array=data)
 
         # ------ tests that should FAIL for new mode index being incorrectly defined for renaming
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # too many lists of indices provided
             mode_index = {i: ["index"] for i in range(len(shape)+1)}
             tensor.set_mode_index(mode_index=mode_index)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ModeError):
             # incorrect type of keys (not integers)
-            mode_index = {"index".format(mode): mode for mode in range(true_order)}
+            mode_index = {"index-name": mode for mode in range(true_order)}
             tensor.set_mode_index(mode_index=mode_index)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # key value exceeds the order of a tensor
             wrong_key = true_order + 1
             mode_index = {wrong_key : ["idx"]}
             tensor.set_mode_index(mode_index=mode_index)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # key value exceeds the order of a tensor
             wrong_key = -1
             mode_index = {wrong_key : ["idx"]}
             tensor.set_mode_index(mode_index=mode_index)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # not enough indices for the length of the mode
             mode_index = {0: ["idx"]}
             tensor.set_mode_index(mode_index=mode_index)
@@ -557,12 +558,12 @@ class TestTensor:
             Tensor(array=orig_data).unfold(mode=0, rtype="dummy", inplace=True)
 
         # Tests for checking normal state of a tensor
-        with pytest.raises(TypeError):
+        with pytest.raises(TensorStateError):
             # Should not unfold several times in a row
             Tensor(array=orig_data).unfold(mode=0, inplace=True).unfold(mode=0, inplace=True)
 
-        with pytest.raises(TypeError):
-            # Should not fold inf it wasn't unfolded before
+        with pytest.raises(TensorStateError):
+            # Should not fold if it wasn't unfolded before
             Tensor(array=orig_data).fold(inplace=True)
 
     def test_vectorise(self):
@@ -622,7 +623,7 @@ class TestTensor:
             Tensor(array=orig_data).vectorise(rtype="dummy", inplace=True)
 
         # Tests for checking normal state of a tensor
-        with pytest.raises(TypeError):
+        with pytest.raises(TensorStateError):
             # Should vectorise a tensor only if it was in normal state
             Tensor(array=orig_data).unfold(mode=0, inplace=True).vectorise(inplace=True)
 
@@ -670,7 +671,7 @@ class TestTensor:
             np.testing.assert_array_equal(tensor.data, array_3d)
 
         # check that mode_n_product can be performed only on a tensor in normal state
-        with pytest.raises(TypeError):
+        with pytest.raises(TensorStateError):
             tensor = Tensor(array=array_3d).unfold(mode=0, inplace=True)
             matrix = np.arange(2)
             tensor.mode_n_product(matrix, mode=0)
@@ -683,10 +684,10 @@ class TestTensor:
         orig_names = ['country', 'model', 'year']
 
         # check that names have not been changed when multiply with numpy array
-        for mode in range(len(new_dim)):
+        for i, mode in enumerate(new_dim):
             tensor = Tensor(array=array_3d, mode_names=orig_names)
-            matrix = np.arange(new_dim[mode] * orig_dim[mode]).reshape(new_dim[mode], orig_dim[mode])
-            tensor.mode_n_product(matrix, mode=mode)
+            matrix = np.arange(mode * orig_dim[i]).reshape(mode, orig_dim[i])
+            tensor.mode_n_product(matrix, mode=i)
             assert (tensor.mode_names == orig_names)
 
         # check that names have not been changed when multiply with matrix as a Tensor object with default names
@@ -718,7 +719,7 @@ class TestTensor:
             assert (tensor.mode_names == new_true_names)
 
         # check that you cannot use matrix of Tensor class and specify new name at the same time
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             mode = 1
             tensor = Tensor(array=array_3d, mode_names=orig_names)
             matrix = Tensor(np.arange(new_dim[mode] * orig_dim[mode]).reshape(new_dim[mode], orig_dim[mode]))
@@ -726,7 +727,7 @@ class TestTensor:
             tensor.mode_n_product(matrix, mode=mode, new_name=new_name)
 
         # check that new_name should be of string type
-        with pytest.raises(TypeError):
+        with pytest.raises(ModeError):
             mode = 1
             tensor = Tensor(array=array_3d, mode_names=orig_names)
             matrix = np.arange(new_dim[mode] * orig_dim[mode]).reshape(new_dim[mode], orig_dim[mode])
@@ -834,18 +835,18 @@ class TestTensorCPD:
             TensorCPD(fmat=incorrect_fmat, core_values=correct_core_values)
 
         # all factor matrices should be a 2-dimensional numpy array
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             incorrect_fmat = [fmat.copy() for fmat in correct_fmat]
             incorrect_fmat[0] = np.ones([2, 2, 2])
             TensorCPD(fmat=incorrect_fmat, core_values=correct_core_values)
 
         # too many (or not enough) `core_values` for `fmat`
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             incorrect_core_values = np.ones(correct_core_values.size + 1)
             TensorCPD(fmat=correct_fmat, core_values=incorrect_core_values)
 
         # dimension all factor matrices should have the same number of columns
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             incorrect_fmat = [fmat.copy() for fmat in correct_fmat]
             incorrect_fmat[0] = incorrect_fmat[0].T
             TensorCPD(fmat=incorrect_fmat, core_values=correct_core_values)
@@ -965,7 +966,7 @@ class TestTensorCPD:
             # wrong data type
             assert TensorCPD(fmat=fmat_1, core_values=core_values_1) + np.ones(R_2)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             # wrong topology which is determined by the ft_shape or number of dimensions
             ft_shape_new = ft_shape + (6,)
             fmat_2_new = [np.ones(i * R_2).reshape(i, R_2) for i in ft_shape_new]
@@ -973,7 +974,7 @@ class TestTensorCPD:
             t_cpd_2 = TensorCPD(fmat=fmat_2_new, core_values=core_values_2)
             assert t_cpd_1 + t_cpd_2
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # wrong mode index
             t_cpd_1 = TensorCPD(fmat=fmat_1, core_values=core_values_1)
             t_cpd_2 = TensorCPD(fmat=fmat_2, core_values=core_values_2).set_mode_index(mode_index=new_mode_index)
@@ -1112,22 +1113,22 @@ class TestTensorCPD:
         assert all([tensor_cpd.modes[i].name == tensor_cpd_true.modes[i].name for i in range(tensor_cpd.order)])
 
         # ------ tests that should FAIL for new mode names being incorrectly defined for renaming
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # too many mode names
             incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(true_order + 1)}
             tensor_cpd.set_mode_names(mode_names=incorrect_new_mode_names)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ModeError):
             # incorrect type of keys (not integers)
             incorrect_new_mode_names = {"{}-mode".format(mode): mode for mode in range(true_order)}
             tensor_cpd.set_mode_names(mode_names=incorrect_new_mode_names)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # key value exceeds the order of a tensor
             incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(true_order - 2, true_order + 1)}
             tensor_cpd.set_mode_names(mode_names=incorrect_new_mode_names)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # key value is set to be negative
             incorrect_new_mode_names = {mode: "{}-mode".format(mode) for mode in range(-1, true_order - 1)}
             tensor_cpd.set_mode_names(mode_names=incorrect_new_mode_names)
@@ -1167,29 +1168,29 @@ class TestTensorCPD:
         assert all([tensor_cpd.modes[i].index == mode_index[i] for i in range(tensor_cpd.order)])
 
         # ------ tests that should FAIL for new mode index being incorrectly defined for renaming
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # too many lists of indices provided
             mode_index = {i: ["index"] for i in range(len(ft_shape) + 1)}
             tensor_cpd.set_mode_index(mode_index=mode_index)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ModeError):
             # incorrect type of keys (not integers)
             mode_index = {"index".format(mode): mode for mode in range(true_order)}
             tensor_cpd.set_mode_index(mode_index=mode_index)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # key value exceeds the order of a tensor
             wrong_key = true_order + 1
             mode_index = {wrong_key: ["idx"]}
             tensor_cpd.set_mode_index(mode_index=mode_index)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # key value exceeds the order of a tensor
             wrong_key = -1
             mode_index = {wrong_key: ["idx"]}
             tensor_cpd.set_mode_index(mode_index=mode_index)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # not enough indices for the length of the mode
             mode_index = {0: ["idx"]}
             tensor_cpd.set_mode_index(mode_index=mode_index)
@@ -1281,19 +1282,19 @@ class TestTensorTKD:
             TensorTKD(fmat=incorrect_fmat, core_values=correct_core_values)
 
         # all factor matrices should be a 2-dimensional numpy array
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             incorrect_fmat = [fmat.copy() for fmat in correct_fmat]
             mode = 0
             incorrect_fmat[mode] = np.ones([ft_shape[mode], ml_rank[mode], 2])
             TensorTKD(fmat=incorrect_fmat, core_values=correct_core_values)
 
         # Not enough factor matrices for the specified core tensor
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             incorrect_core_values = np.ones(correct_core_values.shape + (2,))
             TensorTKD(fmat=correct_fmat, core_values=incorrect_core_values)
 
         # number of columns of some factor matrices does not match the size of the corresponding mode of the core
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             incorrect_fmat = [fmat.copy() for fmat in correct_fmat]
             incorrect_fmat[0] = incorrect_fmat[0].T
             TensorTKD(fmat=incorrect_fmat, core_values=correct_core_values)
@@ -1454,7 +1455,7 @@ class TestTensorTKD:
             # wrong data type
             assert TensorTKD(fmat=fmat_1, core_values=core_values_1) + np.ones(ml_rank_1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             # wrong topology which is determined by the ft_shape or number of dimensions
             ft_shape_new = tuple(i + 1 for i in ft_shape)
             fmat_2_new = create_fmat(np.ones, ft_shape_new, ml_rank_2)
@@ -1462,7 +1463,7 @@ class TestTensorTKD:
             tensor_tkd_2 = TensorTKD(fmat=fmat_2_new, core_values=core_values_2)
             assert tensor_tkd_1 + tensor_tkd_2
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ModeError):
             # wrong mode index
             tensor_tkd_1 = TensorTKD(fmat=fmat_1, core_values=core_values_1)
             tensor_tkd_2 = TensorTKD(fmat=fmat_2, core_values=core_values_2).set_mode_index(mode_index=new_mode_index)
@@ -1759,24 +1760,24 @@ class TestTensorTT:
             TensorTT(core_values=incorrect_core_values)
 
         # not enough elements in core_values for the specified ft_shape
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             incorrect_core_values = [correct_core_1, correct_core_2]
             TensorTT(core_values=incorrect_core_values)
 
         # first and last element of core_values should be 2-dimensional arrays
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             shape = (2, 2, 2)
             incorrect_core_values = [np.ones(shape) for _ in range(len(correct_ft_shape))]
             TensorTT(core_values=incorrect_core_values)
 
         # All but first and last element of core_values should be 3-dimensional arrays
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             shape = (2, 2)
             incorrect_core_values = [np.ones(shape) for _ in range(len(correct_ft_shape))]
             TensorTT(core_values=incorrect_core_values)
 
         # Last dimension of core_values[i] should be the same as the first dimension of core_values[i+1]
-        with pytest.raises(ValueError):
+        with pytest.raises(TensorTopologyError):
             incorrect_core_values = [np.ones((2, 3)), np.ones((3, 4, 5)), np.ones((6, 8))]
             TensorTT(core_values=incorrect_core_values)
 

@@ -123,7 +123,7 @@ def _pprint(params, offset=0, printer=repr):
     line_sep = ',\n' + (1 + offset // 2) * ' '
     for i, name in enumerate(param_names):
         value = params[name]
-        if type(value) is float:
+        if isinstance(value, float):
             this_repr = '%s=%s' % (name, str(value))
         else:
             this_repr = '%s=%s' % (name, printer(value))

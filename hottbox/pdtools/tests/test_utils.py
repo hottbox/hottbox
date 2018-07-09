@@ -82,6 +82,6 @@ def test_tensor_to_pd():
     pd.testing.assert_frame_equal(df_mi, df_rec)
 
     # ----- tests that should FAILS
-    with pytest.raises(TypeError):
+    with pytest.raises(TensorStateError):
         tensor.unfold(0, inplace=True)
         tensor_to_pd(tensor=tensor)
