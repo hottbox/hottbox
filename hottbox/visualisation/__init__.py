@@ -92,7 +92,7 @@ BANK_OF_PLOTS = {
 }
 
 
-def _main_plotting_function(tensor_cpd, group, plot_bank=None):
+def _main_plotting_function(tensor_cpd, group, plot_bank):
 
     n_rows = 1
     n_cols = tensor_cpd.order
@@ -102,8 +102,6 @@ def _main_plotting_function(tensor_cpd, group, plot_bank=None):
                              ncols=n_cols,
                              figsize=(n_cols * axis_width, n_rows * axis_height)
                              )
-    if plot_bank is None:
-        plot_bank = {i: _line_plot for i in range(n_cols)}
 
     for i, fmat in enumerate(tensor_cpd.fmat):
         factor = group[i]
@@ -116,136 +114,10 @@ def _main_plotting_function(tensor_cpd, group, plot_bank=None):
 
 
 
+class BaseIPlot(object):
 
-class PlotTensorCPD():
-    def __init__(self, tensor_cpd):
-        """
+    DEFAULT_PLOT_TYPE = {"line" : _line_plot}
 
-        Parameters
-        ----------
-        tensor_cpd : TensorCPD
-        """
-        self.tensor_rep = tensor_cpd
-        self.sliders = self.create_fmat_sliders(tensor_cpd.fmat)
-        self.dropdown = self.create_dropdown(tensor_cpd.order)
-        self.out = widgets.Output()
-        self.dashboard = widgets.VBox([self.out,
-                                       widgets.HBox(self.sliders),
-                                       widgets.HBox(self.dropdown)
-                                       ])
-
-    @staticmethod
-    def create_fmat_sliders(fmat):
-        slider_list = [widgets.IntSlider(min=0, max=fmat[0].shape[1]-1)]
-        return slider_list
-
-    @staticmethod
-    def create_dropdown(number):
-        dropdown_list = [None] * number
-        for i in range(number):
-            dropdown_list[i] = widgets.Dropdown(options=['line', 'bar'],
-                                                value='line',
-                                                description='Plot type:',
-                                                disabled=False,
-                                                )
-        return dropdown_list
-
-    def general_callback(self, change):
-        plot_bank = {i: BANK_OF_PLOTS[dropdown.value] for i, dropdown in enumerate(self.dropdown)}
-        group = tuple([slider.value for slider in self.sliders])
-        with self.out:
-            fig = self.update_plot(group=group, plot_bank=plot_bank)
-            display(fig)
-            clear_output(wait=True)
-
-    def start_interacting(self):
-        for slider in self.sliders:
-            slider.observe(self.general_callback, names="value")
-
-        for dropdown in self.dropdown:
-            dropdown.observe(self.general_callback, names="value")
-
-        display(self.dashboard)
-
-    def update_plot(self, group, plot_bank=None):
-        new_group = group * self.tensor_rep.order
-        fig = _main_plotting_function(tensor_cpd=self.tensor_rep, group=new_group, plot_bank=plot_bank)
-        return fig
-
-
-
-
-
-
-class PlotTensorTKD():
-    def __init__(self, tensor_tkd):
-        """
-
-        Parameters
-        ----------
-        tensor_tkd : TensorTKD
-        """
-        self.tensor_rep = tensor_tkd
-        self.out = widgets.Output()
-        self.sliders = self.create_fmat_sliders(tensor_tkd.fmat)
-        self.dropdown = self.create_dropdown(tensor_tkd.order)
-        self.dashboard = widgets.VBox([self.out,
-                                       widgets.HBox(self.sliders),
-                                       widgets.HBox(self.dropdown)
-                                       ])
-
-    @staticmethod
-    def create_fmat_sliders(fmat):
-        slider_list = [None] * len(fmat)
-        for i, f in enumerate(fmat):
-            slider_list[i] = widgets.IntSlider(min=0, max=f.shape[1]-1)
-        return slider_list
-
-    @staticmethod
-    def create_dropdown(number):
-        dropdown_list = [None] * number
-        for i in range(number):
-            dropdown_list[i] = widgets.Dropdown(options=['line', 'bar'],
-                                                value='line',
-                                                description='Plot type:',
-                                                disabled=False,
-                                                )
-        return dropdown_list
-
-    def general_callback(self, change):
-        plot_bank = {i: BANK_OF_PLOTS[dropdown.value] for i, dropdown in enumerate(self.dropdown)}
-        group = tuple([slider.value for slider in self.sliders])
-        with self.out:
-            fig = self.update_plot(group=group, plot_bank=plot_bank)
-            display(fig)
-            clear_output(wait=True)
-
-    def start_interacting(self):
-        for slider in self.sliders:
-            slider.observe(self.general_callback, names="value")
-
-        for dropdown in self.dropdown:
-            dropdown.observe(self.general_callback, names="value")
-
-        display(self.dashboard)
-
-
-    def update_plot(self, group, plot_bank):
-        fig = _main_plotting_function(tensor_cpd=self.tensor_rep, group=group, plot_bank=plot_bank)
-        return fig
-
-
-
-
-
-
-
-
-
-
-
-
-class BaseIplot():
     def __init__(self, tensor_rep):
         """
 
@@ -255,32 +127,94 @@ class BaseIplot():
         """
         self.tensor_rep = tensor_rep
         self.out = widgets.Output()
-        self.sliders = self.create_fmat_sliders()
-        self.dropdown = self.create_plot_type_dropdown()
-        self.dashboard = self.assemble_dashboard()
+        self.sliders = self._create_fmat_sliders()
+        self.dropdown = self._create_fmat_dropdown()
+        self.dashboard = widgets.VBox([self.out,
+                                       widgets.HBox(self.sliders),
+                                       widgets.HBox(self.dropdown)
+                                       ])
 
-    # def create_fmat_sliders(self, params):
-    #     sliders_list = [None] * len(params)
-    #     for i in
-    #     pass
+    def _create_fmat_sliders(self):
+        """ Just a dummy slider since this is an interface """
+        slider_list = [widgets.IntSlider(min=0, max=0, value=0)]
+        return slider_list
 
-    def create_plot_type_dropdown(self):
-        pass
+    def _create_fmat_dropdown(self):
+        # TODO: Needs to be dynamic
+        dropdown_params = dict(options=['line', 'bar'],
+                               value='line',
+                               description='Plot type:',
+                               disabled=False
+                               )
+        dropdown_list = [widgets.Dropdown(**dropdown_params) for _ in self.tensor_rep.fmat]
+        return dropdown_list
 
     def start_interacting(self):
-        pass
+        # Start tracking changes
+        [slider.observe(self.general_callback, names="value") for slider in self.sliders]
+        [dropdown.observe(self.general_callback, names="value") for dropdown in self.dropdown]
+        display(self.dashboard)
 
-    def assemble_dashboard(self):
-        pass
+    def general_callback(self, change):
+        slider_values = [slider.value for slider in self.sliders]
+        dropdown_values = [dropdown.value for dropdown in self.dropdown]
+        self.update_plot(slider_values=slider_values, dropdown_values=dropdown_values)
 
-    def slider_callback(self, change):
-        pass
-
-    def dropdown_callback(self, change):
-        pass
-
-    def update_plot(self):
+    def update_plot(self, slider_values, dropdown_values):
+        group = tuple(slider_values)
+        plot_bank = {i: BANK_OF_PLOTS[value] for i, value in enumerate(dropdown_values)}
         with self.out:
-            fig = _main_plotting_function()
+            fig = _main_plotting_function(tensor_cpd=self.tensor_rep, group=group, plot_bank=plot_bank)
+            display(fig)
+            clear_output(wait=True)
+
+
+class PlotTensorCPD(BaseIPlot):
+    def __init__(self, tensor_rep):
+        super(PlotTensorCPD, self).__init__(tensor_rep=tensor_rep)
+
+    def _create_fmat_sliders(self):
+        slider_list = [widgets.IntSlider(min=0, max=(self.tensor_rep.fmat[0].shape[1] - 1))]
+        return slider_list
+
+    def _create_fmat_dropdown(self):
+        dropdown_list = super(PlotTensorCPD, self)._create_fmat_dropdown()
+        return dropdown_list
+
+    def start_interacting(self):
+        super(PlotTensorCPD, self).start_interacting()
+
+    def general_callback(self, change):
+        super(PlotTensorCPD, self).general_callback(change)
+
+    def update_plot(self, slider_values, dropdown_values):
+        super(PlotTensorCPD, self).update_plot(slider_values=slider_values * self.tensor_rep.order,
+                                               dropdown_values=dropdown_values
+                                               )
+
+class PlotTensorTKD(BaseIPlot):
+    def __init__(self, tensor_rep):
+        super(PlotTensorTKD, self).__init__(tensor_rep=tensor_rep)
+
+    def _create_fmat_sliders(self):
+        slider_list = [widgets.IntSlider(min=0, max=(fmat.shape[1] - 1)) for fmat in self.tensor_rep.fmat]
+        return slider_list
+
+    def _create_fmat_dropdown(self):
+        dropdown_list = super(PlotTensorTKD, self)._create_fmat_dropdown()
+        return dropdown_list
+
+    def start_interacting(self):
+        super(PlotTensorTKD, self).start_interacting()
+
+    def general_callback(self, change):
+        super(PlotTensorTKD, self).general_callback(change)
+
+    def update_plot(self, slider_values, dropdown_values):
+        super(PlotTensorTKD, self).update_plot(slider_values=slider_values,
+                                               dropdown_values=dropdown_values
+                                               )
+
+
 
 
