@@ -12,10 +12,9 @@ All its functionality should be used inside Jupyter Lab/ Jupyter Notebook.
 import numpy as np
 import ipywidgets as widgets
 import matplotlib.pyplot as plt  # This essentially can be replaced with `plotly` in a future
-from scipy import signal  # for generating testing data
-from hottbox.core import TensorCPD, TensorTKD  # for type hinting
+from scipy import signal  # for generating testing data and can be removed
 from IPython.display import display, clear_output
-
+from ..core import TensorCPD, TensorTKD  # for type hinting
 
 def gen_test_data(plot=False):
     """ Generate factor matrices which components will be easy to differentiate from one another
@@ -86,37 +85,14 @@ def _bar_plot(ax, data):
     """ Sample custom plot function """
     ax.bar(x=range(data.shape[0]), height=data)
 
-BANK_OF_PLOTS = {
-    "line" : _line_plot,
-    "bar" : _bar_plot
+
+_DEFAULT_1D_PLOTS = {
+    "line": _line_plot,
+    "bar": _bar_plot
 }
 
 
-def _main_plotting_function(tensor_cpd, group, plot_bank):
-
-    n_rows = 1
-    n_cols = tensor_cpd.order
-    axis_width = 4
-    axis_height = 4
-    fig, axis = plt.subplots(nrows=n_rows,
-                             ncols=n_cols,
-                             figsize=(n_cols * axis_width, n_rows * axis_height)
-                             )
-
-    for i, fmat in enumerate(tensor_cpd.fmat):
-        factor = group[i]
-        plot_function = plot_bank[i]
-        plot_function(ax=axis[i],
-                      data=fmat[:, factor])
-        axis[i].set_title("Factor matrix: {}".format(tensor_cpd.mode_names[i]))
-    plt.tight_layout()
-    return fig
-
-
-
-class BaseIPlot(object):
-
-    DEFAULT_PLOT_TYPE = {"line" : _line_plot}
+class BaseComponentPlot(object):
 
     def __init__(self, tensor_rep):
         """
@@ -126,6 +102,7 @@ class BaseIPlot(object):
         tensor_rep : {TensorCPD, TensorTKD}
         """
         self.tensor_rep = tensor_rep
+        self.available_plots = {**_DEFAULT_1D_PLOTS}
         self.out = widgets.Output()
         self.sliders = self._create_fmat_sliders()
         self.dropdown = self._create_fmat_dropdown()
@@ -133,6 +110,7 @@ class BaseIPlot(object):
                                        widgets.HBox(self.sliders),
                                        widgets.HBox(self.dropdown)
                                        ])
+        self._start_interacting()
 
     def _create_fmat_sliders(self):
         """ Just a dummy slider since this is an interface """
@@ -140,81 +118,126 @@ class BaseIPlot(object):
         return slider_list
 
     def _create_fmat_dropdown(self):
-        # TODO: Needs to be dynamic
-        dropdown_params = dict(options=['line', 'bar'],
-                               value='line',
+        options_list = list(self.available_plots.keys())
+        default_value = "line"  # default_value = options_list[0]
+        dropdown_params = dict(options=options_list,
+                               value=default_value,
                                description='Plot type:',
                                disabled=False
                                )
         dropdown_list = [widgets.Dropdown(**dropdown_params) for _ in self.tensor_rep.fmat]
         return dropdown_list
 
-    def start_interacting(self):
+    def _start_interacting(self):
         # Start tracking changes
-        [slider.observe(self.general_callback, names="value") for slider in self.sliders]
-        [dropdown.observe(self.general_callback, names="value") for dropdown in self.dropdown]
+        [slider.observe(self._general_callback, names="value") for slider in self.sliders]
+        [dropdown.observe(self._general_callback, names="value") for dropdown in self.dropdown]
         display(self.dashboard)
 
-    def general_callback(self, change):
+    def _general_callback(self, change):
         slider_values = [slider.value for slider in self.sliders]
         dropdown_values = [dropdown.value for dropdown in self.dropdown]
-        self.update_plot(slider_values=slider_values, dropdown_values=dropdown_values)
+        self._update_plot(slider_values=slider_values, dropdown_values=dropdown_values)
 
-    def update_plot(self, slider_values, dropdown_values):
+    def _update_plot(self, slider_values, dropdown_values):
         group = tuple(slider_values)
-        plot_bank = {i: BANK_OF_PLOTS[value] for i, value in enumerate(dropdown_values)}
         with self.out:
-            fig = _main_plotting_function(tensor_cpd=self.tensor_rep, group=group, plot_bank=plot_bank)
+            fig = self._main_plotting_function(group=group)
             display(fig)
             clear_output(wait=True)
 
+    def _main_plotting_function(self, group):
+        n_rows = 1
+        n_cols = self.tensor_rep.order
+        axis_width = 4
+        axis_height = 4
+        fig, axis = plt.subplots(nrows=n_rows,
+                                 ncols=n_cols,
+                                 figsize=(n_cols * axis_width, n_rows * axis_height)
+                                 )
 
-class PlotTensorCPD(BaseIPlot):
+        for i, fmat in enumerate(self.tensor_rep.fmat):
+            factor = group[i]
+            plot_function = self.available_plots[self.dropdown[i].value]
+            plot_function(ax=axis[i],
+                          data=fmat[:, factor])
+            axis[i].set_title("Factor matrix: {}".format(self.tensor_rep.mode_names[i]))
+        plt.tight_layout()
+        return fig
+
+    def _update_figure(self):
+
+        pass
+
+    # TODO: think of an elegant way of adding plot function only to a specific dropdown menu
+    def extend_available_plots(self, custom_plots):
+        # TODO: this implementation changes the order of available options but the because we eliminate possible duplicates using set which is unordered
+        # extend dict with 'label' -> plot_functions
+        self.available_plots.update(custom_plots)
+
+        # Update dropdown menus
+        new_dropdown_options = list(custom_plots.keys())
+        for dropdown in self.dropdown:
+            dropdown.options = list({*dropdown.options, *new_dropdown_options})
+
+    # def extend_available_plots(self, custom_plots):
+    # # TODO: don't like this implementation but the original order of options should still be preserved
+    #     current_dropdown_options = self.dropdown[0].options
+    #     new_dropdown_options = [key for key in custom_plots if key not in current_dropdown_options]
+    #     self.available_plots.update(custom_plots)
+    #     for dropdown in self.dropdown:
+    #         dropdown.options = [*dropdown.options, *new_dropdown_options]
+
+
+class ComponentPlotCPD(BaseComponentPlot):
     def __init__(self, tensor_rep):
-        super(PlotTensorCPD, self).__init__(tensor_rep=tensor_rep)
+        super(ComponentPlotCPD, self).__init__(tensor_rep=tensor_rep)
 
     def _create_fmat_sliders(self):
         slider_list = [widgets.IntSlider(min=0, max=(self.tensor_rep.fmat[0].shape[1] - 1))]
         return slider_list
 
     def _create_fmat_dropdown(self):
-        dropdown_list = super(PlotTensorCPD, self)._create_fmat_dropdown()
+        dropdown_list = super(ComponentPlotCPD, self)._create_fmat_dropdown()
         return dropdown_list
 
-    def start_interacting(self):
-        super(PlotTensorCPD, self).start_interacting()
+    def _start_interacting(self):
+        super(ComponentPlotCPD, self)._start_interacting()
 
-    def general_callback(self, change):
-        super(PlotTensorCPD, self).general_callback(change)
+    def _general_callback(self, change):
+        super(ComponentPlotCPD, self)._general_callback(change)
 
-    def update_plot(self, slider_values, dropdown_values):
-        super(PlotTensorCPD, self).update_plot(slider_values=slider_values * self.tensor_rep.order,
-                                               dropdown_values=dropdown_values
-                                               )
+    def _update_plot(self, slider_values, dropdown_values):
+        super(ComponentPlotCPD, self)._update_plot(slider_values=slider_values * self.tensor_rep.order,
+                                                   dropdown_values=dropdown_values
+                                                   )
 
-class PlotTensorTKD(BaseIPlot):
+    def extend_available_plots(self, custom_plots):
+        super(ComponentPlotCPD, self).extend_available_plots(custom_plots=custom_plots)
+
+
+class ComponentPlotTKD(BaseComponentPlot):
     def __init__(self, tensor_rep):
-        super(PlotTensorTKD, self).__init__(tensor_rep=tensor_rep)
+        super(ComponentPlotTKD, self).__init__(tensor_rep=tensor_rep)
 
     def _create_fmat_sliders(self):
         slider_list = [widgets.IntSlider(min=0, max=(fmat.shape[1] - 1)) for fmat in self.tensor_rep.fmat]
         return slider_list
 
     def _create_fmat_dropdown(self):
-        dropdown_list = super(PlotTensorTKD, self)._create_fmat_dropdown()
+        dropdown_list = super(ComponentPlotTKD, self)._create_fmat_dropdown()
         return dropdown_list
 
-    def start_interacting(self):
-        super(PlotTensorTKD, self).start_interacting()
+    def _start_interacting(self):
+        super(ComponentPlotTKD, self)._start_interacting()
 
-    def general_callback(self, change):
-        super(PlotTensorTKD, self).general_callback(change)
+    def _general_callback(self, change):
+        super(ComponentPlotTKD, self)._general_callback(change)
 
-    def update_plot(self, slider_values, dropdown_values):
-        super(PlotTensorTKD, self).update_plot(slider_values=slider_values,
-                                               dropdown_values=dropdown_values
-                                               )
+    def _update_plot(self, slider_values, dropdown_values):
+        super(ComponentPlotTKD, self)._update_plot(slider_values=slider_values,
+                                                   dropdown_values=dropdown_values
+                                                   )
 
-
-
-
+    def extend_available_plots(self, custom_plots):
+        super(ComponentPlotTKD, self).extend_available_plots(custom_plots=custom_plots)
