@@ -71,12 +71,12 @@ def gen_test_tensor_cpd():
 
 
 def _line_plot(ax, data):
-    """ Represent factor vector as line plot
+    """ Base function for representing factor vector as line plot
 
     Parameters
     ----------
     ax : matplotlib.axes.Axes
-        Axes object which is used to illustrate `data`
+        Axis object which is used to illustrate `data`
     data : np.ndarray
         Array of data to be plotted. Shape of such array is ``(N, 1)``
     """
@@ -84,12 +84,12 @@ def _line_plot(ax, data):
 
 
 def _bar_plot(ax, data):
-    """ Represent factor vector as bar plot
+    """ Base function for representing factor vector as bar plot
 
     Parameters
     ----------
     ax : matplotlib.axes.Axes
-        Axes object which is used to illustrate `data`
+        Axis object which is used to illustrate `data`
     data : np.ndarray
         Array of data to be plotted. Shape of such array is ``(N, 1)``
     """
@@ -102,21 +102,26 @@ _DEFAULT_1D_PLOTS = OrderedDict([("line", _line_plot),
 
 
 class BaseComponentPlot(object):
-    """
+    """ Dashboard for interactive visualisation of the factor vectors
 
     Attributes
     ----------
     available_plots : dict[str, callable]
         Ordered dictionary with all available plot functions for the factor vectors
     out : Output
+        Widget used as a context manager to display output.
     sliders : list[IntSlider]
+        List of slider widgets each of which allows to select factor vector to be plotted.
     dropdown : list[Dropdown]
+        List of dropdown widgets each of which allows to select type of plot
+        for the factor vector selected by the corresponding slider.
     dashboard : VBox
-
+        Dashboard with visualisations of the factor vectors and widgets for selection
+        of how and what is going to be displayed.
     """
 
     def __init__(self, tensor_rep):
-        """
+        """ Constructor of the interactive dashboard
 
         Parameters
         ----------
@@ -134,12 +139,12 @@ class BaseComponentPlot(object):
         self._start_interacting()
 
     def _create_fmat_sliders(self):
-        """ Create slider widgets for factor vectors
+        """ Create slider widgets for selecting factor vectors
 
         Returns
         -------
         slider_list : list[IntSlider]
-            List of sliders for selecting factor vector to be plotted
+            List of slider widgets for selecting factor vector to be plotted
 
         Notes
         -----
@@ -154,12 +159,12 @@ class BaseComponentPlot(object):
         return slider_list
 
     def _create_fmat_dropdown(self):
-        """ Create dropdown widgets for each factor matrix
+        """ Create dropdown widgets for selecting plotting functions
 
         Returns
         -------
         dropdown_list : list[Dropdown]
-            List of dropdown menus for selecting type of plot for the factor matrix
+            List of dropdown widgets for selecting type of plot for the factor matrix
         """
         options_list = list(self.available_plots.keys())
         default_value = options_list[0]  # default_value = "line"
@@ -172,46 +177,40 @@ class BaseComponentPlot(object):
         return dropdown_list
 
     def _start_interacting(self):
-        """ Setup a handler to be called when values of dashboard have been changed
-        """
+        """ Display the dashboard and setup callbacks for its widgets """
         [slider.observe(self._general_callback, names="value") for slider in self.sliders]
         [dropdown.observe(self._general_callback, names="value") for dropdown in self.dropdown]
         display(self.dashboard)
 
     def _general_callback(self, change):
-        """ A callable that is called when when values of dashboard have been changed
+        """ A callable that is called when values of slider or dropdown widgets have been changed
 
         Notes
         -----
             The signature of this method should not be changed
         """
-        slider_values = [slider.value for slider in self.sliders]
-        self._update_visualisation(slider_values=slider_values)
-
-    def _update_visualisation(self, slider_values):
-        """
-
-        Parameters
-        ----------
-        slider_values : list[int]
-        """
-        group = tuple(slider_values)
         with self.out:
-            fig = self._plot_factor_vectors(group=group)
+            fig = self._plot_factor_vectors()
             display(fig)
             clear_output(wait=True)
 
-    def _plot_factor_vectors(self, group):
-        """
+    def _plot_factor_vectors(self):
+        """ Plot selected factor vectors using selected plot functions
 
-        Parameters
-        ----------
-        group
+        Values of slider widgets are used to determine which factor vectors to plot.
+        Values of dropdown widgets are used to determine which plot functions to use.
 
         Returns
         -------
         fig : matplotlib.figure.Figure
         """
+        dropdown_values = [dropdown.value for dropdown in self.dropdown]
+        factor_vectors_list = [slider.value for slider in self.sliders]
+
+        if isinstance(self.tensor_rep, TensorCPD):
+            # Since one slider is used to select factor vectors across all modes
+            factor_vectors_list *= self.tensor_rep.order
+
         n_rows = 1
         n_cols = self.tensor_rep.order
         axis_width = 4
@@ -222,15 +221,15 @@ class BaseComponentPlot(object):
                                  )
 
         for i, fmat in enumerate(self.tensor_rep.fmat):
-            factor = group[i]
-            plot_function = self.available_plots[self.dropdown[i].value]
+            factor = factor_vectors_list[i]
+            plot_function = self.available_plots[dropdown_values[i]]
             plot_function(ax=axis[i],
                           data=fmat[:, factor])
             axis[i].set_title("Factor matrix: {}".format(self.tensor_rep.mode_names[i]))
         plt.tight_layout()
         return fig
 
-    def extend_available_plots(self, custom_plots, modes):
+    def extend_available_plots(self, custom_plots, modes=()):
         """ Add custom plot functions available for representing factor vectors
 
         This method can be used either for adding new ways of plotting of the
@@ -281,9 +280,34 @@ class BaseComponentPlot(object):
 
 class ComponentPlotCPD(BaseComponentPlot):
     def __init__(self, tensor_rep):
+        """ Constructor of the interactive dashboard for the `TensorCPD` objects
+
+        Parameters
+        ----------
+        tensor_rep : TensorCPD
+            Tensor represented in the kruskal form.
+
+        Notes
+        -----
+        1)  There is only one slider for selecting which factor vectors to plot.
+            This is due to the nature of the kruskal representation, i.e. one to
+            one relation between the factor vectors from factor matrices of different modes.
+        """
         super(ComponentPlotCPD, self).__init__(tensor_rep=tensor_rep)
 
     def _create_fmat_sliders(self):
+        """ Create slider widgets for selecting factor vectors
+
+        Returns
+        -------
+        slider_list : list[IntSlider]
+            List of slider widgets for selecting factor vector to be plotted
+
+        Notes
+        -----
+            Only one slider is required for selecting which factor vectors
+            will be plotted, i.e. ``len(slider_list) == 1``
+        """
         default_params = dict(min=0,
                               max=self.tensor_rep.fmat[0].shape[1] - 1,
                               value=0,
@@ -292,49 +316,39 @@ class ComponentPlotCPD(BaseComponentPlot):
         slider_list = [IntSlider(**default_params)]
         return slider_list
 
-    def _create_fmat_dropdown(self):
-        dropdown_list = super(ComponentPlotCPD, self)._create_fmat_dropdown()
-        return dropdown_list
-
-    def _start_interacting(self):
-        super(ComponentPlotCPD, self)._start_interacting()
-
-    def _general_callback(self, change):
-        super(ComponentPlotCPD, self)._general_callback(change)
-
-    def _update_visualisation(self, slider_values):
-        super(ComponentPlotCPD, self)._update_visualisation(slider_values=slider_values * self.tensor_rep.order)
-
-    def extend_available_plots(self, custom_plots, modes=()):
-        super(ComponentPlotCPD, self).extend_available_plots(custom_plots=custom_plots,
-                                                             modes=modes)
-
 
 class ComponentPlotTKD(BaseComponentPlot):
     def __init__(self, tensor_rep):
+        """ Constructor of the interactive dashboard for the `TensorTKD` objects
+
+        Parameters
+        ----------
+        tensor_rep : TensorTKD
+            Tensor represented in the tucker form.
+
+        Notes
+        -----
+        1)  There is one slider per mode for selecting which factor vector to plot.
+            This is due to the nature of the tucker representation, i.e. each factor
+            from one mode vector is related all factor vectors from all other modes.
+        """
         super(ComponentPlotTKD, self).__init__(tensor_rep=tensor_rep)
 
     def _create_fmat_sliders(self):
+        """ Create slider widgets for selecting factor vectors
+
+        Returns
+        -------
+        slider_list : list[IntSlider]
+            List of slider widgets for selecting factor vector to be plotted
+
+        Notes
+        -----
+            There is one slider widgets per mode, i.e. ``len(slider_list) == self.tensor_rep.order``
+        """
         default_params = dict(min=0,
                               value=0,
                               continuous_update=False
                               )
         slider_list = [IntSlider(**default_params, max=(fmat.shape[1] - 1)) for fmat in self.tensor_rep.fmat]
         return slider_list
-
-    def _create_fmat_dropdown(self):
-        dropdown_list = super(ComponentPlotTKD, self)._create_fmat_dropdown()
-        return dropdown_list
-
-    def _start_interacting(self):
-        super(ComponentPlotTKD, self)._start_interacting()
-
-    def _general_callback(self, change):
-        super(ComponentPlotTKD, self)._general_callback(change)
-
-    def _update_visualisation(self, slider_values):
-        super(ComponentPlotTKD, self)._update_visualisation(slider_values=slider_values)
-
-    def extend_available_plots(self, custom_plots, modes=()):
-        super(ComponentPlotTKD, self).extend_available_plots(custom_plots=custom_plots,
-                                                             modes=modes)
