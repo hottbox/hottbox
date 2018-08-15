@@ -1,22 +1,27 @@
 HOTTBOX: Higher Order Tensors ToolBOX
 =====================================
 
-|Travis|_ |Appveyor|_ |Coveralls|_ |PyPi|_
+|Travis|_ |Appveyor|_ |Coveralls|_ |PyPi|_ |Binder|_
 
-.. |Travis| image:: https://img.shields.io/travis/hottbox/hottbox/master.svg?label=TravisCI
+.. |Travis| image:: https://travis-ci.org/hottbox/hottbox.svg?branch=master
 .. _Travis: https://travis-ci.org/hottbox/hottbox/
 
-.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/master?svg=true
+.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/sh2rk41gpn26h7a7/branch/master?svg=true
 .. _Appveyor: https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a
 
-.. |Coveralls| image:: https://img.shields.io/coveralls/github/hottbox/hottbox/master.svg
-.. _Coveralls: https://coveralls.io/github/hottbox/hottbox
+.. |Coveralls| image:: https://coveralls.io/repos/github/hottbox/hottbox/badge.svg?branch=master
+.. _Coveralls: https://coveralls.io/github/hottbox/hottbox?branch=master
 
 .. |PyPi| image:: https://badge.fury.io/py/hottbox.svg
 .. _PyPi: https://badge.fury.io/py/hottbox
 
-Welcome to the toolbox for tensor decompositions, statistical analysis, visualisation, feature extraction, 
-regression and non-linear classification of multi-dimensional data. 
+.. |Binder| image:: https://mybinder.org/badge.svg
+.. _Binder: https://mybinder.org/v2/gh/hottbox/hottbox-tutorials/master
+
+Welcome to the toolbox for tensor decompositions, statistical analysis, visualisation, feature extraction,
+regression and non-linear classification of multi-dimensional data. Not sure you need this toolbox? Give it
+a try on `mybinder.org <https://mybinder.org/v2/gh/hottbox/hottbox-tutorials/master>`_ without installation.
+
 
 
 Installing HOTTBOX

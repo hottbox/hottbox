@@ -6,6 +6,7 @@ import numpy as np
 from functools import reduce
 from .operations import unfold, kolda_unfold, fold, kolda_fold, mode_n_product
 from ._meta import Mode, State
+from ..errors import TensorModeError, TensorShapeError, TensorStateError, TensorTopologyError, ModeError, StateError
 
 
 class Tensor(object):
@@ -42,6 +43,17 @@ class Tensor(object):
             Description of the tensor modes.
             If nothing is specified then all modes of the created ``Tensor``
             get generic names 'mode-0', 'mode-1' etc.
+
+        Raises
+        ------
+        TypeError
+            If parameter ``array`` is not of ``np.ndarray`` type.
+        StateError
+            If parameter ``custom_state`` is inconsistent with provided ``array``
+            or does not meet requirements for creating ``State`` of the tensor.
+        ModeError
+            If parameter ``mode_names`` is inconsistent with provided ``array`` and ``custom_state``
+            or does not meet requirements for creating list of ``Mode`` of the tensor.
 
         Examples
         --------
@@ -85,6 +97,7 @@ class Tensor(object):
             This tensor is of order 2 and consists of 24 elements.
             Sizes and names of its modes are (2, 12) and ['mode-0', 'mode-1_mode-2'] respectively.
         """
+        # TODO: provide more details for raises section?
         self._validate_init_data(array=array, mode_names=mode_names, custom_state=custom_state)
         self._data = array.copy()
         self._state, self._modes = self._create_meta(array=array,
@@ -137,11 +150,11 @@ class Tensor(object):
                             "with an object of {} class!".format(self.__class__.__name__,
                                                                  other.__class__.__name__))
         if not all([self.in_normal_state, other.in_normal_state]):
-            raise ValueError("Both tensors should be in normal state!")
+            raise TensorStateError("Both tensors should be in normal state!")
         if self.shape != other.shape:
-            raise ValueError("Both tensors should have the same shape!")
+            raise TensorShapeError("Both tensors should have the same shape!")
         if not all([self.modes[i].index == other.modes[i].index for i in range(self.order)]):
-            raise ValueError("Both tensors should have the same indices!")
+            raise TensorModeError("Both tensors should have the same indices!")
         array = self.data + other.data
         tensor = Tensor(array=array).copy_modes(self)
         if self.mode_names != other.mode_names:
@@ -175,71 +188,73 @@ class Tensor(object):
         # validate custom_state if provided
         if custom_state is not None:
             if not isinstance(custom_state, dict):
-                raise TypeError("Incorrect type of the parameter `custom_state`!\n"
-                                "It should be `dict`")
+                raise StateError("Incorrect type of the parameter `custom_state`!\n"
+                                 "It should be `dict`")
 
             keys_required = ['mode_order', 'normal_shape', 'rtype']
+            keys_required.sort()
             keys_presented = list(custom_state.keys())
             keys_presented.sort()
             if keys_presented != keys_required:
-                raise ValueError("Some keys missing or extra keys have been provided!!!\n"
+                raise StateError("Some keys missing or extra keys have been provided!!!\n"
                                  "`custom_state` should have only {} keys".format(keys_required)
                                  )
 
             # ------------------------------
             if not isinstance(custom_state['normal_shape'], tuple):
-                raise TypeError("Incorrect type of the parameter `custom_state['normal_shape']`!\n"
-                                "It should be `tuple`")
+                raise StateError("Incorrect type of the parameter `custom_state['normal_shape']`!\n"
+                                 "It should be `tuple`")
 
             normal_shape = custom_state['normal_shape']
             size = reduce(lambda x, y: x * y, normal_shape)
             if size != array.size:
-                raise ValueError("Values of `normal_shape` are inconsistent with the provided data array ({} != {})!")
+                raise StateError("Values of `normal_shape` are inconsistent "
+                                 "with the provided data array ({} != {})!".format(size, array.size))
 
             # ------------------------------
             mode_order_ = custom_state['mode_order']
             if not isinstance(mode_order_, tuple):
-                raise TypeError("Incorrect type of the parameter `custom_state['mode_order']`!\n"
-                                "It should be `tuple` of lists")
+                raise StateError("Incorrect type of the parameter `custom_state['mode_order']`!\n"
+                                 "It should be `tuple` of lists")
 
             if not all(isinstance(mode_seq, list) for mode_seq in mode_order_):
-                raise TypeError("Incorrect type of the parameter `mode_order[i]`!\n"
-                                "It should be `list` of `int`")
+                raise StateError("Incorrect type of the parameter `mode_order[i]`!\n"
+                                 "It should be `list` of `int`")
 
             if len(mode_order_) != array.ndim:
-                raise ValueError("Provided `custom_state` does not correspond to the shape of provided data array!\n"
-                                 "{}!={} (len(custom_state['mode_order']) != array.ndim)".format(mode_order_,
+                raise StateError("Provided `custom_state` does not correspond to the shape of provided data array!\n"
+                                 "{}!={} (len(custom_state['mode_order']) != array.ndim)".format(len(mode_order_),
                                                                                                  array.ndim))
 
             modes_specified = list(itertools.chain.from_iterable(mode_order_))
             if len(modes_specified) != len(normal_shape):
-                raise ValueError("Number of provided modes is inconsistent with the provided length `normal_shape`!\n"
+                raise StateError("Number of provided modes is inconsistent with the provided length `normal_shape`!\n"
                                  "{} != {}".format(len(modes_specified), len(normal_shape))
                                  )
 
         # validate mode_names if provided
         if mode_names is not None:
             if not isinstance(mode_names, list):
-                raise TypeError("You should use list for mode_names!")
+                raise ModeError("You should use list for `mode_names`!")
 
             if not all(isinstance(name, str) for name in mode_names):
-                raise TypeError("The list of mode names should contain only strings!")
+                raise ModeError("The list of mode names should contain only strings!")
 
             if custom_state is None:
                 if array.ndim != len(mode_names):
-                    raise ValueError("Incorrect number of names for the modes of a tensor: {0} != {1} "
-                                     "('array.ndim != len(mode_names)')!\n".format(array.ndim,
-                                                                                   len(mode_names)
-                                                                                   )
-                                     )
+                    raise ModeError("Incorrect number of names for the modes of a tensor: {0} != {1} "
+                                    "('array.ndim != len(mode_names)')!\n".format(array.ndim,
+                                                                                  len(mode_names)
+                                                                                  )
+                                    )
             else:
                 normal_shape = custom_state['normal_shape']
                 if len(normal_shape) != len(mode_names):
-                    raise ValueError("Incorrect number of names for the modes of a tensor: {0} != {1} "
-                                     "('len(normal_shape) != len(mode_names)')!\n".format(len(normal_shape),
-                                                                                          len(mode_names)
-                                                                                          )
-                                     )
+                    raise ModeError("Incorrect number of names for the modes of a tensor: {0} != {1} "
+                                    "('len(normal_shape) != len(mode_names)')!\n".format(len(normal_shape),
+                                                                                         len(mode_names)
+                                                                                         )
+                                    )
 
     @staticmethod
     def _create_meta(array, custom_state, mode_names):
@@ -271,7 +286,7 @@ class Tensor(object):
 
     @property
     def data(self):
-        """ N-dimensional array with data values 
+        """ N-dimensional array with data values
         
         Returns
         -------
@@ -346,7 +361,6 @@ class Tensor(object):
         -------
         float
         """
-        # return np.sqrt(np.sum(self.data ** 2))
         return np.linalg.norm(self.data)
 
     @property
@@ -395,7 +409,6 @@ class Tensor(object):
         array = self.data
         if self.in_normal_state:
             new_object = Tensor(array=array)
-
         else:
             custom_state = dict(normal_shape=self._state.normal_shape,
                                 rtype=self._state.rtype,
@@ -436,7 +449,7 @@ class Tensor(object):
         """ Rename modes of a tensor
         
         Parameters
-        ----------        
+        ----------
         mode_names : dict
             New names for the tensor modes in form of a dictionary
             The name of the mode defined by the Key of the dict will be renamed to the corresponding Value
@@ -445,15 +458,20 @@ class Tensor(object):
         -------
         self : Tensor
             Return self so that methods could be chained
+
+        Raises
+        ------
+        ModeError
+            If parameter ``mode_names`` is inconsistent with ``self.modes``.
         """
         if len(mode_names.keys()) > self.order:
-            raise ValueError("Too many mode names have been specified")
+            raise ModeError("Too many mode names have been specified")
         if not all(isinstance(mode, int) for mode in mode_names.keys()):
-            raise TypeError("The dict of `mode_names` should contain only integer keys!")
+            raise ModeError("The dict of `mode_names` should contain only integer keys!")
         if not all(mode < self.order for mode in mode_names.keys()):
-            raise ValueError("All specified mode values should not exceed the order of the tensor!")
+            raise ModeError("All specified mode values should not exceed the order of the tensor!")
         if not all(mode >= 0 for mode in mode_names.keys()):
-            raise ValueError("All specified mode keys should be non-negative!")
+            raise ModeError("All specified mode keys should be non-negative!")
 
         for i, name in mode_names.items():
             self.modes[i].set_name(name=name)
@@ -495,17 +513,22 @@ class Tensor(object):
         Returns
         -------
         self : Tensor
+
+        Raises
+        ------
+        ModeError
+            If parameter ``mode_index`` is inconsistent with ``self.modes``.
         """
         if len(mode_index.keys()) > self.order:
-            raise ValueError("Too many sets of indices have been specified")
+            raise ModeError("Too many sets of indices have been specified")
         if not all(isinstance(mode, int) for mode in mode_index.keys()):
-            raise TypeError("The dict of `mode_index` should contain only integer keys!")
+            raise ModeError("The dict of `mode_index` should contain only integer keys!")
         if not all(mode < self.order for mode in mode_index.keys()):
-            raise ValueError("All specified mode values should not exceed the order of the tensor!")
+            raise ModeError("All specified mode values should not exceed the order of the tensor!")
         if not all(mode >= 0 for mode in mode_index.keys()):
-            raise ValueError("All specified mode keys should be non-negative!")
+            raise ModeError("All specified mode keys should be non-negative!")
         if not all([len(index) == self.ft_shape[mode] for mode, index in mode_index.items()]):
-            raise ValueError("Not enough of too many indices for the specified mode")
+            raise ModeError("Not enough of too many indices for the specified mode")
 
         for i, index in mode_index.items():
             self.modes[i].set_index(index=index)
@@ -553,9 +576,16 @@ class Tensor(object):
         ----------
         tensor : Tensor
             Unfolded version of a tensor
+
+        Raises
+        ------
+        TensorStateError
+            If tensor is not in normal state: ``self.in_normal_state is False``.
+        ValueError
+            If parameter ``rtype`` is not one of {'T', 'K'}.
         """
         if not self.in_normal_state:
-            raise TypeError("The tensor is not in the original form")
+            raise TensorStateError("The tensor is not in the original form")
 
         # Unfold data
         if rtype is "T":
@@ -590,9 +620,16 @@ class Tensor(object):
         ----------
         tensor : Tensor
             Vectorised version of a tensor
+
+        Raises
+        ------
+        TensorStateError
+            If tensor is not in normal state: ``self.in_normal_state is False``.
+        ValueError
+            If parameter ``rtype`` is not one of {'T', 'K'}.
         """
         if not self.in_normal_state:
-            raise TypeError("The tensor is not in the original form")
+            raise TensorStateError("The tensor is not in the original form")
 
         # Unfold data
         if rtype is "T":
@@ -626,13 +663,18 @@ class Tensor(object):
         tensor : Tensor
             Tensor of original shape (``self.ft_shape``)
 
+        Raises
+        ------
+        TensorStateError
+            If tensor is in normal state: ``self.in_normal_state is True``.
+
         Notes
         -----
         Basically, this method can be called in order to undo both ``self.unfold`` and ``self.vectorise``
         """
         # Do not do anything if the tensor is in the normal form (hadn't been unfolded before)
         if self.in_normal_state:
-            raise TypeError("The tensor hadn't bee unfolded before")
+            raise TensorStateError("The tensor hadn't bee unfolded before")
 
         # Fold data
         temp = self._state.mode_order[0]
@@ -682,6 +724,13 @@ class Tensor(object):
         tensor : Tensor
             The result of the mode-n product of a tensor with a `matrix` along specified `mode`.
 
+        Raises
+        ------
+        TensorStateError
+            If tensor is not in normal state: ``self.in_normal_state is False``.
+        ModeError
+            If there is uncertainty with assigning new name for the ``tensor.modes[mode]``.
+
         Notes
         -------
             1. Mode-n product operation changes the ``self._state._normal_shape`` attribute
@@ -692,14 +741,14 @@ class Tensor(object):
             4. If ``matrix.mode_names[0] == "mode-0"`` then no changes to ``tensor.mode_names`` will be made
         """
         if not self.in_normal_state:
-            raise TypeError("The tensor is not in the original form")
+            raise TensorStateError("The tensor is not in the original form")
 
         # TODO: need to rethink this if statements so it would be easier to follow
         if isinstance(matrix, Tensor) and new_name is not None:
-            raise ValueError("Oops... Don't know which name for the mode description to use!\n"
-                             "Either use the default value for `new_name=None` or pass numpy array for `matrix.`")
+            raise ModeError("Oops... Don't know which name for the mode description to use!\n"
+                            "Either use the default value for `new_name=None` or pass numpy array for `matrix.`")
         if new_name is not None and not isinstance(new_name, str):
-            raise TypeError("The parameter `new_name` should be of sting type!")
+            raise ModeError("The parameter `new_name` should be of sting type!")
 
         # Convert to Tensor class, in order to have consistent interface
         if isinstance(matrix, np.ndarray):
@@ -719,13 +768,13 @@ class Tensor(object):
         tensor.reset_mode_index(mode=mode)
 
         # The only one case when mode name won't be changed
-        if new_name != "mode-0":            
+        if new_name != "mode-0":
             new_mode_names = {mode: new_name}
             tensor.set_mode_names(mode_names=new_mode_names)
 
         return tensor
 
-
+# TODO: add validation of `mode_names`
 class BaseTensorTD(object):
     """
     This class provides a general interface for a tensor represented through a tensor decomposition.
@@ -831,15 +880,20 @@ class BaseTensorTD(object):
         Returns
         -------
         self
+
+        Raises
+        ------
+        ModeError
+            If parameter ``mode_names`` is inconsistent with ``self.modes``.
         """
         if len(mode_names.keys()) > self.order:
-            raise ValueError("Too many mode names have been specified")
+            raise ModeError("Too many mode names have been specified")
         if not all(isinstance(mode, int) for mode in mode_names.keys()):
-            raise TypeError("The dict of `mode_names` should contain only integer keys!")
+            raise ModeError("The dict of `mode_names` should contain only integer keys!")
         if not all(mode < self.order for mode in mode_names.keys()):
-            raise ValueError("All specified mode values should not exceed the order of the tensor!")
+            raise ModeError("All specified mode values should not exceed the order of the tensor!")
         if not all(mode >= 0 for mode in mode_names.keys()):
-            raise ValueError("All specified mode keys should be non-negative!")
+            raise ModeError("All specified mode keys should be non-negative!")
 
         for i, name in mode_names.items():
             self.modes[i].set_name(name)
@@ -881,21 +935,26 @@ class BaseTensorTD(object):
         Returns
         -------
         self
+
+        Raises
+        ------
+        ModeError
+            If parameter ``mode_index`` is inconsistent with ``self.modes``.
         """
         if len(mode_index.keys()) > self.order:
-            raise ValueError("Too many sets of indices have been specified")
+            raise ModeError("Too many sets of indices have been specified")
         if not all(isinstance(mode, int) for mode in mode_index.keys()):
-            raise TypeError("The dict of `mode_index` should contain only integer keys!")
+            raise ModeError("The dict of `mode_index` should contain only integer keys!")
         if not all(mode < self.order for mode in mode_index.keys()):
-            raise ValueError("All specified mode values should not exceed the order of the tensor!")
+            raise ModeError("All specified mode values should not exceed the order of the tensor!")
         if not all(mode >= 0 for mode in mode_index.keys()):
-            raise ValueError("All specified mode keys should be non-negative!")
+            raise ModeError("All specified mode keys should be non-negative!")
         if isinstance(self, TensorTT):
             index_long_enough = all([len(index) == self.ft_shape[mode] for mode, index in mode_index.items()])
         else:
             index_long_enough = all([len(index) == self.fmat[mode].shape[0] for mode, index in mode_index.items()])
         if not index_long_enough:
-            raise ValueError("Not enough of too many indices for the specified mode")
+            raise ModeError("Not enough of too many indices for the specified mode")
 
         for i, index in mode_index.items():
             self.modes[i].set_index(index=index)
@@ -946,6 +1005,11 @@ class TensorCPD(BaseTensorTD):
             Array of coefficients on the super-diagonal of a core for the CP representation of a tensor
         mode_names : list[str]
             List of names for the factor matrices
+
+        Raises
+        ------
+        TensorTopologyError
+            If there is inconsistency in shapes of factor matrices and core values
 
         Examples
         --------
@@ -1029,11 +1093,11 @@ class TensorCPD(BaseTensorTD):
                             "with an object of {} class!".format(self.__class__.__name__,
                                                                  other.__class__.__name__))
         if self.ft_shape != other.ft_shape:
-            raise ValueError("Both objects should have the same topology!\n"
-                             "{}!={} (`self.ft_shape != other.ft_shape`)".format(self.ft_shape,
-                                                                                 other.ft_shape))
+            raise TensorTopologyError("Both objects should have the same topology!\n"
+                                      "{}!={} (`self.ft_shape != other.ft_shape`)".format(self.ft_shape,
+                                                                                          other.ft_shape))
         if not all([self.modes[i].index == other.modes[i].index for i in range(self.order)]):
-            raise ValueError("Both tensors should have the same indices!")
+            raise ModeError("Both tensors should have the same indices!")
 
         core_values = np.concatenate((self._core_values, other._core_values))
         fmat_list = [np.concatenate((fmat, other.fmat[i]), axis=1) for i, fmat in enumerate(self.fmat)]
@@ -1073,12 +1137,12 @@ class TensorCPD(BaseTensorTD):
             if not isinstance(mat, np.ndarray):
                 raise TypeError("Each of the factor matrices should be a numpy array!")
             if mat.ndim != 2:
-                raise ValueError("Each of the factor matrices should a 2-dimensional numpy array!")
+                raise TensorTopologyError("Each of the factor matrices should be a 2-dimensional numpy array!")
 
         kryskal_rank = len(core_values)
         if not all([mat.shape[1] == kryskal_rank for mat in fmat]):
-            raise ValueError("Dimension mismatch!\n"
-                             "Number of columns of all factor matrices should be the same and equal to len(core_values)!")
+            raise TensorTopologyError("Dimension mismatch! Number of columns of all "
+                                      "factor matrices should be the same and equal to len(core_values)!")
 
     def _create_modes(self, mode_names):
         """ Create meta data for each factor matrix
@@ -1327,6 +1391,11 @@ class TensorTKD(BaseTensorTD):
         mode_names : list[str]
             List of names for the factor matrices
 
+        Raises
+        ------
+        TensorTopologyError
+            If there is inconsistency in shapes of factor matrices and core values
+
         Examples
         --------
         1) Create tucker representation of a tensor with default meta information
@@ -1420,11 +1489,11 @@ class TensorTKD(BaseTensorTD):
                             "with an object of {} class!".format(self.__class__.__name__,
                                                                  other.__class__.__name__))
         if self.ft_shape != other.ft_shape:
-            raise ValueError("Both objects should have the same topology!\n"
-                             "{}!={} (`self.ft_shape != other.ft_shape`)".format(self.ft_shape,
-                                                                                 other.ft_shape))
+            raise TensorTopologyError("Both objects should have the same topology!\n"
+                                      "{}!={} (`self.ft_shape != other.ft_shape`)".format(self.ft_shape,
+                                                                                          other.ft_shape))
         if not all([self.modes[i].index == other.modes[i].index for i in range(self.order)]):
-            raise ValueError("Both tensors should have the same indices!")
+            raise ModeError("Both tensors should have the same indices!")
 
         # Stack core tensors along main diagonal.
         # Block-wise assignment of values from the core tensors
@@ -1476,19 +1545,19 @@ class TensorTKD(BaseTensorTD):
             if not isinstance(mat, np.ndarray):
                 raise TypeError("Each of the factor matrices should be a numpy array!")
             if mat.ndim != 2:
-                raise ValueError("Each of the factor matrices should a 2-dimensional numpy array!")
+                raise TensorTopologyError("Each of the factor matrices should a 2-dimensional numpy array!")
 
         ml_rank = core_values.shape
         order = core_values.ndim
         if len(fmat) != order:
-            raise ValueError("Not enough or too many factor matrices for the specified core tensor!\n"
-                             "{}!={} (`len(fmat) != core_values.ndim`)".format(len(fmat), order))
+            raise TensorTopologyError("Not enough or too many factor matrices for the specified core tensor!\n"
+                                      "{}!={} (`len(fmat) != core_values.ndim`)".format(len(fmat), order))
         mat_shapes = tuple(mat.shape[1] for mat in fmat)
         if not all([mat_shapes[i] == ml_rank[i] for i in range(order)]):
-            raise ValueError("Dimension mismatch between the factor matrices and the core tensor!\n"
-                             "The number of columns of a factor matrix should match the corresponding "
-                             "dimension size of the core tensor:\n"
-                             "{} != {} (fmat[i].shape[1] != core_values.shape)".format(mat_shapes, ml_rank))
+            raise TensorTopologyError("Dimension mismatch between the factor matrices and the core tensor!\n"
+                                      "The number of columns of a factor matrix should match the corresponding "
+                                      "dimension size of the core tensor:\n"
+                                      "{} != {} (fmat[i].shape[1] != core_values.shape)".format(mat_shapes, ml_rank))
 
     def _create_modes(self, mode_names):
         """ Create meta data for each factor matrix
@@ -1718,14 +1787,23 @@ class TensorTT(BaseTensorTD):
     ----------
     _core_values : list[np.ndarray]
         Placeholder for a list of cores for the Tensor Train representation of a tensor.
+    _modes : list[Mode]
+        Description of the physical modes
     """
     def __init__(self, core_values, mode_names=None):
-        """
+        """ Create object of ``TensorTT`` class
         
         Parameters
         ----------
         core_values : list[np.ndarray]
             List of cores for the Tensor Train representation of a tensor.
+        mode_names : list[str]
+            List of names for the physical modes
+
+        Raises
+        ------
+        TensorTopologyError
+            If there is inconsistency in shapes of core values
 
         Examples
         --------
@@ -1818,17 +1896,17 @@ class TensorTT(BaseTensorTD):
 
         # validate sizes of the cores
         if (core_values[0].ndim != 2) or (core_values[-1].ndim != 2):
-            raise ValueError("The first and the last elements of the `core_values` "
-                             "should be 2-dimensional numpy arrays!")
+            raise TensorTopologyError("The first and the last elements of the `core_values` "
+                                      "should be 2-dimensional numpy arrays!")
         for i in range(1, len(core_values) - 1):
             if core_values[i].ndim != 3:
-                raise ValueError("All but first and the last elements of the `core_values` "
-                                 "should be 3-dimensional numpy arrays!")
+                raise TensorTopologyError("All but first and the last elements of the `core_values` "
+                                          "should be 3-dimensional numpy arrays!")
         for i in range(len(core_values)-1):
             if core_values[i].shape[-1] != core_values[i+1].shape[0]:
-                raise ValueError("Dimension mismatch for the specified cores:\n"
-                                 "Last dimension of core_values[{}] should be the same as the "
-                                 "first dimension of core_values[{}]".format(i, i+1))
+                raise TensorTopologyError("Dimension mismatch for the specified cores:\n"
+                                          "Last dimension of core_values[{}] should be the same as the "
+                                          "first dimension of core_values[{}]".format(i, i+1))
 
     def _create_modes(self, mode_names):
         """ Create meta data for each factor matrix
@@ -2123,14 +2201,10 @@ def residual_tensor(tensor_orig, tensor_approx):
     if not isinstance(tensor_orig, Tensor):
         raise TypeError("Unknown data type of original tensor.\n"
                         "The available type for `tensor_A` is `Tensor`")
-
+    # TODO: make use of direct subtraction of tensors
     if isinstance(tensor_approx, Tensor):
         residual = Tensor(tensor_orig.data - tensor_approx.data)
-    elif isinstance(tensor_approx, TensorCPD):
-        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct().data)
-    elif isinstance(tensor_approx, TensorTKD):
-        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct().data)
-    elif isinstance(tensor_approx, TensorTT):
+    elif isinstance(tensor_approx, BaseTensorTD):
         residual = Tensor(tensor_orig.data - tensor_approx.reconstruct().data)
     else:
         raise TypeError("Unknown data type of the approximation tensor!\n"

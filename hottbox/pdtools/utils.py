@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from ..core.structures import Tensor
+from ..errors import TensorStateError
 
 
 def pd_to_tensor(df, keep_index=True):
@@ -98,6 +99,11 @@ def tensor_to_pd(tensor, col_name=None):
     -------
     df : pd.DataFrame
         Multi-index data frame
+
+    Raises
+    ------
+    TensorStateError
+        If ``tensor`` is not in normal state: ``tensor.in_normal_state is False``.
 
     Examples
     --------
@@ -207,7 +213,7 @@ def tensor_to_pd(tensor, col_name=None):
                    Wed           7
     """
     if not tensor.in_normal_state:
-        raise TypeError("`tensor` should be in normal state prior this conversion")
+        raise TensorStateError("`tensor` should be in normal state prior this conversion")
 
     # Create multidimensional index
     names = tensor.mode_names

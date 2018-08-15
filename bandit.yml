@@ -1,0 +1,2 @@
+# do not check assert statements
+skips: ['B101']

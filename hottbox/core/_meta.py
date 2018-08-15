@@ -141,7 +141,7 @@ class State(object):
         return self.mode_order == self.normal_mode_order
 
     def change_normal_shape(self, normal_shape):
-        """ Change shape of a `Tensor` object in normal format dut to mode-n product or contraction
+        """ Change shape of a ``Tensor`` object in normal format due to mode-n product or contraction
 
         Parameters
         ----------
