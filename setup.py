@@ -4,9 +4,16 @@ from setuptools import setup, find_packages
 __version__ = None
 exec(open('hottbox/version.py').read())
 
+
 def readme():
     with open('README.rst') as f:
         return f.read()
+
+
+def install_requires():
+    with open('requirements.txt') as f:
+        return list(f.read().strip().split('\n'))
+
 
 config = dict(
     name='hottbox',
@@ -28,7 +35,7 @@ config = dict(
         'Programming Language :: Python :: 3'
     ],
     keywords=['tensor decompositions', 'machine learning'],
-    install_requires=['numpy', 'scipy', 'pandas'],
+    install_requires=install_requires(),
     include_package_data=True,
     zip_safe=False
 )
