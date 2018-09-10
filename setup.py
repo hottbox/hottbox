@@ -15,6 +15,23 @@ def install_requires():
         return list(f.read().strip().split('\n'))
 
 
+def extras_require():
+    extra_requirements = {
+        'tests': [
+            'pytest',
+            'pytest-cov'
+        ],
+        'docs': [
+            'sphinx',
+            'sphinx_rtd_theme',
+            'numpydoc'
+        ]
+    }
+    all_requires = [item for sublist in extra_requirements.values() for item in sublist]
+    extra_requirements['all'] = all_requires
+    return extra_requirements
+
+
 config = dict(
     name='hottbox',
     version=__version__,
@@ -36,6 +53,7 @@ config = dict(
     ],
     keywords=['tensor decompositions', 'machine learning'],
     install_requires=install_requires(),
+    extras_require=extras_require(),
     include_package_data=True,
     zip_safe=False
 )

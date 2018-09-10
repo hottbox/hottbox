@@ -4,7 +4,9 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         make \
         git \
-        nano && \
+        nano \
+        # for matplotlib
+        libxext6 && \
     rm -rf /var/lib/apt/lists/*
 
 ENV HOME=/home/developer

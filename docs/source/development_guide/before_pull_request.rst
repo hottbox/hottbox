@@ -10,7 +10,7 @@ cover new features. We use tools provided by the ``pytest`` package to verify th
 
 First, you will need to install some additional software: ::
 
-    $ pip install pytest pytest-cov
+    $ pip install -e '.[tests]'
 
 To run test, simply execute inside the directory(ies) with your changes: ::
 
@@ -52,7 +52,24 @@ from the docs/ directory::
 .. important::
    Building the documentation requires the ``sphinx``, ``numpydoc`` and ``sphinx_rtd_theme``::
 
-      $ pip install sphinx numpydoc sphinx_rtd_theme
+      $ pip install -e '.[docs]'
+
+
+
+Docker validation
+-----------------
+Bla Bla::
+
+    # Create docker image with installation of local state of 'hottbox'
+    $ make dev-image
+
+    # Start docker container of the image from previous step
+    $ make dev-container
+
+    # Inside docker container
+    $ make test-cov     # performs unit tests with coverage
+    $ make html         # builds documentation
+
 
 .. note::
    .. image:: ../_static/docs_comparison.png

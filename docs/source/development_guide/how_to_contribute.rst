@@ -14,22 +14,22 @@ work on your feature and then submit a PR. The outline of this process should be
 2. Clone this copy to your local disk
    ::
 
-      $ git clone git@github.com:YourGitHubLogin/hottbox.git
+      $ git clone git@github.com:__YourGitHubLogin__/hottbox.git
       $ cd hottbox
 
-3. Most likely you would need (want) to install ``hottbox`` package into you environment in editable mode
+3. Install ``hottbox`` package (in editable mode) and additional development tools
    ::
 
-      $ pip install --editable .
+      $ pip install -e '.[tests, docs]'
 
    This basically builds the extension in place and creates a link to the development directory
 
-3. Next, create a branch to hold your changes. It is a good practice not to work on the ``master`` branch
+4. Next, create a branch to hold your changes. It is a good practice not to work on the ``master`` branch
    ::
 
       $ git checkout -b my-feature
 
-4. Work on this copy, on your computer, using Git to do the version control. In order to record your changes in Git, do
+5. Work on this copy, on your computer, using Git to do the version control. In order to record your changes in Git, do
    ::
 
       $ git add modified_files
@@ -40,7 +40,7 @@ work on your feature and then submit a PR. The outline of this process should be
 
       $ git push -u origin my-feature
 
-5. Finally, follow `these <https://help.github.com/articles/creating-a-pull-request-from-a-fork/>`_ instructions to create a pull request from your fork.
+6. Finally, follow `these <https://help.github.com/articles/creating-a-pull-request-from-a-fork/>`_ instructions to create a pull request from your fork.
 
 .. note::
    When you decide which branch you'd like to merge your changes into (step 4 of PR guide above),
