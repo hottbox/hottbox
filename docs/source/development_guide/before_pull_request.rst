@@ -19,12 +19,6 @@ To run test, simply execute inside the directory(ies) with your changes: ::
 Here is a `youtube video <https://www.youtube.com/watch?v=ixqeebhUa-w&t=831s>`_ that could help you
 if you have never been dealing with this side of software development.
 
-.. note::
-   When submitting the pull request you should see that all tests have been **passed**
-   and **100%** as total coverage when you execute the following statement from the root directory::
-
-      $ pytest -v --cov hottbox --cov-branch --cov-report term-missing
-
 
 
 Document your code
@@ -58,20 +52,23 @@ from the docs/ directory::
 
 Docker validation
 -----------------
-Bla Bla::
+
+Optionally, you can use `Docker <https://youtube.com/watch?v=JprTjTViaEA>`_ and corresponding
+utilities from the ``Makefile``, in order to ensure that there are no local dependecies.
+Specificaitons for the Docker image can be found in corresponding under ``docker/`` directory::
 
     # Create docker image with installation of local state of 'hottbox'
-    $ make dev-image
+    $ make dev-image  # Size 850MB; built on top of conda/miniconda3
 
     # Start docker container of the image from previous step
     $ make dev-container
 
-    # Inside docker container
+    # Inside docker container; Should finish without errors
     $ make test-cov     # performs unit tests with coverage
     $ make html         # builds documentation
 
 
 .. note::
    .. image:: ../_static/docs_comparison.png
-      :scale: 75 %
+      :scale: 35 %
       :align: center

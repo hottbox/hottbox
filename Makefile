@@ -37,9 +37,9 @@ base-image:
 	@printf "===   Creating base docker image   ===\n"
 	@printf "===                                ===\n"
 	@printf "======================================\n\n"
-#	docker build -t hottbox-dev-base \
-#				 -f docker/hottbox-dev-base \
-#				 .
+	docker build -t hottbox-dev-base \
+				 -f docker/hottbox-dev-base \
+				 .
 
 dev-image: base-image
 	@printf "\n\n"
@@ -48,9 +48,9 @@ dev-image: base-image
 	@printf "===   Creating development docker image   ===\n"
 	@printf "===                                       ===\n"
 	@printf "=============================================\n\n"
-#	docker build -t hottbox-dev \
-#				 -f docker/hottbox-dev \
-#				 .
+	docker build -t hottbox-dev \
+				 -f docker/hottbox-dev \
+				 .
 
 dev-container:
 	docker run -it --hostname=localhost --rm hottbox-dev

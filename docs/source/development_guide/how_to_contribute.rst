@@ -24,9 +24,13 @@ work on your feature and then submit a PR. The outline of this process should be
 
    This basically builds the extension in place and creates a link to the development directory
 
-4. Next, create a branch to hold your changes. It is a good practice not to work on the ``master`` branch
+4. It is a good practice not to work on the ``master`` branch as it should contain only production
+   ready state of the code. In case of ``hottbox``, this corresponds to the version available on
+   `pypi.org <https://pypi.org/project/hottbox/>`_. Therefore, all development is taking place on
+   ``develop`` branch and for each new feature we advise to create a new branch that stems from ``develop``.
    ::
 
+      $ git checkout develop
       $ git checkout -b my-feature
 
 5. Work on this copy, on your computer, using Git to do the version control. In order to record your changes in Git, do
