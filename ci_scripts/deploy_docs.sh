@@ -47,5 +47,5 @@ else
     echo "Will only push docs if: "
     echo "1) Travis CI is triggered from hottbox:develop."
     echo "2) In case of CI triggered by Pull Request, only if it has been approved."
-    ehco "3) If \$DEPLOY_DOCS == 1 (specified in '.travis.yml')."
+    echo "3) If \$DEPLOY_DOCS == 1 (specified in '.travis.yml')."
 fi
