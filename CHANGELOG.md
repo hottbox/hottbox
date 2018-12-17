@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - [ ] Custom Exceptions that are more appropriate for the structure of `hottbox`
 - [ ] Raises section in docstrings
 - [ ] More examples in docstrings
+- [ ] LS-STM (least squares support tensor machine) for classification
+- [ ] Tensor Ensemble Learning
 
 
 ### Changed
