@@ -16,7 +16,7 @@ if [[ $TRAVIS_PULL_REQUEST == false && $TRAVIS_BRANCH == "develop" && $DEPLOY_DO
     git config --global user.email "hottbox.developers@gmail.com"
     git config --global user.name "Travis Bot"
 
-	# Installed the dependencies for making documentation
+	# Install the dependencies for making documentation
 	pip install sphinx sphinx_rtd_theme numpydoc
 
 	# cd to the doc folder and build the doc
@@ -30,10 +30,22 @@ if [[ $TRAVIS_PULL_REQUEST == false && $TRAVIS_BRANCH == "develop" && $DEPLOY_DO
         mkdir develop
     fi
     cp -r ../docs/build/html/* develop
-    git add develop
-    git commit -m "Travis auto-update (hottbox:develop)"
-    git push --force --quiet "https://${GH_TOKEN}@github.com/hottbox/hottbox.github.io" > /dev/null 2>&1
+
+    # In order for contributors to take advantage of their own Travis CI and successfully pass the build
+    # there is a check whether 'GH_TOKEN' had been defined in a list of ENV variables in travis settings.
+    # Setting it in 'https://travis-ci.org/__USER__/hottbox/settings' would still result errored or failed
+    # CI build because their 'GH_TOKEN' would not have write write permissions to 'https://github.com/hottbox/hottbox.github.io'
+    # and added to list of ENV variables in travis settings for 'https://travis-ci.org/hottbox/hottbox/settings'.
+    if [ ! -z "$GH_TOKEN" ];then
+        git add develop
+        git commit -m "Travis auto-update (hottbox:develop)"
+        git push --force --quiet "https://${GH_TOKEN}@github.com/hottbox/hottbox.github.io" > /dev/null 2>&1
+    fi
     )
 else
-    echo "-- Will only push docs from develop and if \$DEPLOY_DOCS == 1 --"
+    echo "===================================================="
+    echo "Will only push docs if: "
+    echo "1) Travis CI is triggered from hottbox:develop."
+    echo "2) In case of CI triggered by Pull Request, only if it has been approved."
+    ehco "3) If \$DEPLOY_DOCS == 1 (specified in '.travis.yml')."
 fi

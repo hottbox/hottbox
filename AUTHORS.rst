@@ -4,7 +4,7 @@ Our Team
 --------
 
 - Ilya Kisil,
-    ilyakisil@gmail.com ||| ik1614@ic.ac.uk
+    ilyakisil@gmail.com | ik1614@ic.ac.uk
 
 - Bruno Scalzo Dees,
     bs1912@ic.ac.uk
