@@ -1,0 +1,19 @@
+[
+  { "name": "Priority: High", "color": "#D73A4A", "description": ""},
+  { "name": "Priority: Low", "color": "#78C878", "description": ""},
+  { "name": "Priority: Medium", "color": "#FCDA50", "description": ""},
+  { "name": "Status: Abandoned", "color": "#D73A4A", "description": ""},
+  { "name": "Status: Accepted", "color": "#78C878", "description": ""},
+  { "name": "Status: Completed", "color": "#78C878", "description": ""},
+  { "name": "Status: In Progress", "color": "#FCDA50", "description": ""},
+  { "name": "Status: More Info Needed", "color": "#FCDA50", "description": ""},
+  { "name": "Status: Revision Needed", "color": "#FCDA50", "description": ""},
+  { "name": "Type: Bug", "color": "#D73A4A", "description": "Something isn't working"},
+  { "name": "Type: Docs", "color": "#A2EEEF", "description": "Related to documentation, or README files"},
+  { "name": "Type: Duplicate", "color": "#CCCCCC", "description": "This issue or pull request already exists"},
+  { "name": "Type: Enhancement", "color": "#A2EEEF", "description": "Requesting, adding or improving a feature"},
+  { "name": "Type: Good First Issue", "color": "#CCCCCC", "description": "Good for newcomers"},
+  { "name": "Type: Help Wanted", "color": "#CCCCCC", "description": "Extra attention is needed"},
+  { "name": "Type: Investigate", "color": "#A2EEEF", "description": ""},
+  { "name": "Type: Question", "color": "#CCCCCC", "description": ""}
+]
