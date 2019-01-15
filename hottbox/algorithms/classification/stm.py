@@ -1,10 +1,9 @@
 import numpy as np
-from ..core import Tensor
+from ...core import Tensor
 
 
 class LSSTM:
     def __init__(self, C, max_iter):
-
         self.order = None
         self.shape = None
         self.C = C
@@ -17,7 +16,6 @@ class LSSTM:
         self.eta_history = []
         self.b_history = []
         self.orig_labels = None
-
 
     def fit(self, X_train, labels):
         """
@@ -41,10 +39,10 @@ class LSSTM:
         w_n = self._initialize_weights(X_train[0].shape)
 
         for i in range(self.max_iter):
-           # w_n_old = copy.deepcopy(weights)
+            # w_n_old = copy.deepcopy(weights)
             for n in range(self.order):
-                #Always seems to be better if the weights are updated on the fly, rather than altogether at the
-                #end of each iteration
+                # Always seems to be better if the weights are updated on the fly, rather than altogether at the
+                # end of each iteration
                 # eta = self._calc_eta(w_n_old, n)
                 # X_m = self._calc_Xm(X_train, w_n_old, n)
                 eta = self._calc_eta(w_n, n)
@@ -57,8 +55,6 @@ class LSSTM:
             self._update_model(w_n, b, i)
             if self._converged(): break
 
-
-
     def predict(self, X_test):
         """
 
@@ -68,7 +64,7 @@ class LSSTM:
 
         Returns
         -------
-        y_pred: list of predicted laels
+        y_pred: list of predicted labels
 
         """
 
@@ -78,15 +74,13 @@ class LSSTM:
         b = self.model['Bias']
         y_pred = []
         for xtest in X_test:
-            #temp = xtest.copy()
+            temp = xtest.copy()
             for n, w in enumerate(w_n):
-                xtest.mode_n_product(np.expand_dims(w, axis=0), mode=n, inplace=True)
-            y_pred.append(np.sign(xtest.data.squeeze() + b))
+                temp.mode_n_product(np.expand_dims(w, axis=0), mode=n, inplace=True)
+            y_pred.append(np.sign(temp.data.squeeze() + b))
 
         y_pred = [self.orig_labels[0] if x == 1 else self.orig_labels[1] for x in y_pred]
         return y_pred
-
-
 
     def _assert_data(self, X_data, labels=None):
         """
@@ -111,7 +105,6 @@ class LSSTM:
         if labels is not None:
             assert len(set(labels)) == 2, "LSSTM is a binary classifier, more than two labels were passed"
 
-
     def _initialize_weights(self, shape):
         """
 
@@ -129,7 +122,6 @@ class LSSTM:
             w_n.append(np.random.randn(dim))
         return w_n
 
-
     def _calc_eta(self, w_n, n):
         """
 
@@ -143,13 +135,11 @@ class LSSTM:
         eta: int, parameter to be used in LS-STM optimization problem
 
         """
-
         w_n_new = [w for i, w in enumerate(w_n) if i != n]
         eta = 1
         for w in w_n_new:
             eta *= (np.linalg.norm(w)**2)
         return eta
-
 
     def _calc_Xm(self, X_data, w_n, n):
         """
@@ -180,15 +170,14 @@ class LSSTM:
 
         return X_m
 
-
     def _ls_optimizer(self, X_m, labels, eta, C):
         """
 
         Parameters
         ----------
         X_m: np.ndarray,  Matrix of contracted tensors along all weights except the current n
-        labels: int, the labels of hte tarining data
-        eta: int, Parameter to be used in the algo
+        labels: int, the labels of hte training data
+        eta: int, Parameter to be used in the algorithm
         C: Cost
 
         Returns
@@ -217,7 +206,6 @@ class LSSTM:
 
         return w, b
 
-
     def _update_model(self, w, b, nIter):
         """
 
@@ -235,8 +223,6 @@ class LSSTM:
         self.model['Weights'] = w
         self.model['Bias'] = b
         self.model['nIter'] = nIter
-
-
 
     def _converged(self):
         """
@@ -261,43 +247,3 @@ class LSSTM:
                 return True
 
         return False
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
