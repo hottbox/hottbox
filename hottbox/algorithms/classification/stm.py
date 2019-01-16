@@ -1,249 +1,286 @@
 import numpy as np
 from ...core import Tensor
+from .base import Classifier
 
 
-class LSSTM:
-    def __init__(self, C, max_iter):
-        self.order = None
-        self.shape = None
+class LSSTM(Classifier):
+    """ Least Squares Support Tensor Machine (LS-STM) for binary classification.
+
+    Parameters
+    ----------
+    C : float
+        Penalty parameter C of the error term.
+    tol : float
+        Tolerance for stopping criterion.
+    max_iter : int
+        Hard limit on iterations within solver.
+    probability : bool
+        Whether to enable probability estimates. This must be enabled prior
+        to calling `fit`, and will slow down that method.
+    verbose : bool
+        Enable verbose output.
+
+    Attributes
+    ----------
+    weights_ : list[np.ndarray]
+        List of weights for each mode of the training data
+    bias_ : np.float64
+    eta_history_ : np.ndarray
+    bias_history_ : np.ndarray
+
+    Notes
+    -----
+    [1] Zhao, Xinbin, et al. "Least squares twin support tensor machine for classification."
+        Journal of Information & Computational Science 11.12 (2014): 4175-4189.
+
+    [2] Cichocki, Andrzej, et al. "Tensor networks for dimensionality reduction and large-scale optimization:
+        Part 2 applications and future perspectives."
+        Foundations and Trends in Machine Learning 9.6 (2017): 431-673.
+
+    """
+    def __init__(self, C=1, tol=1e-3, max_iter=100, probability=False, verbose=False):
+        super(LSSTM, self).__init__(probability=probability,
+                                    verbose=verbose)
         self.C = C
+        self.tol = tol
         self.max_iter = max_iter
-        self.model = {'Weights': None,
-                      'Bias': 0,
-                      'nIter': 0
-                      }
+        self.bias_ = None
+        self.weights_ = None
+        self.eta_history_ = None
+        self.bias_history_ = None
+        self._orig_labels = None
 
-        self.eta_history = []
-        self.b_history = []
-        self.orig_labels = None
+    def set_params(self, **params):
+        super(LSSTM, self).set_params(**params)
 
-    def fit(self, X_train, labels):
-        """
+    def get_params(self):
+        return super(LSSTM, self).get_params()
 
-        Parameters
-        ----------
-        X_train: list[Tensor],  list of length M of Tensor objects, all of the same order and size
-        labels: list of length M of labels +1, -1
-
-        Returns
-        -------
-
-        """
-        self.order = X_train[0].order
-        self.shape = X_train[0].shape
-        self._assert_data(X_train, labels=labels)
-
-        self.orig_labels = list(set(labels))
-        labels = [1 if x == self.orig_labels[0] else -1 for x in labels]
-
-        w_n = self._initialize_weights(X_train[0].shape)
-
-        for i in range(self.max_iter):
-            # w_n_old = copy.deepcopy(weights)
-            for n in range(self.order):
-                # Always seems to be better if the weights are updated on the fly, rather than altogether at the
-                # end of each iteration
-                # eta = self._calc_eta(w_n_old, n)
-                # X_m = self._calc_Xm(X_train, w_n_old, n)
-                eta = self._calc_eta(w_n, n)
-                X_m = self._calc_Xm(X_train, w_n, n)
-                self.eta_history.append(eta)
-
-                w, b = self._ls_optimizer(X_m, labels, eta, self.C)
-                w_n[n] = w
-
-            self._update_model(w_n, b, i)
-            if self._converged(): break
-
-    def predict(self, X_test):
-        """
+    def fit(self, X, y):
+        """ Fit the LS-STM model according to the given data.
 
         Parameters
         ----------
-        X_test: list[Tensor]
+        X : list[Tensor]
+            List of training samples of the same order and size.
+        y : np.ndarray
+            Target values relative to X for classification.
+            of length M of labels +1, -1
 
         Returns
         -------
-        y_pred: list of predicted labels
-
+        self : object
         """
+        self._assert_data_samples(X)
+        self._assert_data_labels(y)
 
-        self._assert_data(X_test)
+        # Binaries labels
+        self._orig_labels = list(set(y))
+        y = np.array([1 if x == self._orig_labels[0] else -1 for x in y])
 
-        w_n = self.model['Weights']
-        b = self.model['Bias']
+        # Initialise weights
+        self.weights_ = [np.random.randn(dim) for dim in X[0].shape]
+
+        eta_history = []
+        bias_history = [0]
+        for n_iter in range(self.max_iter):
+            eta_iter = []
+            bias = 0  # no need to track bias for different modes
+            for mode_n in range(X[0].order):
+                X_m = self._compute_X_m(X, skip_mode=mode_n)
+                eta = self._compute_eta(skip_mode=mode_n)
+                eta_iter.append(eta)
+
+                # Update LS-STM model weights on the fly
+                self.weights_[mode_n], bias = self._ls_optimizer(X_m, eta, y)
+
+            # Extend history for and check for convergence
+            eta_history.append(eta_iter)
+            bias_history.append(bias)
+            if n_iter > 10:
+                err1 = np.diff(eta_history[-2:], axis=0)
+                err2 = bias_history[-2] - bias_history[-1]
+                if np.all(np.abs(err1) <= self.tol) and abs(err2) <= self.tol:
+                    break
+
+        self.bias_ = bias_history[-1]
+        self.bias_history_ = np.array(bias_history)
+        self.eta_history_ = np.array(eta_history)
+        return self
+
+    def predict(self, X):
+        """ Predict the class labels for the provided data.
+
+        Parameters
+        ----------
+        X : list[Tensor]
+            List of test samples.
+
+        Returns
+        -------
+        y_pred : list[np.ndarray]
+            Class labels for samples in X.
+        """
+        self._assert_data_samples(X)
+        if self.weights_ is None:
+            raise ValueError("This {} instance is not fitted yet. Call 'fit' with "
+                             "appropriate arguments before using this method.".format(self.name))
+
+        # Check that all samples in 'X' are of the same shape as during training.
+        # By this point we have made sure that samples in 'X' are of the same shape.
+        weights_shape = tuple([w.shape[0] for w in self.weights_])
+        if not all([w_shape == X[0].shape[mode] for mode, w_shape in enumerate(weights_shape)]):
+            raise ValueError("This {} instance has been trained of data of different shape. "
+                             "Got {}, whereas {} is expected.".format(self.name,
+                                                                      weights_shape,
+                                                                      X[0].shape
+                                                                      )
+                             )
         y_pred = []
-        for xtest in X_test:
-            temp = xtest.copy()
-            for n, w in enumerate(w_n):
-                temp.mode_n_product(np.expand_dims(w, axis=0), mode=n, inplace=True)
-            y_pred.append(np.sign(temp.data.squeeze() + b))
+        for test_sample in X:
+            temp = test_sample.copy()
+            for mode_n in range(X[0].order):
+                # TODO: this could be simplified when 'hottbox' will support mode-n product with a vector
+                temp.mode_n_product(np.expand_dims(self.weights_[mode_n], axis=0), mode=mode_n, inplace=True)
+            y_pred.append(np.sign(temp.data.squeeze() + self.bias_))
 
-        y_pred = [self.orig_labels[0] if x == 1 else self.orig_labels[1] for x in y_pred]
+        y_pred = np.array([self._orig_labels[0] if x == 1 else self._orig_labels[1] for x in y_pred])
         return y_pred
 
-    def _assert_data(self, X_data, labels=None):
+    def predict_proba(self, X):
+        return super(LSSTM, self).predict_proba(X=X)
+
+    def score(self, X, y):
+        """ Returns the mean accuracy on the given test data and labels.
+
+        Parameters
+        ----------
+        X : list[Tensor]
+            List of test samples.
+        y : np.ndarray
+            True labels for test samples.
+
+        Returns
+        -------
+        acc : np.float64
+            Mean accuracy of ``self.predict(X)`` with respect to ``y``.
+        """
+        y_pred = self.predict(X)
+        acc = np.sum(y_pred == y) / y.size
+        return acc
+
+    @staticmethod
+    def _assert_data_samples(X):
+        """ Checks if all samples have same shape and order.
+
+        Parameters
+        ----------
+        X : list[Tensor]
+            List of data samples of ``Tensor`` class.
+        """
+        if not isinstance(X, list):
+            raise TypeError("All data samples should be passed as a list")
+
+        if not all([isinstance(_, Tensor) for _ in X]):
+            raise TypeError("All data samples should be of `Tensor` class")
+
+        if not all([_.order for _ in X]):
+            raise ValueError("All data samples should be of the same order")
+
+        if not all([_.shape for _ in X]):
+            raise ValueError("All data samples should be of the same shape")
+
+    @staticmethod
+    def _assert_data_labels(y):
+        """ Checks if labels form a binary set.
+
+        Parameters
+        ----------
+        y : np.ndarray
+            List of labels for training data.
+        """
+        if np.unique(y).size != 2:
+            raise ValueError("LS-STM is a binary classifier. Provided labels do not form a binary set")
+
+    def _compute_eta(self, skip_mode):
         """
 
         Parameters
         ----------
-        X_data: list[Tensor]
+        skip_mode : int
+            The mode for which LS-STM optimisation problem needs to be solved.
 
         Returns
         -------
-
-        None, just checks if all tensors have same order and dimensions, and if labels are binary
+        eta : np.float64
+            Parameter to be used in LS-STM optimization problem
         """
-        order = self.order
-        shape = self.shape
-        for tensor in X_data[1:]:
-            assert tensor.order == order, "Tensors must all be of the same order"
-            assert tensor.shape == shape, "Tensors must all have modes of equal dimensions"
-            order = tensor.order
-            shape = tensor.shape
-
-        if labels is not None:
-            assert len(set(labels)) == 2, "LSSTM is a binary classifier, more than two labels were passed"
-
-    def _initialize_weights(self, shape):
-        """
-
-        Parameters
-        ----------
-        shape: tuple, of tensor dimensions
-
-        Returns
-        -------
-        w_n: list, the initialized weights
-
-        """
-        w_n = []
-        for dim in shape:
-            w_n.append(np.random.randn(dim))
-        return w_n
-
-    def _calc_eta(self, w_n, n):
-        """
-
-        Parameters
-        ----------
-        w_n: list, of LS-STM weights
-        n: int, the one to leave out
-
-        Returns
-        -------
-        eta: int, parameter to be used in LS-STM optimization problem
-
-        """
-        w_n_new = [w for i, w in enumerate(w_n) if i != n]
         eta = 1
-        for w in w_n_new:
-            eta *= (np.linalg.norm(w)**2)
+        for mode in range(len(self.weights_)):
+            if mode != skip_mode:
+                eta *= (np.linalg.norm(self.weights_[mode]) ** 2)
         return eta
 
-    def _calc_Xm(self, X_data, w_n, n):
+    def _compute_X_m(self, X, skip_mode):
         """
 
         Parameters
         ----------
-        X_data: list[Tensor], all the data as list of tensor objects
-        w_n: list, the weights treated as constants
-        n: int, the mode we're looking at
+        X : list[Tensor]
+            All the data as list of tensor objects.
+        skip_mode : int
+            The mode for which LS-STM optimisation problem needs to be solved.
 
         Returns
         -------
-        X_m: np.ndarray of size M x mode(n), to be passed to the LS-SVM solver
-
+        X_m : np.ndarray
+            Array to be used in LS-STM optimization problem.
+            Has a shape ``(M, N)`` where ``M = len(X)`` and ``N = X[0].shape[skip_mode]``
         """
-        order = X_data[0].order
-        w_n_new = [w for i, w in enumerate(w_n) if i != n]
-        M = len(X_data)
-        modes = [i for i in range(order) if i != n]
-
-        X_m = np.zeros((M, X_data[0].shape[n]))
-        for i, tensor in enumerate(X_data):
+        X_m = np.zeros((len(X), X[0].shape[skip_mode]))
+        for i, tensor in enumerate(X):
             temp = tensor.copy()
-            for w, mode in zip(w_n_new, modes):
-                temp.mode_n_product(np.expand_dims(w, axis=0), mode, inplace=True)
-            x_m = np.expand_dims(temp.data.squeeze(), axis=0)
-            X_m[i, :] = x_m
-
+            for mode in range(X[0].order):
+                if mode != skip_mode:
+                    temp.mode_n_product(np.expand_dims(self.weights_[mode], axis=0), mode=mode, inplace=True)
+            X_m[i, :] = temp.data.squeeze()
         return X_m
 
-    def _ls_optimizer(self, X_m, labels, eta, C):
-        """
+    # TODO: potentially can be put in a separate module in order to be reused
+    def _ls_optimizer(self, X_m, eta, labels):
+        """ Solves LS-STM optimization problem for mode-n
 
         Parameters
         ----------
-        X_m: np.ndarray,  Matrix of contracted tensors along all weights except the current n
-        labels: int, the labels of hte training data
-        eta: int, Parameter to be used in the algorithm
-        C: Cost
+        X_m : np.ndarray
+            Matrix of contracted tensors along all weights except the current n
+        eta : np.float64
+            Parameter to be used in the algorithm
+        labels : np.ndarray
+            The labels of the training data
 
         Returns
         -------
-        w: list, Weights for mode n
-        b: int, Bias
-
+        weights : np.ndarray
+            Weights obtained by solving LS-STM optimization problem for mode-n
+        bias : np.float64
+            Bias obtained by solving LS-STM optimization problem for mode-n
         """
-
         M = X_m.shape[0]
-        gamma = C / eta
-        y_train = np.expand_dims(np.array(labels), axis=1)
+        ones = np.ones(M)
+        identity = np.identity(M)
+        gamma = eta / self.C
+        omega = np.dot(X_m, X_m.transpose())
 
-        #For now, use no kernel
-        Omega = np.dot(X_m, X_m.transpose())
-        left_column = np.expand_dims(np.append(np.array([0]), np.ones(M)), axis=1)
-        right_block = np.append(np.expand_dims(np.ones(M), axis=0),  Omega + (1/gamma) * np.eye(M), axis=0)
-        params = np.append( left_column, right_block, axis=1)
+        right_hand_side = np.expand_dims(np.hstack([0, labels]), axis=1)
 
-        RHS = np.append(np.array([[0]]), y_train, axis=0)
+        left_column = np.expand_dims(np.hstack([0, ones]), axis=1)
+        right_block = np.vstack([ones, omega + gamma * identity])
+        left_hand_side = np.hstack([left_column, right_block])
 
-        alphas = np.dot(np.linalg.inv(params), RHS)
+        alphas = np.dot(np.linalg.inv(left_hand_side), right_hand_side)
 
-        w = np.sum(alphas[1:,:] * X_m, axis=0)
-        b = alphas[0][0]
+        weights = np.sum(alphas[1:, :] * X_m, axis=0)
+        bias = alphas[0, 0]
 
-        return w, b
-
-    def _update_model(self, w, b, nIter):
-        """
-
-        Parameters
-        ----------
-        w: list, estimated weights
-        b: int,  estimated bias
-        nIter: int, current iteration number
-
-        Returns
-        -------
-        None
-
-        """
-        self.model['Weights'] = w
-        self.model['Bias'] = b
-        self.model['nIter'] = nIter
-
-    def _converged(self):
-        """
-
-        Parameters
-        ----------
-        w_n_old: list, previous computed weights
-
-        Returns
-        -------
-        Boolean
-
-        """
-
-        self.b_history.append(self.model['Bias'])
-
-        if len(self.b_history) > 10:
-            err1 = np.diff(np.array(self.eta_history[-11:]))
-            err2 = np.diff(np.array(self.b_history[-11:]))
-
-            if np.all(np.abs(err1) < 1e-8) and np.all(np.abs(err2) < 1e-8):
-                return True
-
-        return False
+        return weights, bias

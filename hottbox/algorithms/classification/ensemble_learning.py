@@ -351,6 +351,14 @@ class BaseTensorEnsembleClassifier(Classifier):
         y_pred = df.idxmax(axis=1).as_matrix()
         return y_pred
 
+    # Hacky way of getting predict_proba to raise an AttributeError when
+    # probability=False using properties. Do not use this in new code; when
+    # probabilities are not available depending on a setting, introduce two
+    # estimators.
+    def _check_proba(self):
+        if not self.probability:
+            raise AttributeError('`predict_proba` is not available when `probability=False`')
+
 
 class TelVI(BaseTensorEnsembleClassifier):
     """ Tensor Ensemble Learning: Vectors Independently (TelVI)
@@ -368,6 +376,11 @@ class TelVI(BaseTensorEnsembleClassifier):
         to calling `fit`, and will slow down that method.
     verbose : bool
         Enable verbose output.
+
+    Notes
+    -----
+    [1] Kisil, Ilia, Ahmad Moniri, and Danilo P. Mandic. "Tensor Ensemble Learning for Multidimensional Data."
+        arXiv preprint arXiv:1812.06888 (2018).
     """
     def __init__(self, base_clf, probability=False, verbose=False):
         super(TelVI, self).__init__(base_clf=base_clf,
