@@ -9,34 +9,29 @@ class LSSTM(Classifier):
     Parameters
     ----------
     C : float
-        Penalty parameter C of the error term.
+        Penalty parameter of the error term.
     tol : float
         Tolerance for stopping criterion.
     max_iter : int
         Hard limit on iterations within solver.
     probability : bool
         Whether to enable probability estimates. This must be enabled prior
-        to calling `fit`, and will slow down that method.
+        to calling ``fit``, and will slow down that method.
     verbose : bool
         Enable verbose output.
 
     Attributes
     ----------
     weights_ : list[np.ndarray]
-        List of weights for each mode of the training data
+        List of weights for each mode of the training data.
     bias_ : np.float64
     eta_history_ : np.ndarray
     bias_history_ : np.ndarray
 
-    Notes
-    -----
-    [1] Zhao, Xinbin, et al. "Least squares twin support tensor machine for classification."
-        Journal of Information & Computational Science 11.12 (2014): 4175-4189.
-
-    [2] Cichocki, Andrzej, et al. "Tensor networks for dimensionality reduction and large-scale optimization:
-        Part 2 applications and future perspectives."
-        Foundations and Trends in Machine Learning 9.6 (2017): 431-673.
-
+    References
+    ----------
+    1)  Cichocki, Andrzej, et al. "Tensor networks for dimensionality reduction and large-scale optimization:
+        Part 2 applications and future perspectives." Foundations and Trends in Machine Learning 9.6 (2017): 431-673.
     """
     def __init__(self, C=1, tol=1e-3, max_iter=100, probability=False, verbose=False):
         super(LSSTM, self).__init__(probability=probability,
@@ -50,12 +45,6 @@ class LSSTM(Classifier):
         self.bias_history_ = None
         self._orig_labels = None
 
-    def set_params(self, **params):
-        super(LSSTM, self).set_params(**params)
-
-    def get_params(self):
-        return super(LSSTM, self).get_params()
-
     def fit(self, X, y):
         """ Fit the LS-STM model according to the given data.
 
@@ -65,11 +54,10 @@ class LSSTM(Classifier):
             List of training samples of the same order and size.
         y : np.ndarray
             Target values relative to X for classification.
-            of length M of labels +1, -1
 
         Returns
         -------
-        self : object
+        self
         """
         self._assert_data_samples(X)
         self._assert_data_labels(y)
@@ -169,6 +157,12 @@ class LSSTM(Classifier):
         acc = np.sum(y_pred == y) / y.size
         return acc
 
+    def set_params(self, **params):
+        super(LSSTM, self).set_params(**params)
+
+    def get_params(self):
+        return super(LSSTM, self).get_params()
+
     @staticmethod
     def _assert_data_samples(X):
         """ Checks if all samples have same shape and order.
@@ -176,7 +170,7 @@ class LSSTM(Classifier):
         Parameters
         ----------
         X : list[Tensor]
-            List of data samples of ``Tensor`` class.
+            List of multi-dimensional data samples.
         """
         if not isinstance(X, list):
             raise TypeError("All data samples should be passed as a list")
@@ -203,7 +197,7 @@ class LSSTM(Classifier):
             raise ValueError("LS-STM is a binary classifier. Provided labels do not form a binary set")
 
     def _compute_eta(self, skip_mode):
-        """
+        """ Compute an upper bound of margin errors.
 
         Parameters
         ----------
@@ -213,7 +207,7 @@ class LSSTM(Classifier):
         Returns
         -------
         eta : np.float64
-            Parameter to be used in LS-STM optimization problem
+            An upper bound of margin errors.
         """
         eta = 1
         for mode in range(len(self.weights_)):
@@ -222,19 +216,19 @@ class LSSTM(Classifier):
         return eta
 
     def _compute_X_m(self, X, skip_mode):
-        """
+        """ Contract multi-dimensional data samples with weights.
 
         Parameters
         ----------
         X : list[Tensor]
-            All the data as list of tensor objects.
+            List of all multi-dimensional data samples.
         skip_mode : int
-            The mode for which LS-STM optimisation problem needs to be solved.
+            The mode for which contraction is skipped.
 
         Returns
         -------
         X_m : np.ndarray
-            Array to be used in LS-STM optimization problem.
+            Matrix of contracted samples with weights along all modes except the ``skip_mode``.
             Has a shape ``(M, N)`` where ``M = len(X)`` and ``N = X[0].shape[skip_mode]``
         """
         X_m = np.zeros((len(X), X[0].shape[skip_mode]))
@@ -248,36 +242,49 @@ class LSSTM(Classifier):
 
     # TODO: potentially can be put in a separate module in order to be reused
     def _ls_optimizer(self, X_m, eta, labels):
-        """ Solves LS-STM optimization problem for mode-n
+        """ Solves LS-STM optimization problem for mode-n.
 
         Parameters
         ----------
         X_m : np.ndarray
-            Matrix of contracted tensors along all weights except the current n
+            Matrix of contracted tensor-samples with weights along all
+            modes except the current one.
         eta : np.float64
-            Parameter to be used in the algorithm
+            An upper bound of margin errors.
         labels : np.ndarray
-            The labels of the training data
+            The labels of the training data.
 
         Returns
         -------
         weights : np.ndarray
-            Weights obtained by solving LS-STM optimization problem for mode-n
+            Weights assigned to the features with respect to mode-n.
         bias : np.float64
-            Bias obtained by solving LS-STM optimization problem for mode-n
+            Constant in decision function.
+
+        Notes
+        -----
+        Formulation of LS-STM for mode-n is equivalent to formulation of Least Squares
+        Support Vector Machine.
         """
         M = X_m.shape[0]
-        ones = np.ones(M)
+        ones_row = np.ones(M)
+        ones_col = np.expand_dims(ones_row, axis=1)
         identity = np.identity(M)
-        gamma = eta / self.C
+
+        # Kernel matrix (Linear for now)
         omega = np.dot(X_m, X_m.transpose())
+
+        # We flip this around to simplify expression for matrix construction
+        gamma = eta / self.C
+
+        # Constructing a linear system (LHS x [bias, weights]^T = RHS)
+        top = np.hstack([0, ones_row])
+        bottom = np.hstack([ones_col, omega + gamma * identity])
+        left_hand_side = np.vstack([top, bottom])
 
         right_hand_side = np.expand_dims(np.hstack([0, labels]), axis=1)
 
-        left_column = np.expand_dims(np.hstack([0, ones]), axis=1)
-        right_block = np.vstack([ones, omega + gamma * identity])
-        left_hand_side = np.hstack([left_column, right_block])
-
+        # Obtain Lagrange multipliers
         alphas = np.dot(np.linalg.inv(left_hand_side), right_hand_side)
 
         weights = np.sum(alphas[1:, :] * X_m, axis=0)
