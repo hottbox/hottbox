@@ -7,15 +7,59 @@ from functools import reduce
 from .core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
 
 
+def sliceT(tensor, inds, mode, overwrite=None):
+    """ Equivalent to multidimnesional slicing
+
+    Parameters
+    ----------
+    tensor : Tensor
+        Tensor to slice at position
+    inds : int
+        The index of the axis. e.g [:,:,0] will be at mode=2, inds=0
+    mode : int
+        The axis to access
+    overwrite : Tensor
+        Overwrite slice with a subtensor
+    Returns
+    -------
+        Numpy function for creating arrays
+    """
+    tensl = np.array([slice(None)] * tensor.ndim)
+    tensl[mode] = inds
+    tensl = tensl.tolist()
+    if overwrite is not None:
+        tensor[tensl] = overwrite
+    return tensor[tensl]
+
+
+def genToeplitzMatrix(r, c=None):
+    r = np.asarray(r).flatten()
+    if c is None:
+        c = r.conjugate()
+    else:
+        c = np.asarray(c).flatten()
+
+    vals = np.concatenate((r[-1:0:-1], c))
+    a, b = np.ogrid[0:len(c), len(r) - 1:-1:-1]
+    place = a + b
+    # place contains the positional indicies such that 
+    # that vals[place] would be a Toeplitz matrix.
+    return vals[place]
+
+def genHankelMatrix(r,c=None):
+    r = r[::-1]
+    if c is not None:
+        c = c[::-1]
+    return genToeplitzMatrix(r,c)[::-1]
+
+
 def _select_base_function(base):
     """ Utility for creating arrays
-
     Parameters
     ----------
     base : str
         Id of base function.
         If not one from ``{"arange", "randn", "rand", "ones"}`` then `np.arange` will be used.
-
     Returns
     -------
         Numpy function for creating arrays
@@ -24,6 +68,56 @@ def _select_base_function(base):
             "randn": np.random.randn,
             "rand": np.random.rand,
             "ones": np.ones}.get(base, np.arange)
+
+
+def isToepMatrix(mat):
+    """ Utility for checking if a matrix is a Toeplitz matrix
+    Parameters
+    ----------
+    mat : np.ndarray
+        n x m array
+    Returns
+    -------
+        Boolean indicating if Toeplitz matrix
+    """
+    n,m = mat.shape
+    # Horizontal diagonals
+    for off in range(1,m):
+        if np.ptp(np.diagonal(mat, offset=off)):
+            return False
+    # Vertical diagonals
+    for off in range(1,n):
+        if np.ptp(np.diagonal(mat, offset=-off)):
+            return False
+    # we only reach here when all elements 
+    # in given diagonal are same 
+    return True
+
+# Currently recursive, TODO: improve efficiency
+def isToepTensor(tensor, modes=[0,1]):
+    """ Utility for checking if a Tensor is a Toeplitz Tensor
+    Parameters
+    ----------
+    mat : np.ndarray
+        n x m array
+    Returns
+    -------
+        Boolean indicating if Toeplitz matrix
+    """
+    tensor = tensor.data
+    if tensor.ndim <= 2:
+        return isToepMatrix(tensor)
+    sz = np.asarray(tensor.shape)
+    availmodes = np.setdiff1d(np.arange(len(sz)),modes)
+    for idx, mode in enumerate(availmodes):
+        dim = sz[mode]
+        # Go through each dim
+        for i in range(dim):
+            t = sliceT(tensor,i,mode)
+            if not(isToepTensor(t)): 
+                print ("Wrong slice: \n{}\n{}".format(t,(i,idx)))
+                return False
+    return True
 
 
 def quick_tensor(shape, base="arange"):
