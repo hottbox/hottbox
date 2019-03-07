@@ -59,10 +59,9 @@ class LSSTM(Classifier):
         -------
         self
         """
-        self._assert_data_samples(X)
-        self._assert_data_labels(y)
+        self._assert_train_data(X=X, y=y)
 
-        # Binaries labels
+        # Binaries labels (-1 and 1)
         self._orig_labels = list(set(y))
         y = np.array([1 if x == self._orig_labels[0] else -1 for x in y])
 
@@ -70,7 +69,7 @@ class LSSTM(Classifier):
         self.weights_ = [np.random.randn(dim) for dim in X[0].shape]
 
         eta_history = []
-        bias_history = [0]
+        bias_history = [0.0]
         for n_iter in range(self.max_iter):
             eta_iter = []
             bias = 0  # no need to track bias for different modes
@@ -109,21 +108,7 @@ class LSSTM(Classifier):
         y_pred : list[np.ndarray]
             Class labels for samples in X.
         """
-        self._assert_data_samples(X)
-        if self.weights_ is None:
-            raise ValueError("This {} instance is not fitted yet. Call 'fit' with "
-                             "appropriate arguments before using this method.".format(self.name))
-
-        # Check that all samples in 'X' are of the same shape as during training.
-        # By this point we have made sure that samples in 'X' are of the same shape.
-        weights_shape = tuple([w.shape[0] for w in self.weights_])
-        if not all([w_shape == X[0].shape[mode] for mode, w_shape in enumerate(weights_shape)]):
-            raise ValueError("This {} instance has been trained of data of different shape. "
-                             "Got {}, whereas {} is expected.".format(self.name,
-                                                                      weights_shape,
-                                                                      X[0].shape
-                                                                      )
-                             )
+        self._assert_test_data(X=X)
         y_pred = []
         for test_sample in X:
             temp = test_sample.copy()
@@ -136,6 +121,7 @@ class LSSTM(Classifier):
         return y_pred
 
     def predict_proba(self, X):
+        self._assert_test_data(X=X)
         return super(LSSTM, self).predict_proba(X=X)
 
     def score(self, X, y):
@@ -153,6 +139,7 @@ class LSSTM(Classifier):
         acc : np.float64
             Mean accuracy of ``self.predict(X)`` with respect to ``y``.
         """
+        self._assert_test_data(X=X, y=y)
         y_pred = self.predict(X)
         acc = np.sum(y_pred == y) / y.size
         return acc
@@ -162,6 +149,50 @@ class LSSTM(Classifier):
 
     def get_params(self):
         return super(LSSTM, self).get_params()
+
+    def _assert_train_data(self, X, y):
+        """ Validate train data
+
+        Parameters
+        ----------
+        X : list[Tensor]
+            List of multi-dimensional training samples.
+        y : np.ndarray
+            List of corresponding labels.
+        """
+        self._assert_data_samples(X)
+        self._assert_data_labels(y)
+        self._assert_samples_vs_labels(X, y)
+
+    def _assert_test_data(self, X, y=None):
+        """ Validate test data
+
+        Parameters
+        ----------
+        X : list[Tensor]
+            List of multi-dimensional test samples.
+        y : np.ndarray
+            True labels for test samples.
+        """
+        if self.weights_ is None:
+            raise ValueError("This {} instance is not fitted yet. Call 'fit' with "
+                             "appropriate arguments before using this method.".format(self.name))
+
+        self._assert_data_samples(X)
+        if y is not None:
+            self._assert_data_labels(y)
+            self._assert_samples_vs_labels(X=X, y=y)
+
+        # Check that all samples in 'X' are of the same shape as during training.
+        # By this point we have already made sure that samples in 'X' are of the same shape.
+        weights_shape = tuple([w.shape[0] for w in self.weights_])
+        if weights_shape != X[0].shape:
+            raise ValueError("This {} instance has been trained of data of different shape. "
+                             "Got {}, whereas {} is expected.".format(self.name,
+                                                                      weights_shape,
+                                                                      X[0].shape
+                                                                      )
+                             )
 
     @staticmethod
     def _assert_data_samples(X):
@@ -175,13 +206,13 @@ class LSSTM(Classifier):
         if not isinstance(X, list):
             raise TypeError("All data samples should be passed as a list")
 
-        if not all([isinstance(_, Tensor) for _ in X]):
+        if not all([isinstance(sample, Tensor) for sample in X]):
             raise TypeError("All data samples should be of `Tensor` class")
 
-        if not all([_.order for _ in X]):
+        if not all([sample.order == X[0].order for sample in X]):
             raise ValueError("All data samples should be of the same order")
 
-        if not all([_.shape for _ in X]):
+        if not all([sample.shape == X[0].shape for sample in X]):
             raise ValueError("All data samples should be of the same shape")
 
     @staticmethod
@@ -193,8 +224,17 @@ class LSSTM(Classifier):
         y : np.ndarray
             List of labels for training data.
         """
-        if np.unique(y).size != 2:
+        if np.unique(y).size > 2:
             raise ValueError("LS-STM is a binary classifier. Provided labels do not form a binary set")
+
+    @staticmethod
+    def _assert_samples_vs_labels(X, y):
+        if y.size != len(X):
+            raise ValueError("Number of provided labels should be equal to a number of data samples."
+                             "Got {} labels, whereas {} is expected".format(y.size,
+                                                                            len(X)
+                                                                            )
+                             )
 
     def _compute_eta(self, skip_mode):
         """ Compute an upper bound of margin errors.
