@@ -69,7 +69,7 @@ class LSSTM(Classifier):
         self.weights_ = [np.random.randn(dim) for dim in X[0].shape]
 
         eta_history = []
-        bias_history = [0.0]
+        bias_history = []
         for n_iter in range(self.max_iter):
             eta_iter = []
             bias = 0  # no need to track bias for different modes
@@ -105,7 +105,7 @@ class LSSTM(Classifier):
 
         Returns
         -------
-        y_pred : list[np.ndarray]
+        y_pred : np.ndarray
             Class labels for samples in X.
         """
         self._assert_test_data(X=X)
@@ -121,6 +121,7 @@ class LSSTM(Classifier):
         return y_pred
 
     def predict_proba(self, X):
+        """ Compute probabilities of possible outcomes for samples in the provided data. """
         self._assert_test_data(X=X)
         return super(LSSTM, self).predict_proba(X=X)
 
@@ -140,6 +141,10 @@ class LSSTM(Classifier):
             Mean accuracy of ``self.predict(X)`` with respect to ``y``.
         """
         self._assert_test_data(X=X, y=y)
+        if not np.unique(y) in np.unique(self._orig_labels):
+            # TODO: provide with the meaningful message
+            raise ValueError
+
         y_pred = self.predict(X)
         acc = np.sum(y_pred == y) / y.size
         return acc
@@ -150,6 +155,9 @@ class LSSTM(Classifier):
     def get_params(self):
         return super(LSSTM, self).get_params()
 
+    # TODO: Implementation of data input validation should be generalised.
+    #  Data/model is validated twice when `score` method is called since it
+    #  is based on `predict` method.
     def _assert_train_data(self, X, y):
         """ Validate train data
 
@@ -161,8 +169,8 @@ class LSSTM(Classifier):
             List of corresponding labels.
         """
         self._assert_data_samples(X)
-        self._assert_data_labels(y)
         self._assert_samples_vs_labels(X, y)
+        self._assert_data_labels(y)
 
     def _assert_test_data(self, X, y=None):
         """ Validate test data
@@ -180,8 +188,8 @@ class LSSTM(Classifier):
 
         self._assert_data_samples(X)
         if y is not None:
-            self._assert_data_labels(y)
             self._assert_samples_vs_labels(X=X, y=y)
+            self._assert_data_labels(y)
 
         # Check that all samples in 'X' are of the same shape as during training.
         # By this point we have already made sure that samples in 'X' are of the same shape.
@@ -225,7 +233,7 @@ class LSSTM(Classifier):
             List of labels for training data.
         """
         if np.unique(y).size > 2:
-            raise ValueError("LS-STM is a binary classifier. Provided labels do not form a binary set")
+            raise ValueError("This is a binary classifier. Provided labels do not form a binary set")
 
     @staticmethod
     def _assert_samples_vs_labels(X, y):
