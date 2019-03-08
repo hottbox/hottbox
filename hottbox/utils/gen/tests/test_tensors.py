@@ -1,59 +1,6 @@
-from ..version import __version__
-from ..utils import *
-from ..core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
-from ..core._meta import State
-
-
-def test_version():
-    assert isinstance(__version__, str)
-
-def _manualToepTensor():
-    tensor = np.zeros(shape=(4,4,3))
-    mat_A = genToeplitzMatrix([1,2,3,4],[1,4,3,2])
-    mat_B = genToeplitzMatrix([13,5,17,8],[13,18,17,5])
-    mat_C = genToeplitzMatrix([0,9,30,11],[0,11,30,9]) 
-    tensor[:,:,0] = mat_A
-    tensor[:,:,1] = mat_B
-    tensor[:,:,2] = mat_C
-    return Tensor(array=tensor)
-
-
-def _manualToepMatrix():
-    mat = np.array([[1, 2, 3, 4, 5, 6],
-                    [4, 1, 2, 3, 4, 5],
-                    [5, 4, 1, 2, 3, 4],
-                    [6, 5, 4, 1, 2, 3]])
-    return mat
-
-def _manualHankelMatrix():
-    mat = np.array([[1, 4, 5, 6, 5, 4],
-                    [4, 5, 6, 5, 4, 3],
-                    [5, 6, 5, 4, 3, 2],
-                    [6, 5, 4, 3, 2, 1]])
-    return mat
-
-
-def test_sliceT():
-    tensor = _manualToepTensor().data
-    assert np.array_equal(tensor[0,:,:], sliceT(tensor, 0, 0))
-    assert np.array_equal(tensor[:,3,:], sliceT(tensor, 3, 1))
-    assert np.array_equal(tensor[:,:,1], sliceT(tensor, 1, 2))
-
-
-def test_isToepMatrix():
-    mat = _manualToepMatrix()
-    assert isToepMatrix(mat)
-
-def test_isToepTensor():
-    assert isToepTensor(_manualToepTensor())
-
-def test_genToeplitzMatrix():
-    mat = genToeplitzMatrix([1,2,3,4,5,6], [1,4,5,6])
-    assert np.array_equal(_manualToepMatrix(), mat)
-
-def test_genHankelMatrix():
-    mat = genHankelMatrix([1,2,3,4,5,6], [1,4,5,6])
-    assert np.array_equal(_manualHankelMatrix(), mat)
+from ..tensors import *
+from ....core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
+from ....core._meta import State
 
 def test_quick_tensorcpd():
     """ Tests for `quick_tensorcpd` function """

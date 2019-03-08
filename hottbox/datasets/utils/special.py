@@ -1,9 +1,10 @@
 import numpy as np
 from ...core.structures import Tensor
-from ...utils import sliceT, genToeplitzMatrix
+from ...utils.utils import sliceT
+from ...utils.gen.matrices import genToeplitzMatrix
 import itertools
 
-def _toeplitzRandom(shape, modes, low=None, high=None):
+def _toeplitz_random(shape, modes, low=None, high=None):
     """ Generate the apppropraite number of Toeplitz matrices
     according to the required shape
 
@@ -38,7 +39,7 @@ def _toeplitzRandom(shape, modes, low=None, high=None):
     return matC
 
 
-def toeplitzTensor(shape, modes=[0, 1], matC=None, random=False, lh=(None, None)):
+def toeplitz(shape, modes=[0, 1], matC=None, random=False, lh=(None, None)):
     """ Function to generate a toeplitz tensor. Every slice along modes will be a Toeplitz matrix.
     :param shape: (required) shape of output. If c is not None, they must match.
     :param modes: the mode by which the tensor is excpected to be circulant
@@ -57,7 +58,7 @@ def toeplitzTensor(shape, modes=[0, 1], matC=None, random=False, lh=(None, None)
     low, high = lh
     # Generate a list of Toeplitz matrices
     if random:
-        matC = _toeplitzRandom(shape, modes, low, high)
+        matC = _toeplitz_random(shape, modes, low, high)
     tensor = np.zeros(shape=shape)
     matC = np.asarray(matC)
 

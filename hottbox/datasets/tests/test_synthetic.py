@@ -5,7 +5,7 @@ import pytest
 import numpy as np
 from ..synthetic import *
 from ...core.structures import Tensor
-from ...utils import isToepTensor, isToepMatrix
+from ...utils.checks import isToepTensor, isToepMatrix
 
 
 class TestbasicTensor():

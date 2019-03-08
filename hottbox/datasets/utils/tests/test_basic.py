@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from ..basic import *
 from ....core.structures import Tensor
-from ....utils import isToepTensor, isToepMatrix
+from ....utils.checks import isToepTensor, isToepMatrix
 
 def test_dense():
     # TODO: test distribution

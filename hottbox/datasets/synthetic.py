@@ -1,6 +1,7 @@
 import numpy as np
 from ..core.structures import Tensor
-from ..utils import sliceT, genToeplitzMatrix
+from ..utils.utils import sliceT
+from ..utils.gen.matrices import genToeplitzMatrix
 import itertools
 
 
