@@ -30,5 +30,3 @@ def sliceT(tensor, inds, mode, overwrite=None):
     if overwrite is not None:
         tensor[tensl] = overwrite
     return tensor[tensl]
-
-
