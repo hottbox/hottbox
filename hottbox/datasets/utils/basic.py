@@ -20,7 +20,7 @@ def dense(shape, distr='uniform', distr_type=0, fxdind=None):
     
     Parameters
     ----------
-    shape : int
+    shape : tuple(int)
         specifies the dimensions of the tensor
     distr (optional): string
         Specifies the random generation using a class of the numpy.random module
@@ -38,7 +38,7 @@ def dense(shape, distr='uniform', distr_type=0, fxdind=None):
         tensor = _predefined_distr(distr, shape)
     else:
         tensor = np.random.uniform(size=shape)
-        print("not yet implemented")
+        raise NotImplementedError('Not implemented in dataset (basic) class')
     return Tensor(array=tensor)
 
 def sparse(shape, distr='uniform', distr_type=0, fxdind=None, pct=0.05):
@@ -46,7 +46,7 @@ def sparse(shape, distr='uniform', distr_type=0, fxdind=None, pct=0.05):
     
     Parameters
     ----------
-    shape : int
+    shape : tuple(int)
         specifies the dimensions of the tensor
     distr (optional): string
         Specifies the random generation using a class of the numpy.random module
@@ -69,41 +69,70 @@ def sparse(shape, distr='uniform', distr_type=0, fxdind=None, pct=0.05):
         tensor[indx] = _predefined_distr(distr,sz)
         tensor = tensor.reshape(shape)
     else:
-        print("not yet implemented")
+        raise NotImplementedError('Not implemented in dataset (basic) class')
+
 
     return Tensor(array=tensor)
 
-def superdiagonal(shape, distr='uniform', dataset=[None]):
+def superdiagonal(shape, distr='uniform', values=[None]):
     """ Generates a tensor of any dimension with random or specified numbers accross the superdiagonal and zeros elsewhere
     
     Parameters
     ----------
-    shape : int
+    shape : tuple(int)
         specifies the dimensions of the tensor
+        ``len(shape)`` defines the order of the tensor, whereas its values specify sizes of dimensions of the tensor.
     distr (optional): string
         Specifies the random generation using a class of the numpy.random module
     values : List
-        User defined number for the super diagonal
+        Array of values on the super-diagonal of a tensor
+
+    Returns
+    -------
+    tensor: Tensor
+        Generated tensor according to the parameters specified
+    """
+    if not isinstance(shape, tuple):
+        raise TypeError("Parameter `shape` should be passed as a tuple!")
     
+    if shape[1:] != shape[:-1]:
+            raise ValueError("All values in `shape` should have the same value!")
+    inds = shape[0]
+    tensor = np.zeros(shape)
+    
+    if values == [None]:
+        values = _predefined_distr(distr, inds)
+    if len(values) != inds:
+        raise ValueError("Dimension mismatch! The specified values do not match"\
+                +"the specified shape of the tensor provided ({} != {})".format(len(values),inds))
+    values = np.asarray(values).flatten()
+    np.fill_diagonal(tensor, values)
+    return Tensor(array=tensor)
+
+def supersymmetric(shape, tensor=None):
+    """ Generates a tensor of equal dimensions with random or specified numbers, with a specified tensor.
+
+    Parameters
+    ----------
+    shape : tuple(int)
+        specifies the dimensions of the tensor
+        ``len(shape)`` defines the order of the tensor, whereas its values specify sizes of dimensions of the tensor.
+    tensor (optional): Tensor
+        input tensor to be symmetricized
+
     Returns
     -------
     tensor: Tensor
         Generated tensor according to the parameters specified
     """
 
-    if shape[1:] != shape[:-1]:
-        print("Must have equal dimensions "
-              + "for a supersymmetric matrix")
-    inds = shape[0]
-    tensor = np.zeros(shape)
-    
-    dataset = np.asarray(dataset).flatten()
-    if dataset == [None]:
-        dataset = _predefined_distr(distr, inds)
-    if len(dataset) != inds:
-        print("The specified values do not match"\
-                +"the shape of the tensor provided")
-    np.fill_diagonal(tensor, dataset)
-    return Tensor(array=tensor)
+    dims = len(shape)
+    inds = itertools.permutations(np.arange(dims))
+    inds = np.array(list(inds))
+    A = np.zeros(shape)
+    if tensor is None:
+        tensor = dense(shape) 
+    for i, _ in enumerate(inds):
+        A=A + np.transpose(tensor, tuple(inds[i,:]))
+    return Tensor(array=A)
 
-"""def supersymmetric(shape):"""

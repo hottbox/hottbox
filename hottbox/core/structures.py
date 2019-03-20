@@ -8,7 +8,6 @@ from .operations import unfold, kolda_unfold, fold, kolda_fold, mode_n_product
 from ._meta import Mode, State
 from ..errors import TensorModeError, TensorShapeError, TensorStateError, TensorTopologyError, ModeError, StateError
 
-
 class Tensor(object):
     """ This class describes multidimensional data.
 
