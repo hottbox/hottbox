@@ -2,8 +2,9 @@ import numpy as np
 from functools import reduce
 from ..core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
 from .utils import sliceT
+import itertools
 
-def isToepMatrix(mat):
+def is_toep_matrix(mat):
     """ Utility for checking if a matrix is a Toeplitz matrix
     Parameters
     ----------
@@ -27,7 +28,7 @@ def isToepMatrix(mat):
     return True
 
 # Currently recursive, TODO: improve efficiency
-def isToepTensor(tensor, modes=[0,1]):
+def is_toep_tensor(tensor, modes=[0,1]):
     """ Utility for checking if a Tensor is a Toeplitz Tensor
     Parameters
     ----------
@@ -39,7 +40,7 @@ def isToepTensor(tensor, modes=[0,1]):
     """
     tensor = tensor.data
     if tensor.ndim <= 2:
-        return isToepMatrix(tensor)
+        return is_toep_matrix(tensor)
     sz = np.asarray(tensor.shape)
     availmodes = np.setdiff1d(np.arange(len(sz)),modes)
     for idx, mode in enumerate(availmodes):
@@ -47,8 +48,20 @@ def isToepTensor(tensor, modes=[0,1]):
         # Go through each dim
         for i in range(dim):
             t = sliceT(tensor,i,mode)
-            if not(isToepTensor(t)): 
+            if not(is_toep_tensor(t)): 
                 print ("Wrong slice: \n{}\n{}".format(t,(i,idx)))
                 return False
     return True
 
+
+def is_super_symmetric(tensor):
+    tensor = tensor.data
+    idx = np.arange(len(tensor.shape))
+    inds = itertools.permutations(idx)
+    for k,i in enumerate(inds):
+        s = np.transpose(tensor,np.array(i))
+        if not np.allclose(tensor,s, atol=1e-4, equal_nan=True):
+            print("{} \n is not the same as \n {}".format(tensor, s))
+            return False
+        
+    return True

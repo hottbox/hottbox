@@ -133,6 +133,6 @@ def supersymmetric(shape, tensor=None):
     if tensor is None:
         tensor = dense(shape) 
     for i, _ in enumerate(inds):
-        A=A + np.transpose(tensor, tuple(inds[i,:]))
+        A=A + np.transpose(tensor.data, tuple(inds[i,:]))
     return Tensor(array=A)
 

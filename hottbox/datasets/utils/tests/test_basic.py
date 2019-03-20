@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from ..basic import *
 from ....core.structures import Tensor
-from ....utils.checks import isToepTensor, isToepMatrix
+from ....utils.checks import is_super_symmetric
 
 def test_dense():
     # TODO: test distribution
@@ -38,3 +38,11 @@ def test_superdiagonal():
         trace += tensor[i,i,i]
     assert trace == true_shape[0]
 
+
+def test_supersymmetric():
+    true_shape = (4,4,4)
+    tensor = supersymmetric(true_shape)
+
+    assert true_shape == tensor.shape
+    assert isinstance(tensor, Tensor)
+    assert is_super_symmetric(tensor)

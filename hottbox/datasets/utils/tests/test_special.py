@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from ..special import *
 from ....core.structures import Tensor
-from ....utils.checks import isToepTensor, isToepMatrix
+from ....utils.checks import is_toep_tensor
 
 def test_toeplitz():
     tensor = np.zeros(shape=(4,4,3))
@@ -20,6 +20,6 @@ def test_toeplitz():
 
 def test_toeplitz_random():
     test_tensor = toeplitz((3,3,4), modes=[0,1], random=True)
-    assert isToepTensor(test_tensor, modes=[0,1])
+    assert is_toep_tensor(test_tensor, modes=[0,1])
 
 
