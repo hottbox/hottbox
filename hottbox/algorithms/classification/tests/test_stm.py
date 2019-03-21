@@ -15,6 +15,8 @@ class TestLSSTM:
         assert stm.C == C
         assert stm.tol == tol
         assert stm.max_iter == max_iter
+        assert stm.probability == False
+        assert stm.verbose == False
         assert stm.weights_ is None
         assert stm.bias_ is None
         assert stm.bias_history_ is None
@@ -23,12 +25,41 @@ class TestLSSTM:
         assert stm.verbose is False
         assert stm.name == "LSSTM"
 
-    # def test_set_params(self):
-    #     pass
-    #
-    # def test_get_params(self):
-    #     pass
-    #
+    def test_get_set_params(self):
+        orig_params = dict(C=1,
+                           tol=1,
+                           max_iter=1,
+                           probability=True,
+                           verbose=True
+                           )
+        new_params = dict(C=10,
+                          tol=10,
+                          max_iter=10,
+                          probability=False,
+                          verbose=False
+                          )
+        stm = LSSTM(**orig_params)
+
+
+        params = stm.get_params()
+        all_fields = stm.__dict__
+        for key in all_fields.keys():
+            if key not in params.keys():
+                # Test for wrong use of `set_params` (e.g. trying to modify attributes)
+                with pytest.raises(ValueError):
+                    wrong_params = {key: None}
+                    stm.set_params(**wrong_params)
+            else:
+                # Test for `get_params`
+                assert params[key] == orig_params[key]
+
+        # Test for correct use of `set_params`
+        stm.set_params(**new_params)
+        params = stm.get_params()
+        for key in params.keys():
+            assert params[key] == new_params[key]
+
+
 
     @pytest.mark.parametrize("label_0, label_1", [
         (6, 8),
@@ -234,12 +265,10 @@ class TestLSSTM:
 
     @pytest.mark.parametrize("label_0, label_1", [
         (6, 8),
-        ("word_1", "word_2"),
-        ("word 1 with space", "word 2 with space")
+        # ("word_1", "word_2"),
+        # ("word 1 with space", "word 2 with space")
     ])
     def test_score_fail(self, label_0, label_1):
-        # TODO: add check that test labels are within train labels. This also needs to be incorporated in assert method for test data
-        # TODO: finish this test
         sample_shape = (2, 3, 4)
         n_samples_0_train = 5
         n_samples_1_train = 5
@@ -250,8 +279,8 @@ class TestLSSTM:
         labels_1_train = [label_1] * n_samples_1_train
         labels_train = np.concatenate([np.array(labels_0_train), np.array(labels_1_train)])
 
-        labels_0_test = [label_0] * n_samples_0_test
-        labels_1_test = [label_1] * n_samples_1_test
+        labels_0_test = [label_0 + 1] * n_samples_0_test
+        labels_1_test = [label_1 + 1] * n_samples_1_test
         labels_test = np.concatenate([np.array(labels_0_test), np.array(labels_1_test)])
 
         data_train = [Tensor(np.random.randn(*sample_shape)) for _ in range(labels_train.size)]
@@ -260,4 +289,4 @@ class TestLSSTM:
         stm = LSSTM()
         stm.fit(X=data_train, y=labels_train)
         with pytest.raises(ValueError):
-            acc_score = stm.score(X=data_test,y=labels_test)
+            stm.score(X=data_test,y=labels_test)

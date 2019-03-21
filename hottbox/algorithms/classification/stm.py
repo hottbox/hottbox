@@ -61,7 +61,8 @@ class LSSTM(Classifier):
         """
         self._assert_train_data(X=X, y=y)
 
-        # Binaries labels (-1 and 1)
+        # Convert binary labels to -1 and 1 (provides better results then 1 and 0)
+        # This also allows to pass labels as stings
         self._orig_labels = list(set(y))
         y = np.array([1 if x == self._orig_labels[0] else -1 for x in y])
 
@@ -142,8 +143,11 @@ class LSSTM(Classifier):
         """
         self._assert_test_data(X=X, y=y)
         if not np.unique(y) in np.unique(self._orig_labels):
-            # TODO: provide with the meaningful message
-            raise ValueError
+            raise ValueError("Provided set of labels is inconsistent with the those this {} instance was trained on!!!"
+                             "Got {}, whereas {} expected".format(self.name,
+                                                                 np.unique(y),
+                                                                 self._orig_labels)
+                             )
 
         y_pred = self.predict(X)
         acc = np.sum(y_pred == y) / y.size
@@ -284,6 +288,7 @@ class LSSTM(Classifier):
             temp = tensor.copy()
             for mode in range(X[0].order):
                 if mode != skip_mode:
+                    # TODO: this could be simplified when 'hottbox' will support mode-n product with a vector
                     temp.mode_n_product(np.expand_dims(self.weights_[mode], axis=0), mode=mode, inplace=True)
             X_m[i, :] = temp.data.squeeze()
         return X_m

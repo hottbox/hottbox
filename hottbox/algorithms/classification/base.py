@@ -2,6 +2,7 @@ from inspect import signature
 
 
 # TODO: add interface and for checking labels at the training and testing stages (by analogy with sklearn)
+# TODO: override __repr__ method by analogy with sklearn and how base Decomposition interface.
 class Classifier(object):
     """ General interface for all classes that describe classification algorithms.
 
