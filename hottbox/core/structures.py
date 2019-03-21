@@ -104,6 +104,15 @@ class Tensor(object):
                                                      custom_state=custom_state,
                                                      mode_names=mode_names)
 
+    def __repr__(self):
+        return str(self)
+
+    def __getitem__(self,key):
+        return self.data[key]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
     def __eq__(self, other):
         """
         Parameters
@@ -168,8 +177,6 @@ class Tensor(object):
                "Sizes and names of its modes are {} and {} respectively.".format(self.order, self.size,
                                                                                  self.shape, self.mode_names)
 
-    def __repr__(self):
-        return str(self)
 
     @staticmethod
     def _validate_init_data(array, mode_names, custom_state):
