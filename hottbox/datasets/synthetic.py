@@ -39,7 +39,7 @@ def make_clusters(dims, centers=3, n_samples=1000, center_bounds=(-10.0, 10.0), 
     if isinstance(centers, int):
         centroids = np.random.uniform(*center_bounds, size=(centers, 1, dims))
     else:
-        centroids = centers        
+        centroids = centers 
         
     n_cent = len(centroids)
     
