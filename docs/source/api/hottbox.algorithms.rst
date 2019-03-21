@@ -11,6 +11,7 @@ Algorithms
     :maxdepth: 2
 
     hottbox.algorithms.decomposition
+    hottbox.algorithms.classification
 
 
 
