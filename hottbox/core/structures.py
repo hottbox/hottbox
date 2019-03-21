@@ -177,7 +177,6 @@ class Tensor(object):
                "Sizes and names of its modes are {} and {} respectively.".format(self.order, self.size,
                                                                                  self.shape, self.mode_names)
 
-
     @staticmethod
     def _validate_init_data(array, mode_names, custom_state):
         """ Validate data for ``Tensor`` constructor
