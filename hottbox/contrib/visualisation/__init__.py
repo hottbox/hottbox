@@ -15,7 +15,7 @@ from collections import OrderedDict
 from scipy import signal  # for generating testing data and can be removed
 from ipywidgets import IntSlider, VBox, HBox, Dropdown, Output
 from IPython.display import display, clear_output
-from ..core import TensorCPD, TensorTKD  # for type hinting
+from hottbox.core import TensorCPD, TensorTKD  # for type hinting
 
 
 def gen_test_data(plot=False):
