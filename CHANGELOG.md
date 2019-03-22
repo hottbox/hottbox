@@ -4,39 +4,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [HOTTBOX v0.1.4 Unreleased]
 
-### Package status on branch develop
+
+## [HOTTBOX v0.2.2 Unreleased]
+
+### Package status on branch `develop`
 [![Travis status](https://img.shields.io/travis/hottbox/hottbox/develop.svg?label=TravisCI)](https://travis-ci.org/hottbox/hottbox/)
 [![Appveyor status](https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/develop?svg=true)](https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a/branch/develop)
-[![Coveralls status](https://img.shields.io/coveralls/github/hottbox/hottbox/develop.svg)](https://coveralls.io/github/hottbox/hottbox)
+[![Coveralls status](https://coveralls.io/repos/github/hottbox/hottbox/badge.svg?branch=develop)](https://coveralls.io/github/hottbox/hottbox?branch=develop)
 
 ### Added
-- [ ] Canonical mode-n unfolding
-- [ ] Sorting and standardising of factor vectors for `TensorCPD`
-- [ ] Custom Exceptions that are more appropriate for the structure of `hottbox`
-- [ ] Raises section in docstrings
-- [ ] More examples in docstrings
-
+- [ ] 
 
 ### Changed
-- [ ]
-
+- [ ] 
 
 ### Removed
-- [ ] ``copy`` method from decomposition algorithms
-
+- [ ] 
 
 ### Fixed
-- [ ] Change of mode index for mode-n product
+- [ ] 
 
+
+
+## HOTTBOX v0.2.1 (2019-03-22)
+
+### Added
+- [x] Custom Exceptions that are more appropriate for the structure of `hottbox`
+- [x] LS-STM (least squares support tensor machine) for classification
+- [x] Auto deployment of the documentation that reflects source code at the `develop` branch
+- [x] Source files and utils to that make setup of development environment easier
 
 
 
 ## HOTTBOX v0.1.3
 
 ### Added
-
 - [x] Tools to convert multi-index pandas dataframe into a `Tensor` and vise versa.
 - [x] Quick construction of generic objects of `Tensor`, `TensorCPD`, `TensorTKD` and `TensorTT` classes.
 - [x] Class `Mode` for meta information about data modes of for tensor representations.
@@ -59,9 +62,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - [x] Restrictions on methods `fold`, `unfold` and `mode_n_product` of `Tensor`.
       Whether they can be called is determined by the current state of the `Tensor` object.
 
-
 ### Changed
-
 - [x] Each mode of a `Tensor` there is characterised by a corresponding `Mode` object with meta information
 - [x] Mode names for the `Tensor` constructor should be passed as list instead of OrderedDict.
       These names are used to create `Mode` objects which are stored in a  list `Tensor._modes`
@@ -70,18 +71,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
       of meta information about modes
 - [x] `describe` functionality is now implemented by `__str__`. Instead, `describe` provides some
       statistics of the `Tensor` by analogy with `pandas`
-       
 
 ### Removed
-
 - [x] Parameter `ft_shape` from the `TensorTT` constructor
 - [x] Parameter `ft_shape` and the corresponding attribute from the `Tensor` constructor.
 - [x] Parameter `mode_description` from constructors for all tensor decomposition algorithms
 - [x] Attribute `_mode_names` from the `Tensor`
 
-
 ### Fixed
-
 - [x] Fix copy methods for `TensorCPD` and `TensorTKD` due to new attributes
 
 
@@ -89,7 +86,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## HOTTBOX v0.1.2
 
 ### Added
-
 - `copy` method for the core tensor structures
 - `describe` method that describes an instance of `Tensor` class
 - Mode descriptions for the modes of `Tensor` through the use of OrderedDict.
@@ -99,17 +95,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Setup CI using Travis, AppVeyor and Coveralls
 - Unit tests using pytest for all available modules
 
-
 ### Changed
-
 - Objects of `Tensor`, `TensorCPD`, `TensorTKD`, `TensorTT` classes can only be created from numpy arrays
 - For all tensor representation all their data values can (should) only be accessed through corresponding properties.
 - The original shape of the tensor can be defined during object creation of `Tensor` class
 - `super_diag_tensor` requires to pass a shape of desired tensor instead of its order
 
-
 ### Fixed
-
 - `reconstruct` was changing the original core so it was not possible to call it several times in a row
 - Incorrect size of a produced factor matrix when its computation is skipped in `decompose` for `HOSVD` and `HOOI` classes 
 
@@ -118,7 +110,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## HOTTBOX v0.1.1
 
 ### Added
-
 - Core operations of tensor algebra
 - Classes for different tensor representations (`Tensor`, `TensorCPD`, `TensorTKD`, `TensorTT`)
 - Functions for computing special types of tensors (`super_diag_tensor`, `residual_tensor`)

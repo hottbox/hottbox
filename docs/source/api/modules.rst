@@ -10,3 +10,4 @@ HOTTBOX API
     hottbox.utils
     hottbox.metrics
     hottbox.rank
+    hottbox.contrib

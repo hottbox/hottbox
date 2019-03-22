@@ -9,7 +9,7 @@ cache:
 
 env:
   matrix:
-    - DISTRIB="conda" PYTHON_VERSION="3.6" COVERAGE="true"
+    - DISTRIB="conda" PYTHON_VERSION="3.6" COVERAGE="true" DEPLOY_DOCS="1"
 
 git:
   depth: 3
@@ -29,6 +29,7 @@ script:
 
 after_success:
   - source ci_scripts/travis_success.sh
+  - bash ci_scripts/deploy_docs.sh
 
 notifications:
   email: false
