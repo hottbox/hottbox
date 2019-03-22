@@ -38,7 +38,7 @@ base-image:
 	@printf "===                                ===\n"
 	@printf "======================================\n\n"
 	docker build -t hottbox-dev-base \
-				 -f docker/hottbox-dev-base \
+				 -f docker/hottbox-dev-base.dockerfile \
 				 .
 
 dev-image: base-image
@@ -49,7 +49,7 @@ dev-image: base-image
 	@printf "===                                       ===\n"
 	@printf "=============================================\n\n"
 	docker build -t hottbox-dev \
-				 -f docker/hottbox-dev \
+				 -f docker/hottbox-dev.dockerfile \
 				 .
 
 dev-container:

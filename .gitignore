@@ -3,7 +3,6 @@ test_[0-9]*
 Untitled*.ipynb
 .coveragerc-dev
 .reports/
-Dockerfile
 
 
 
