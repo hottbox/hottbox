@@ -1,7 +1,6 @@
 import numpy as np
 from functools import reduce
 from ..core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
-from .utils import sliceT
 import itertools
 
 def is_toep_matrix(mat):
@@ -38,16 +37,16 @@ def is_toep_tensor(tensor, modes=[0,1]):
     -------
         Boolean indicating if Toeplitz matrix
     """
-    tensor = tensor.data
-    if tensor.ndim <= 2:
-        return is_toep_matrix(tensor)
+    if tensor.order <= 2:
+        return is_toep_matrix(tensor.data)
     sz = np.asarray(tensor.shape)
     availmodes = np.setdiff1d(np.arange(len(sz)),modes)
     for idx, mode in enumerate(availmodes):
         dim = sz[mode]
         # Go through each dim
         for i in range(dim):
-            t = sliceT(tensor,i,mode)
+            t = tensor.access(i,mode)
+            t = Tensor(t)
             if not(is_toep_tensor(t)): 
                 print ("Wrong slice: \n{}\n{}".format(t,(i,idx)))
                 return False

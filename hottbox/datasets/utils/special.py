@@ -1,7 +1,7 @@
 import numpy as np
 from ...core.structures import Tensor
-from ...utils.utils import sliceT
 from ...utils.gen.matrices import genToeplitzMatrix
+from .basic import dense
 import itertools
 
 def _toeplitz_random(shape, modes, low=None, high=None):
@@ -59,7 +59,7 @@ def toeplitz(shape, modes=[0, 1], matC=None, random=False, lh=(None, None)):
     # Generate a list of Toeplitz matrices
     if random:
         matC = _toeplitz_random(shape, modes, low, high)
-    tensor = np.zeros(shape=shape)
+    tensor = dense(shape, 'zeros')
     matC = np.asarray(matC)
 
     if len(shape) == 2:
@@ -77,6 +77,5 @@ def toeplitz(shape, modes=[0, 1], matC=None, random=False, lh=(None, None)):
     for currmode in range(availsz[0]):
         modecombs = all_combs[tsz*currmode:tsz*(currmode+1)]
         for i, m in enumerate(modecombs):
-            sliceT(tensor, np.asarray(m), np.asarray(
-                availmodes), overwrite=matC[i+currmode])
-    return Tensor(array=tensor)
+            tensor.write_subtensor(np.asarray(m), np.asarray(availmodes), matC[i+currmode])
+    return tensor

@@ -47,7 +47,7 @@ def make_clusters(dims, centers=3, n_samples=1000, center_bounds=(-10.0, 10.0), 
         n_samples = [n_samples//n_cent]*n_cent
 
     if len(n_samples) != n_cent:
-        assert ValueError("The number of samples specified do not match the number" +\
+        raise ValueError("The number of samples specified do not match the number" +\
                           "of centers")
 
     for i, (s_size, center) in enumerate(zip(n_samples, centroids)):
