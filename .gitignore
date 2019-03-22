@@ -1,10 +1,8 @@
 .idea
 test_[0-9]*
-hottbox/algorithms/classification/_temp_utils.py
 Untitled*.ipynb
 .coveragerc-dev
 .reports/
-Dockerfile
 
 
 

@@ -9,6 +9,9 @@ Our Team
 - Bruno Scalzo Dees,
     bs1912@ic.ac.uk
 
+- Ahmad Moniri,
+     am5113@ic.ac.uk
+
 - Giuseppe G. Calvi,
     ggc115@ic.ac.uk
 

@@ -6,16 +6,31 @@ All its functionality should be used inside Jupyter Lab/ Jupyter Notebook.
 
 .. important::
 
-    The API provided by this module is experimental
+    The API provided by this module is experimental and requires additional
+    dependencies to be installed.
 """
 
 import numpy as np
-import matplotlib.pyplot as plt  # This essentially can be replaced with `plotly` in a future
 from collections import OrderedDict
 from scipy import signal  # for generating testing data and can be removed
-from ipywidgets import IntSlider, VBox, HBox, Dropdown, Output
-from IPython.display import display, clear_output
 from hottbox.core import TensorCPD, TensorTKD  # for type hinting
+
+
+try:
+    import matplotlib.pyplot as plt
+    from ipywidgets import IntSlider, VBox, HBox, Dropdown, Output
+    from IPython.display import display, clear_output
+except ModuleNotFoundError as error:
+    extra_required = ["matplotlib",
+                      "ipywidgets",
+                      "IPython"
+                      ]
+    print("="*50)
+    print("\n\nThis is experimental module that depends on additional libraries "
+          "that are not included in the list of main dependencies. "
+          "Please, make sure that you have install {} if you want to "
+          "try out this module.\n\n".format(extra_required))
+    print("=" * 50)
 
 
 def gen_test_data(plot=False):
