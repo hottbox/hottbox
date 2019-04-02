@@ -76,9 +76,7 @@ class BaseCPD(Decomposition):
                 for mode in range(tensor.order):
                     # TODO: don't really like this implementation
                     k = tensor.unfold(mode, inplace=False).data
-                    print ("unfold shape: {}".format(k.shape))
                     fmat[mode], _, _ = svd(k, t_rank)
-                    print ("iter mode: {}, fmat[mode]: {}".format(mode,fmat[mode].shape))
             elif self.init is 'random':
                 fmat = [np.random.randn(mode_size, t_rank) for mode_size in tensor.shape]
             else:
@@ -247,7 +245,7 @@ class CPD(BaseCPD):
         print('At the moment, `plot()` is not implemented for the {}'.format(self.name))
 
 
-
+#TODO: Fix efficiency issues with this
 class CpRand(BaseCPD):
     """ Canonical Polyadic Decomposition.
 
