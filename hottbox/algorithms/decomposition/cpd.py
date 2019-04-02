@@ -186,7 +186,6 @@ class CPD(BaseCPD):
         fmat = self._init_fmat(tensor, rank)
         core_values = np.repeat(np.array([1]), rank)
         norm = tensor.frob_norm
-        print ("len fmat: {}, fmat[0]: {}, fmat[1]: {}".format(len(fmat), fmat[0].shape, fmat[1].shape))
         for n_iter in range(self.max_iter):
 
             # Update factor matrices

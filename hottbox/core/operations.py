@@ -233,7 +233,6 @@ def mode_n_product(tensor, matrix, mode):
                          "whereas an array of order {} was provided".format(matrix.ndim))
     orig_shape = list(tensor.shape)
     new_shape = orig_shape
-    print ("orig_shape: {}, new_shape: {}, mode: {}".format(orig_shape, new_shape, mode))
     new_shape[mode] = matrix.shape[0]
     result = fold(np.dot(matrix, unfold(tensor, mode)), mode, tuple(new_shape))
     return result
@@ -278,7 +277,6 @@ def sampled_khatri_rao(matrices, sample_size=None, skip_matrix=None):
                          'but {} given.'.format(len(matrices)))
 
     n_cols = matrices[0].shape[1]
-    print ("cols:{} mode:{}".format(n_cols, skip_matrix))
 
     if skip_matrix is not None:
         matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
