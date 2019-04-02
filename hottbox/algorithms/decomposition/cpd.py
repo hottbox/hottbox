@@ -283,7 +283,7 @@ class CpRand(BaseCPD):
         self.sample_size = sample_size
     def copy(self):
         """ Copy of the CPD algorithm as a new object """
-        new_object = super(CPD, self).copy()
+        new_object = super(CpRand, self).copy()
         new_object.cost = []
         return new_object
 
@@ -295,7 +295,7 @@ class CpRand(BaseCPD):
         -------
         decomposition_name : str
         """
-        decomposition_name = super(CPD, self).name
+        decomposition_name = super(CpRand, self).name
         return decomposition_name
 
     def decompose(self, tensor, rank, keep_meta=0, kr_reverse=False):
