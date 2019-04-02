@@ -774,6 +774,27 @@ class Tensor(object):
 
         return tensor
 
+    def access(self, inds, mode):
+        """ Equivalent to multidimnesional slicing
+    
+        Parameters
+        ----------
+        inds : int
+            The index of the axis. e.g [:,:,0] will be at mode=2, inds=0
+        mode : int
+            The axis to access
+        overwrite : Tensor
+            Overwrite slice with a subtensor
+        Returns
+        -------
+            Numpy array with the formulated subtensor
+        """
+        tensor = self._data
+        tensl = np.array([slice(None)] * tensor.ndim)
+        tensl[mode] = inds
+        tensl = tensl.tolist()
+        return tensor[tensl]
+
 # TODO: add validation of `mode_names`
 class BaseTensorTD(object):
     """

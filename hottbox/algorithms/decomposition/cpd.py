@@ -339,18 +339,14 @@ class CpRand(BaseCPD):
         fmat = self._init_fmat(tensor, rank)
         core_values = np.repeat(np.array([1]), rank)
         norm = tensor.frob_norm
+        lm = np.arange(tensor.order).tolist()
         for n_iter in range(self.max_iter):
 
             # Update factor matrices
-            for mode in range(tensor.order):
+            for mode in lm:
                 kr_result, idxlist = sampled_khatri_rao(fmat, sample_size=self.sample_size, skip_matrix=mode)
-                idxlist = [i.tolist() for i in idxlist]
-                idxlist.insert(mode, slice(None, None, None))
-                idxlist = tuple(idxlist)
-                if mode:
-                    Xs = tensor.data[idxlist]
-                else:
-                    Xs = tensor.data[idxlist].T
+                lmodes = lm[:mode] + lm[mode+1:]
+                Xs = np.array([tensor.access(m,lmodes) for m in np.array(idxlist).T.tolist()])
 
                 # Solve kr_result^-1 * Xs
                 pos_def = np.dot(kr_result.T, kr_result)
