@@ -1,5 +1,5 @@
-Tensor Decompositions
-=====================
+Tensor Decomposition Algorithms
+===============================
 
 Module contents
 ---------------
@@ -38,13 +38,5 @@ Tensor Train Decomposition (TT)
 
 .. automodule:: hottbox.algorithms.decomposition.tensor_train
     :members: TTSVD
-    :undoc-members:
-    :show-inheritance:
-
-Base Interface (For Development)
---------------------------------
-
-.. automodule:: hottbox.algorithms.decomposition.base
-    :members: Decomposition
     :undoc-members:
     :show-inheritance:

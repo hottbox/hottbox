@@ -734,6 +734,32 @@ class TestTensor:
             new_name = 5
             tensor.mode_n_product(matrix, mode=mode, new_name=new_name)
 
+    def test_access(self):
+        tensor = np.random.uniform(size=(4,4,3,4))
+        tt = Tensor(array=tensor)
+        # testing single access of subtensors
+        assert np.array_equal(tt.access(0,0), tensor[0,:,:,:])
+        assert np.array_equal(tt.access(3,1), tensor[:,3,:,:])
+        assert np.array_equal(tt.access(1,2), tensor[:,:,1,:])
+        assert np.array_equal(tt.access(2,3), tensor[:,:,:,2])
+        # testing multiple array access
+        assert np.array_equal(tt.access(3, [0,1]), tensor[3,3,:,:])
+        assert np.array_equal(tt.access(0, [1,3]), tensor[:,0,:,0])
+        # multiple array access corresponding to indices
+        assert np.array_equal(tt.access([1,2], [0,2]), tensor[1,:,2,:])
+        assert np.array_equal(tt.access([2,3], [1,3]), tensor[:,2,:,3])
+
+    def test_write_subtensor(self):
+        tensor = np.random.uniform(size=(4,4,3,4))
+        tt = Tensor(array=tensor)
+        # testing single access of subtensors
+        wr = np.random.uniform(size=(tensor[0,:,:,:].shape))
+        tt.write_subtensor(0,0,wr)
+        assert np.array_equal(wr, tt.data[0,:,:,:])
+        # testing multiple array access
+        wr = np.random.uniform(size=(tensor[3,3,:,:].shape))
+        tt.write_subtensor(3,[0,1],wr)
+        assert np.array_equal(wr, tt.data[3,3,:,:])
 
 class TestBaseTensorTD:
     """ Tests for the BaseTensorTD as an interface"""
