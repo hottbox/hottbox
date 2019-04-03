@@ -1,7 +1,6 @@
 import numpy as np
 from ..core.structures import Tensor
-from ..utils.gen.matrices import genToeplitzMatrix
-import itertools
+
 
 def _predefined_distr(distr, shape):
     distrlist = {'uniform': np.random.uniform(size=shape),
@@ -14,6 +13,7 @@ def _predefined_distr(distr, shape):
         raise NameError("The distribution {} is not an available one.\
          Please refer to the list of implementations: {}".format(distr, distrlist.keys()))
     return distrlist[distr]
+
 
 def make_clusters(dims, centers=3, n_samples=1000, center_bounds=(-10.0, 10.0), std=0.5, return_centers=False):
     """ Generates a tensor of any dimension with isotropic gaussian blobs as clusters    
@@ -34,7 +34,7 @@ def make_clusters(dims, centers=3, n_samples=1000, center_bounds=(-10.0, 10.0), 
         Generated tensor according to the parameters specified
     """ 
 
-    tensor = np.array([]).reshape(0,1,dims)
+    tensor = np.array([]).reshape(0, 1, dims)
     
     if isinstance(centers, int):
         centroids = np.random.uniform(*center_bounds, size=(centers, 1, dims))
@@ -47,12 +47,12 @@ def make_clusters(dims, centers=3, n_samples=1000, center_bounds=(-10.0, 10.0), 
         n_samples = [n_samples//n_cent]*n_cent
 
     if len(n_samples) != n_cent:
-        raise ValueError("The number of samples specified do not match the number" +\
-                          "of centers")
+        raise ValueError("The number of samples specified do not match the number" +
+                         "of centers")
 
-    for i, (s_size, center) in enumerate(zip(n_samples, centroids)):
-        cl = np.random.normal(loc=center, scale=std, size=(s_size,1,dims))
-        tensor = np.concatenate((tensor,cl))
+    for s_size, center in zip(n_samples, centroids):
+        cl = np.random.normal(loc=center, scale=std, size=(s_size, 1, dims))
+        tensor = np.concatenate((tensor, cl))
 
     tensor = np.asarray(tensor)
     if return_centers:
@@ -60,3 +60,26 @@ def make_clusters(dims, centers=3, n_samples=1000, center_bounds=(-10.0, 10.0), 
     else:
         return Tensor(array=tensor)
 
+
+def eeg(channels, signalSize, trials, noiseamp, jittersize):
+    """ Generates a tensor of any dimension with isotropic gaussian blobs as clusters    
+    Parameters
+    ----------
+    channels : int
+        The number of channels to simulate
+    signalSize : int
+        Specifies the recorded length of the signals
+    trials : int
+        The number of trials simulated
+    noiseamp : int
+        Amplitude of the noise
+    jittersize : int
+        Temporal jitter in the peaks
+
+    Returns
+    -------
+    tensor: Tensor
+        Generated tensor according to the parameters specified
+    """ 
+
+    

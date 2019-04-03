@@ -1,8 +1,11 @@
+"""
+Helper functions for generating synthetic tensors
+"""
+import itertools
 import numpy as np
-from ...core.structures import Tensor
 from ...utils.gen.matrices import genToeplitzMatrix
 from .basic import dense
-import itertools
+
 
 def _toeplitz_random(shape, modes, low=None, high=None):
     """ Generate the apppropraite number of Toeplitz matrices
@@ -39,20 +42,27 @@ def _toeplitz_random(shape, modes, low=None, high=None):
     return matC
 
 
-def toeplitz(shape, modes=[0, 1], matC=None, random=False, lh=(None, None)):
+def toeplitz(shape, modes=None, matC=None, random=False, lh=(None, None)):
     """ Function to generate a toeplitz tensor. Every slice along modes will be a Toeplitz matrix.
-    :param shape: (required) shape of output. If c is not None, they must match.
-    :param modes: the mode by which the tensor is excpected to be circulant
-    :param c: (optional) if None, random is set to True. Two input options.
-                - A list of toeplitz matrices - assumed
-                - A list of numbers
-    :param random: (optional) if true, input c is ignored
-    :param (low,high): (optional) used with random to define min and max values
+
+    Parameters
+    ----------
+    shape : tuple(int)
+        Shape of output. If matC is not None, they must match.
+    modes : int or list(int)
+        The mode by which the tensor is excpected to be circulant
+    matC : list(np.ndarray) or list(float)
+        (optional) if None, random is set to True. Two input options.
+    random : bool
+        (optional) if true, input matC is ignored
+    lh : tuple(float, float)
+        (optional) used with random to define min and max values
     """
     dim_req = len(shape)
     if matC is None:
         random = True
-
+    if modes is None:
+        modes = [0, 1]
     if len(shape) == 1:
         raise ValueError("Toeplitz must have more than one dimension")
     low, high = lh
