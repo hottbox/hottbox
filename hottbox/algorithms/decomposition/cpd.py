@@ -147,17 +147,17 @@ class CPD(BaseCPD):
         return decomposition_name
 
     def decompose(self, tensor, rank, keep_meta=0, kr_reverse=False):
-        """ Performs CPD-ALS on the `tensor` with respect to the specified `rank`
+        """ Performs CPD-ALS on the ``tensor`` with respect to the specified ``rank``
 
         Parameters
         ----------
         tensor : Tensor
-            Multidimensional data to be decomposed
+            Multi-dimensional data to be decomposed
         rank : tuple
-            Desired Kryskal rank for the given `tensor`. Should contain only one value.
+            Desired Kruskal rank for the given ``tensor``. Should contain only one value.
             If it is greater then any of dimensions then random initialisation is used
         keep_meta : int
-            Keep meta information about modes of the given `tensor`.
+            Keep meta information about modes of the given ``tensor``.
             0 - the output will have default values for the meta data
             1 - keep only mode names
             2 - keep mode names and indices
@@ -166,7 +166,7 @@ class CPD(BaseCPD):
         Returns
         -------
         tensor_cpd : TensorCPD
-            CP representation of the `tensor`
+            CP representation of the ``tensor``
 
         Notes
         -----
@@ -247,9 +247,9 @@ class CPD(BaseCPD):
 
 #TODO: Fix efficiency issues with this
 class CpRand(BaseCPD):
-    """ Canonical Polyadic Decomposition.
+    """ Randomised Canonical Polyadic Decomposition.
 
-    Computed via alternating least squares (ALS)
+    Computed via sampled alternating least squares (ALS)
 
     Parameters
     ----------
@@ -281,6 +281,7 @@ class CpRand(BaseCPD):
                                   verbose=verbose)
         self.cost = []
         self.sample_size = sample_size
+
     def copy(self):
         """ Copy of the CPD algorithm as a new object """
         new_object = super(CpRand, self).copy()
@@ -299,17 +300,17 @@ class CpRand(BaseCPD):
         return decomposition_name
 
     def decompose(self, tensor, rank, keep_meta=0, kr_reverse=False):
-        """ Performs CPD-ALS on the `tensor` with respect to the specified `rank`
+        """ Performs CPD-ALS on the ``tensor`` with respect to the specified ``rank``
 
         Parameters
         ----------
         tensor : Tensor
-            Multidimensional data to be decomposed
+            Multi-dimensional data to be decomposed
         rank : tuple
-            Desired Kryskal rank for the given `tensor`. Should contain only one value.
+            Desired Kruskal rank for the given ``tensor``. Should contain only one value.
             If it is greater then any of dimensions then random initialisation is used
         keep_meta : int
-            Keep meta information about modes of the given `tensor`.
+            Keep meta information about modes of the given ``tensor``.
             0 - the output will have default values for the meta data
             1 - keep only mode names
             2 - keep mode names and indices
@@ -318,7 +319,7 @@ class CpRand(BaseCPD):
         Returns
         -------
         tensor_cpd : TensorCPD
-            CP representation of the `tensor`
+            CP representation of the ``tensor``
 
         Notes
         -----
@@ -382,7 +383,7 @@ class CpRand(BaseCPD):
 
     @property
     def converged(self):
-        """ Checks convergence of the CPD-ALS algorithm.
+        """ Checks convergence of the Randomised CPD-ALS algorithm.
 
         Returns
         -------

@@ -4,11 +4,13 @@ import itertools
 
 
 def is_toep_matrix(mat):
-    """ Utility for checking if a matrix is a Toeplitz matrix
+    """ Checks if ``matrix`` has a Toeplitz structure
+
     Parameters
     ----------
     mat : np.ndarray
-        n x m array
+        Input array to check
+
     Returns
     -------
         Boolean indicating if Toeplitz matrix
@@ -29,11 +31,13 @@ def is_toep_matrix(mat):
 
 # Currently recursive, TODO: improve efficiency
 def is_toep_tensor(tensor, modes=None):
-    """ Utility for checking if a Tensor is a Toeplitz Tensor
+    """ Checks if ``tensor`` has Toeplitz structure
+
     Parameters
     ----------
-    mat : np.ndarray
-        n x m array
+    tensor : Tensor
+        Input tensor to check
+
     Returns
     -------
         Boolean indicating if Toeplitz matrix
@@ -57,14 +61,16 @@ def is_toep_tensor(tensor, modes=None):
 
 
 def is_super_symmetric(tensor):
-    """ Utility for checking if a Tensor is a Super Symmetric
+    """ Checks if ``tensor`` has supers-symmetric structure
+
     Parameters
     ----------
     tensor : Tensor
-        input tensor to check
+        Input tensor to check
+
     Returns
     -------
-        Boolean indicating if supersymmetric tensor
+        Boolean indicating if super-symmetric tensor
     """
     tensor = tensor.data
     idx = np.arange(len(tensor.shape))

@@ -43,14 +43,14 @@ def _toeplitz_random(shape, modes, low=None, high=None):
 
 
 def toeplitz(shape, modes=None, matC=None, random=False, lh=(None, None)):
-    """ Function to generate a toeplitz tensor. Every slice along modes will be a Toeplitz matrix.
+    """ Function to generate a Toeplitz tensor. Every slice along modes will be a Toeplitz matrix.
 
     Parameters
     ----------
     shape : tuple(int)
         Shape of output. If matC is not None, they must match.
     modes : int or list(int)
-        The mode by which the tensor is excpected to be circulant
+        The mode by which the tensor is expected to be circulant
     matC : list(np.ndarray) or list(float)
         (optional) if None, random is set to True. Two input options.
     random : bool
