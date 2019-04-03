@@ -4,18 +4,15 @@ and data type conversions
 """
 import numpy as np
 from functools import reduce
-from .core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
-
+from ...core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
 
 def _select_base_function(base):
     """ Utility for creating arrays
-
     Parameters
     ----------
     base : str
         Id of base function.
         If not one from ``{"arange", "randn", "rand", "ones"}`` then `np.arange` will be used.
-
     Returns
     -------
         Numpy function for creating arrays
