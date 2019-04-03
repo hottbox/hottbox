@@ -2191,27 +2191,3 @@ class TensorTT(BaseTensorTD):
         return self
 
 
-def residual_tensor(tensor_orig, tensor_approx):
-    """ Residual tensor
-
-    Parameters
-    ----------
-    tensor_orig : Tensor
-    tensor_approx : {Tensor, TensorCPD, TensorTKD, TensorTT}
-
-    Returns
-    -------
-    residual : Tensor
-    """
-    if not isinstance(tensor_orig, Tensor):
-        raise TypeError("Unknown data type of original tensor.\n"
-                        "The available type for `tensor_A` is `Tensor`")
-    # TODO: make use of direct subtraction of tensors
-    if isinstance(tensor_approx, Tensor):
-        residual = Tensor(tensor_orig.data - tensor_approx.data)
-    elif isinstance(tensor_approx, BaseTensorTD):
-        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct().data)
-    else:
-        raise TypeError("Unknown data type of the approximation tensor!\n"
-                        "The available types for `tensor_B` are `Tensor`,  `TensorCPD`,  `TensorTKD`,  `TensorTT`")
-    return residual

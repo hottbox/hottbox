@@ -1,9 +1,10 @@
 import functools
 import warnings
 import numpy as np
+from hottbox.utils.generation.basic import residual_tensor
+from hottbox.core.structures import Tensor, TensorCPD
+from hottbox.core.operations import khatri_rao, hadamard, sampled_khatri_rao
 from .base import Decomposition, svd
-from ...core.structures import Tensor, TensorCPD, residual_tensor
-from ...core.operations import khatri_rao, hadamard, sampled_khatri_rao
 
 
 # TODO: Need to add option of sorting vectors in the factor matrices and making them sign invariant
