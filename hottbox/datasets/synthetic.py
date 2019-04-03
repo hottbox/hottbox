@@ -59,27 +59,3 @@ def make_clusters(dims, centers=3, n_samples=1000, center_bounds=(-10.0, 10.0), 
         return Tensor(array=tensor), centroids 
     else:
         return Tensor(array=tensor)
-
-
-def eeg(channels, signalSize, trials, noiseamp, jittersize):
-    """ Generates a tensor of any dimension with isotropic gaussian blobs as clusters    
-    Parameters
-    ----------
-    channels : int
-        The number of channels to simulate
-    signalSize : int
-        Specifies the recorded length of the signals
-    trials : int
-        The number of trials simulated
-    noiseamp : int
-        Amplitude of the noise
-    jittersize : int
-        Temporal jitter in the peaks
-
-    Returns
-    -------
-    tensor: Tensor
-        Generated tensor according to the parameters specified
-    """ 
-
-    
