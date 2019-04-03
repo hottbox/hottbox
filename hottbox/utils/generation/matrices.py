@@ -3,7 +3,7 @@ from functools import reduce
 from ...core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
 
 
-def genToeplitzMatrix(r, c=None):
+def toeplitz_matrix(r, c=None):
     r = np.asarray(r).flatten()
     if c is None:
         c = r.conjugate()
@@ -17,8 +17,9 @@ def genToeplitzMatrix(r, c=None):
     # that vals[place] would be a Toeplitz matrix.
     return vals[place]
 
-def genHankelMatrix(r,c=None):
+
+def hankel_matrix(r, c=None):
     r = r[::-1]
     if c is not None:
         c = c[::-1]
-    return genToeplitzMatrix(r,c)[::-1]
+    return toeplitz_matrix(r, c)[::-1]
