@@ -8,8 +8,8 @@ since it is taken care of in computing residual tensor
 """
 import numpy as np
 from functools import reduce
-from ..base import *
-from ...core.structures import Tensor
+from hottbox.core.structures import Tensor
+from ..decomposition import mse, rmse, residual_rel_error, mape
 
 
 def test_mse():

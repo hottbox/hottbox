@@ -1,6 +1,7 @@
 import numpy as np
 from math import sqrt
-from ..core.structures import Tensor, TensorCPD, TensorTKD, TensorTT, residual_tensor
+from hottbox.core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
+from hottbox.utils.generation.basic import residual_tensor
 
 
 def mse(tensor_true, tensor_pred):
