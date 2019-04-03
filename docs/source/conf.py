@@ -109,6 +109,7 @@ html_theme_options = {
 }
 html_static_path = ['_static']
 html_logo = '_static/hottbox_logo_2.png'
+html_favicon = '_static/hottbox_favicon-48x48.ico'
 
 # The name for this set of Sphinx documents. "<project> v<release> documentation" by default.
 html_title = 'HOTTBOX: Higher Order Tensors ToolBox'

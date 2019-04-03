@@ -3,6 +3,7 @@ from ...core.structures import Tensor
 from ...utils.gen.matrices import genToeplitzMatrix
 import itertools
 
+
 def _predefined_distr(distr, shape):
     distrlist = {'uniform': np.random.uniform(size=shape),
                  'normal': np.random.normal(size=shape),
@@ -14,6 +15,7 @@ def _predefined_distr(distr, shape):
         raise NameError("The distribution {} is not an available one.\
          Please refer to the list of implementations: {}".format(distr, distrlist.keys()))
     return distrlist[distr]
+
 
 def dense(shape, distr='uniform', distr_type=0, fxdind=None):
     """ Generates a dense or sparse tensor of any dimension and fills it accordingly
@@ -40,6 +42,7 @@ def dense(shape, distr='uniform', distr_type=0, fxdind=None):
         tensor = np.random.uniform(size=shape)
         raise NotImplementedError('Not implemented in dataset (basic) class')
     return Tensor(array=tensor)
+
 
 def sparse(shape, distr='uniform', distr_type=0, fxdind=None, pct=0.05):
     """ Generates a dense or sparse tensor of any dimension and fills it accordingly
@@ -75,7 +78,7 @@ def sparse(shape, distr='uniform', distr_type=0, fxdind=None, pct=0.05):
     return Tensor(array=tensor)
 
 def superdiagonal(shape, distr='uniform', values=[None]):
-    """ Generates a tensor of any dimension with random or specified numbers accross the superdiagonal and zeros elsewhere
+    """ Generates a tensor of any dimension with random or specified numbers across the super-diagonal and zeros elsewhere
     
     Parameters
     ----------

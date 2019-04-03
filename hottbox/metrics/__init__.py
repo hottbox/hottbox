@@ -1,8 +1,6 @@
 """
-This module contains utilities and methods to measure:
-
-1.  Approximation error for tensor decompositions
-2.  Performance of algorithms for tensor classification and regression
+This module includes score functions and performance metrics for the
+computational methods defined in ``hottbox.algorithms``
 """
 
 from .base import mse, rmse, mape, residual_rel_error

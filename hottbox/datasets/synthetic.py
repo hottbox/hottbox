@@ -3,6 +3,17 @@ from ..core.structures import Tensor
 
 
 def _predefined_distr(distr, shape):
+    """
+
+    Parameters
+    ----------
+    distr :
+    shape :
+
+    Returns
+    -------
+
+    """
     distrlist = {'uniform': np.random.uniform(size=shape),
                  'normal': np.random.normal(size=shape),
                  'triangular': np.random.triangular(-1, 0, 1, size=shape),
@@ -16,7 +27,8 @@ def _predefined_distr(distr, shape):
 
 
 def make_clusters(dims, centers=3, n_samples=1000, center_bounds=(-10.0, 10.0), std=0.5, return_centers=False):
-    """ Generates a tensor of any dimension with isotropic gaussian blobs as clusters    
+    """ Generates a tensor of any dimension with isotropic gaussian blobs as clusters
+
     Parameters
     ----------
     shape : tuple(int)
