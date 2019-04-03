@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 from .base import Decomposition, svd
 from ...core.structures import Tensor, TensorCPD, residual_tensor
-from ...core.operations import khatri_rao, hadamard
+from ...core.operations import khatri_rao, hadamard, sampled_khatri_rao
 
 
 # TODO: Need to add option of sorting vectors in the factor matrices and making them sign invariant
@@ -75,7 +75,8 @@ class BaseCPD(Decomposition):
             if self.init is 'svd':
                 for mode in range(tensor.order):
                     # TODO: don't really like this implementation
-                    fmat[mode], _, _ = svd(tensor.unfold(mode, inplace=False).data, t_rank)
+                    k = tensor.unfold(mode, inplace=False).data
+                    fmat[mode], _, _ = svd(k, t_rank)
             elif self.init is 'random':
                 fmat = [np.random.randn(mode_size, t_rank) for mode_size in tensor.shape]
             else:
@@ -237,6 +238,161 @@ class CPD(BaseCPD):
 
     def _init_fmat(self, tensor, rank):
         fmat = super(CPD, self)._init_fmat(tensor=tensor,
+                                           rank=rank)
+        return fmat
+
+    def plot(self):
+        print('At the moment, `plot()` is not implemented for the {}'.format(self.name))
+
+
+#TODO: Fix efficiency issues with this
+class CpRand(BaseCPD):
+    """ Canonical Polyadic Decomposition.
+
+    Computed via alternating least squares (ALS)
+
+    Parameters
+    ----------
+    init : str
+        Type of factor matrix initialisation. Available options are `svd` and `random`
+    max_iter : int
+        Maximum number of iteration
+    epsilon : float
+        Threshold for the relative error of approximation.
+    tol : float
+        Threshold for convergence of factor matrices
+    random_state : int
+    verbose : bool
+        If True, enable verbose output
+
+    Attributes
+    ----------
+    cost : list
+        A list of relative approximation errors at each iteration of the algorithm.
+    """
+
+    def __init__(self, init='svd', sample_size=None, max_iter=50, epsilon=10e-3, tol=10e-5,
+                 random_state=None, verbose=False) -> None:
+        super(CpRand, self).__init__(init=init,
+                                  max_iter=max_iter,
+                                  epsilon=epsilon,
+                                  tol=tol,
+                                  random_state=random_state,
+                                  verbose=verbose)
+        self.cost = []
+        self.sample_size = sample_size
+    def copy(self):
+        """ Copy of the CPD algorithm as a new object """
+        new_object = super(CpRand, self).copy()
+        new_object.cost = []
+        return new_object
+
+    @property
+    def name(self):
+        """ Name of the decomposition
+
+        Returns
+        -------
+        decomposition_name : str
+        """
+        decomposition_name = super(CpRand, self).name
+        return decomposition_name
+
+    def decompose(self, tensor, rank, keep_meta=0, kr_reverse=False):
+        """ Performs CPD-ALS on the `tensor` with respect to the specified `rank`
+
+        Parameters
+        ----------
+        tensor : Tensor
+            Multidimensional data to be decomposed
+        rank : tuple
+            Desired Kryskal rank for the given `tensor`. Should contain only one value.
+            If it is greater then any of dimensions then random initialisation is used
+        keep_meta : int
+            Keep meta information about modes of the given `tensor`.
+            0 - the output will have default values for the meta data
+            1 - keep only mode names
+            2 - keep mode names and indices
+        kr_reverse : bool
+
+        Returns
+        -------
+        tensor_cpd : TensorCPD
+            CP representation of the `tensor`
+
+        Notes
+        -----
+        khatri-rao product should be of matrices in reversed order. But this will duplicate original data (e.g. images)
+        Probably this has something to do with data ordering in Python and how it relates to kr product
+        """
+        if not isinstance(tensor, Tensor):
+            raise TypeError("Parameter `tensor` should be an object of `Tensor` class!")
+        if not isinstance(rank, tuple):
+            raise TypeError("Parameter `rank` should be passed as a tuple!")
+        if len(rank) != 1:
+            raise ValueError("Parameter `rank` should be tuple with only one value!")
+
+        tensor_cpd = None
+        fmat = self._init_fmat(tensor, rank)
+        core_values = np.repeat(np.array([1]), rank)
+        norm = tensor.frob_norm
+        lm = np.arange(tensor.order).tolist()
+        for n_iter in range(self.max_iter):
+
+            # Update factor matrices
+            for mode in lm:
+                kr_result, idxlist = sampled_khatri_rao(fmat, sample_size=self.sample_size, skip_matrix=mode)
+                lmodes = lm[:mode] + lm[mode+1:]
+                Xs = np.array([tensor.access(m,lmodes) for m in np.array(idxlist).T.tolist()])
+
+                # Solve kr_result^-1 * Xs
+                pos_def = np.dot(kr_result.T, kr_result)
+                corr_term = np.dot(kr_result.T, Xs)
+                min_result = np.linalg.solve(pos_def, corr_term)
+                fmat[mode] = min_result.T
+
+            # Update cost
+            tensor_cpd = TensorCPD(fmat=fmat, core_values=core_values)
+            residual = residual_tensor(tensor, tensor_cpd)
+            self.cost.append(abs(residual.frob_norm / norm))
+            if self.verbose:
+                print('Iter {}: relative error of approximation = {}'.format(n_iter, self.cost[-1]))
+
+            # Check termination conditions
+            if self.cost[-1] <= self.epsilon:
+                if self.verbose:
+                    print('Relative error of approximation has reached the acceptable level: {}'.format(self.cost[-1]))
+                break
+            if self.converged:
+                if self.verbose:
+                    print('Converged in {} iteration(s)'.format(len(self.cost)))
+                break
+        if self.verbose and not self.converged and self.cost[-1] > self.epsilon:
+            print('Maximum number of iterations ({}) has been reached. '
+                  'Variation = {}'.format(self.max_iter, abs(self.cost[-2] - self.cost[-1])))
+
+        if keep_meta == 1:
+            mode_names = {i: mode.name for i, mode in enumerate(tensor.modes)}
+            tensor_cpd.set_mode_names(mode_names=mode_names)
+        elif keep_meta == 2:
+            tensor_cpd.copy_modes(tensor)
+        else:
+            pass
+        return tensor_cpd
+
+    @property
+    def converged(self):
+        """ Checks convergence of the CPD-ALS algorithm.
+
+        Returns
+        -------
+        bool
+        """
+        is_converged = super(CpRand, self).converged
+        return is_converged
+
+    def _init_fmat(self, tensor, rank):
+        fmat = super(CpRand, self)._init_fmat(tensor=tensor,
                                            rank=rank)
         return fmat
 

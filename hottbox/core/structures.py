@@ -1300,7 +1300,7 @@ class TensorCPD(BaseTensorTD):
         tensor = self.core
         for mode, fmat in enumerate(self.fmat):
             tensor.mode_n_product(fmat, mode=mode, inplace=True)
-
+        
         if keep_meta == 1:
             mode_names = {i: mode.name for i, mode in enumerate(self.modes)}
             tensor.set_mode_names(mode_names=mode_names)
