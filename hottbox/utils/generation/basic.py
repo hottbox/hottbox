@@ -1,6 +1,6 @@
 import numpy as np
-from ...core.structures import Tensor
-from ...utils.gen.matrices import genToeplitzMatrix
+from hottbox.core.structures import Tensor
+from hottbox.utils.generation.matrices import toeplitz_matrix
 import itertools
 
 
@@ -17,7 +17,7 @@ def _predefined_distr(distr, shape):
     return distrlist[distr]
 
 
-def dense(shape, distr='uniform', distr_type=0, fxdind=None):
+def dense_tensor(shape, distr='uniform', distr_type=0, fxdind=None):
     """ Generates a dense or sparse tensor of any dimension and fills it accordingly
     
     Parameters
@@ -44,7 +44,7 @@ def dense(shape, distr='uniform', distr_type=0, fxdind=None):
     return Tensor(array=tensor)
 
 
-def sparse(shape, distr='uniform', distr_type=0, fxdind=None, pct=0.05):
+def sparse_tensor(shape, distr='uniform', distr_type=0, fxdind=None, pct=0.05):
     """ Generates a dense or sparse tensor of any dimension and fills it accordingly
     
     Parameters
@@ -77,7 +77,7 @@ def sparse(shape, distr='uniform', distr_type=0, fxdind=None, pct=0.05):
 
     return Tensor(array=tensor)
 
-def superdiagonal(shape, distr='uniform', values=[None]):
+def super_diagonal_tensor(shape, distr='uniform', values=[None]):
     """ Generates a tensor of any dimension with random or specified numbers across the super-diagonal and zeros elsewhere
     
     Parameters
@@ -112,7 +112,7 @@ def superdiagonal(shape, distr='uniform', values=[None]):
     np.fill_diagonal(tensor, values)
     return Tensor(array=tensor)
 
-def supersymmetric(shape, tensor=None):
+def super_symmetric_tensor(shape, tensor=None):
     """ Generates a tensor of equal dimensions with random or specified numbers, with a specified tensor.
 
     Parameters
@@ -134,7 +134,7 @@ def supersymmetric(shape, tensor=None):
     inds = np.array(list(inds))
     A = np.zeros(shape)
     if tensor is None:
-        tensor = dense(shape) 
+        tensor = dense_tensor(shape)
     for i, _ in enumerate(inds):
         A=A + np.transpose(tensor.data, tuple(inds[i,:]))
     return Tensor(array=A)

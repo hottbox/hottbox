@@ -1,9 +1,9 @@
 import numpy as np
-from ..core.structures import Tensor
+from hottbox.core.structures import Tensor
 import itertools
 
 
-def is_toep_matrix(mat):
+def is_toeplitz_matrix(mat):
     """ Checks if ``matrix`` has a Toeplitz structure
 
     Parameters
@@ -30,7 +30,7 @@ def is_toep_matrix(mat):
 
 
 # Currently recursive, TODO: improve efficiency
-def is_toep_tensor(tensor, modes=None):
+def is_toeplitz_tensor(tensor, modes=None):
     """ Checks if ``tensor`` has Toeplitz structure
 
     Parameters
@@ -43,7 +43,7 @@ def is_toep_tensor(tensor, modes=None):
         Boolean indicating if Toeplitz matrix
     """
     if tensor.order <= 2:
-        return is_toep_matrix(tensor.data)
+        return is_toeplitz_matrix(tensor.data)
     if modes is None:
         modes = [0, 1]
     sz = np.asarray(tensor.shape)
@@ -54,7 +54,7 @@ def is_toep_tensor(tensor, modes=None):
         for i in range(dim):
             t = tensor.access(i, mode)
             t = Tensor(t)
-            if not(is_toep_tensor(t)): 
+            if not(is_toeplitz_tensor(t)):
                 print("Wrong slice: \n{}\n{}".format(t, (i, idx)))
                 return False
     return True

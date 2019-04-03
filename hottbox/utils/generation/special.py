@@ -3,8 +3,8 @@ Helper functions for generating synthetic tensors
 """
 import itertools
 import numpy as np
-from ...utils.gen.matrices import genToeplitzMatrix
-from .basic import dense
+from hottbox.utils.generation.matrices import toeplitz_matrix
+from hottbox.utils.generation.basic import dense_tensor
 
 
 def _toeplitz_random(shape, modes, low=None, high=None):
@@ -37,12 +37,12 @@ def _toeplitz_random(shape, modes, low=None, high=None):
             _r, _c = toepVals[i], None
         else:
             _c, _r = toepVals[i][:matSz[0]], toepVals[i][matSz[0]:]
-        toepMatrix = genToeplitzMatrix(r=_r, c=_c)
+        toepMatrix = toeplitz_matrix(r=_r, c=_c)
         matC.append(toepMatrix)
     return matC
 
 
-def toeplitz(shape, modes=None, matC=None, random=False, lh=(None, None)):
+def toeplitz_tensor(shape, modes=None, matC=None, random=False, lh=(None, None)):
     """ Function to generate a Toeplitz tensor. Every slice along modes will be a Toeplitz matrix.
 
     Parameters
@@ -69,11 +69,11 @@ def toeplitz(shape, modes=None, matC=None, random=False, lh=(None, None)):
     # Generate a list of Toeplitz matrices
     if random:
         matC = _toeplitz_random(shape, modes, low, high)
-    tensor = dense(shape, 'zeros')
+    tensor = dense_tensor(shape, 'zeros')
     matC = np.asarray(matC)
 
     if len(shape) == 2:
-        return genToeplitzMatrix(matC)
+        return toeplitz_matrix(matC)
     # Fix all axis except modes
     availmodes = np.setdiff1d(np.arange(dim_req), modes)
     availsz = np.asarray(shape)[availmodes]
