@@ -8,9 +8,9 @@ import numpy as np
 import pandas as pd
 from functools import reduce
 from itertools import product
-from ..cpd import *
-from ....core.structures import Tensor, TensorCPD
-from ....pdtools import pd_to_tensor
+from hottbox.core.structures import Tensor, TensorCPD
+from hottbox.pdtools import pd_to_tensor
+from ..cpd import BaseCPD, CPD, RandomisedCPD
 
 
 class TestBaseCPD:
@@ -314,14 +314,14 @@ class TestCpRand:
         tol = 10e-5
         verbose = False
         sample_size = None
-        cpd = CpRand(init=init,
-                  max_iter=max_iter,
-                  epsilon=epsilon,
-                  tol=tol,
-                  verbose=verbose, 
-                  sample_size=sample_size)
+        cpd = RandomisedCPD(init=init,
+                            max_iter=max_iter,
+                            epsilon=epsilon,
+                            tol=tol,
+                            verbose=verbose,
+                            sample_size=sample_size)
         assert not cpd.cost         # check that this list is empty
-        assert cpd.name == CpRand.__name__
+        assert cpd.name == RandomisedCPD.__name__
         assert cpd.init == init
         assert cpd.max_iter == max_iter
         assert cpd.epsilon == epsilon
@@ -330,7 +330,7 @@ class TestCpRand:
 
     def test_copy(self):
         """ Tests for copy method """
-        cpd = CpRand()
+        cpd = RandomisedCPD()
         cpd.cost = [1, 2]
         cpd_copy = cpd.copy()
 
@@ -362,7 +362,7 @@ class TestCpRand:
         shape = (4, 5, 6)
         size = reduce(lambda x, y: x * y, shape)
         tensor = Tensor(np.random.randn(size).reshape(shape))
-        cpd = CpRand()
+        cpd = RandomisedCPD()
 
         # ------ tests that cpd.cost is reset each time _init_fmat is called
         cpd.cost = [1, 2, 3]
@@ -380,7 +380,7 @@ class TestCpRand:
         # ------ tests for the type of initialisation
         # svd type initialisation should produce factor matrices with orthogonal columns
         rank = (min(tensor.shape)-1,)
-        cpd = CpRand(init='svd')
+        cpd = RandomisedCPD(init='svd')
         fmat = cpd._init_fmat(tensor=tensor, rank=rank)
         for mat in fmat:
             result = np.dot(mat.T, mat)
@@ -390,7 +390,7 @@ class TestCpRand:
         # svd type initialisation but the `rank` is greater then one of the dimensions then you get random fmat
         # and there would be a runtime warning
         rank = (min(tensor.shape)+1,)
-        cpd = CpRand(init='svd', verbose=True)
+        cpd = RandomisedCPD(init='svd', verbose=True)
         with pytest.warns(RuntimeWarning):
             fmat = cpd._init_fmat(tensor=tensor, rank=rank)
         for mat in fmat:
@@ -402,7 +402,7 @@ class TestCpRand:
 
         # random type initialisation should produce factor matrices each of which is not orthonormal
         rank = (3,)
-        cpd = CpRand(init='random')
+        cpd = RandomisedCPD(init='random')
         fmat = cpd._init_fmat(tensor=tensor, rank=rank)
         for mat in fmat:
             result_1 = np.dot(mat.T, mat)
@@ -414,7 +414,7 @@ class TestCpRand:
         # unknown type of initialisation
         with pytest.raises(NotImplementedError):
             rank = (min(tensor.shape)-1,)
-            cpd = CpRand(init='qwerty')
+            cpd = RandomisedCPD(init='qwerty')
             cpd._init_fmat(tensor=tensor, rank=rank)
 
     def test_decompose(self):
@@ -428,7 +428,7 @@ class TestCpRand:
         array_3d = np.random.randn(size).reshape(shape)
         tensor = Tensor(array_3d)
         rank = (2,)
-        cpd = CpRand(verbose=True)
+        cpd = RandomisedCPD(verbose=True)
 
         # check for termination at max iter
         cpd.max_iter = 10
@@ -467,7 +467,7 @@ class TestCpRand:
         tensor = Tensor(array_3d)
         rank = (7,)
 
-        cpd = CpRand(init='random', max_iter=50, epsilon=10e-3, tol=10e-5)
+        cpd = RandomisedCPD(init='random', max_iter=50, epsilon=10e-3, tol=10e-5)
 
         tensor_cpd = cpd.decompose(tensor=tensor, rank=rank)
         assert isinstance(tensor_cpd, TensorCPD)
@@ -481,7 +481,7 @@ class TestCpRand:
         np.testing.assert_almost_equal(tensor_rec.data, tensor.data)
 
         # ------ tests that should FAIL due to wrong input type
-        cpd = CpRand()
+        cpd = RandomisedCPD()
         # tensor should be Tensor class
         with pytest.raises(TypeError):
             shape = (5, 5, 5)
@@ -505,7 +505,7 @@ class TestCpRand:
             cpd.decompose(tensor=correct_tensor, rank=incorrect_rank)
         # invalid sample size
         with pytest.raises(ValueError):
-            cpd = CpRand(sample_size=0)
+            cpd = RandomisedCPD(sample_size=0)
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
             correct_tensor = Tensor(np.arange(size).reshape(shape))
@@ -526,7 +526,7 @@ class TestCpRand:
         df_mi = df.set_index(columns)
         tensor = pd_to_tensor(df=df_mi, keep_index=True)
         rank = (2,)
-        cpd = CpRand()
+        cpd = RandomisedCPD()
 
         tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=2)
         assert tensor_cpd.modes == tensor.modes
@@ -542,7 +542,7 @@ class TestCpRand:
     def test_converged(self):
         """ Tests for converged method """
         tol = 0.01
-        cpd = CpRand(tol=tol)
+        cpd = RandomisedCPD(tol=tol)
 
         # when it is empty, which is the case at the object creation
         assert not cpd.converged
@@ -570,6 +570,6 @@ class TestCpRand:
         # This is only for coverage at the moment
         captured_output = io.StringIO()     # Create StringIO object for testing verbosity
         sys.stdout = captured_output        # and redirect stdout.
-        cpd = CpRand()
+        cpd = RandomisedCPD()
         cpd.plot()
         assert captured_output.getvalue() != ''  # to check that something was actually printed

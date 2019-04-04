@@ -247,7 +247,7 @@ class CPD(BaseCPD):
 
 
 #TODO: Fix efficiency issues with this
-class CpRand(BaseCPD):
+class RandomisedCPD(BaseCPD):
     """ Randomised Canonical Polyadic Decomposition.
 
     Computed via sampled alternating least squares (ALS)
@@ -274,18 +274,18 @@ class CpRand(BaseCPD):
 
     def __init__(self, init='svd', sample_size=None, max_iter=50, epsilon=10e-3, tol=10e-5,
                  random_state=None, verbose=False) -> None:
-        super(CpRand, self).__init__(init=init,
-                                  max_iter=max_iter,
-                                  epsilon=epsilon,
-                                  tol=tol,
-                                  random_state=random_state,
-                                  verbose=verbose)
+        super(RandomisedCPD, self).__init__(init=init,
+                                            max_iter=max_iter,
+                                            epsilon=epsilon,
+                                            tol=tol,
+                                            random_state=random_state,
+                                            verbose=verbose)
         self.cost = []
         self.sample_size = sample_size
 
     def copy(self):
         """ Copy of the CPD algorithm as a new object """
-        new_object = super(CpRand, self).copy()
+        new_object = super(RandomisedCPD, self).copy()
         new_object.cost = []
         return new_object
 
@@ -297,7 +297,7 @@ class CpRand(BaseCPD):
         -------
         decomposition_name : str
         """
-        decomposition_name = super(CpRand, self).name
+        decomposition_name = super(RandomisedCPD, self).name
         return decomposition_name
 
     def decompose(self, tensor, rank, keep_meta=0, kr_reverse=False):
@@ -390,12 +390,12 @@ class CpRand(BaseCPD):
         -------
         bool
         """
-        is_converged = super(CpRand, self).converged
+        is_converged = super(RandomisedCPD, self).converged
         return is_converged
 
     def _init_fmat(self, tensor, rank):
-        fmat = super(CpRand, self)._init_fmat(tensor=tensor,
-                                           rank=rank)
+        fmat = super(RandomisedCPD, self)._init_fmat(tensor=tensor,
+                                                     rank=rank)
         return fmat
 
     def plot(self):
