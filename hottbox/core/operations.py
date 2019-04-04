@@ -265,11 +265,12 @@ def sampled_khatri_rao(matrices, sample_size=None, skip_matrix=None):
         The result of the Khatri-Rao product of the sampled matrices
     indices : tuple list
         list of indices for all modes
+
     References
     ----------
-    Battaglino, C., Ballard, G., & Kolda, T. G. (2018). A Practical Randomized CP Tensor
-    Decomposition. SIAM Journal on Matrix Analysis and Applications, 39(2), 876–901.
-    http://doi.org/10.1137/17m1112303
+    ..  [1] Battaglino, C., Ballard, G., & Kolda, T. G. (2018). A Practical Randomized CP Tensor
+        Decomposition. SIAM Journal on Matrix Analysis and Applications, 39(2), 876–901.
+        http://doi.org/10.1137/17m1112303
     """
     np.random.seed(0)
     if len(matrices) < 2:

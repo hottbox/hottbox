@@ -17,11 +17,11 @@ Tensor Decomposition Algorithms
     :toctree: generated/
     :template: class.rst
 
-    cpd.CPD
-    cpd.RandomisedCPD
-    tucker.HOSVD
-    tucker.HOOI
-    tensor_train.TTSVD
+    CPD
+    RandomisedCPD
+    HOSVD
+    HOOI
+    TTSVD
 
 
 Multi-linear Classification Algorithms
@@ -38,4 +38,4 @@ Multi-linear Classification Algorithms
     :toctree: generated/
     :template: class.rst
 
-    stm.LSSTM
+    LSSTM

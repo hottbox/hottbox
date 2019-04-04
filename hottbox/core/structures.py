@@ -10,9 +10,7 @@ from ..errors import TensorModeError, TensorShapeError, TensorStateError, Tensor
 
 
 class Tensor(object):
-    """ This class describes multidimensional data.
-
-    All its methods implement all common operation on a tensor alone
+    """
 
     Attributes
     ----------
@@ -27,7 +25,9 @@ class Tensor(object):
     """
 
     def __init__(self, array, custom_state=None, mode_names=None) -> None:
-        """ Create object of ``Tensor`` class
+        """ This class describes multidimensional data.
+
+        All its methods implement all common operation on a tensor alone
 
         Parameters
         ----------
@@ -1025,7 +1025,7 @@ class BaseTensorTD(object):
 
 
 class TensorCPD(BaseTensorTD):
-    """ Representation of a tensor in the Kruskal (CP) form.
+    """
 
     Attributes
     ----------
@@ -1037,7 +1037,7 @@ class TensorCPD(BaseTensorTD):
         Description of the factor matrix for the corresponding mode
     """
     def __init__(self, fmat, core_values, mode_names=None):
-        """ Create object of ``TensorCPD`` class
+        """ Representation of a tensor in the Kruskal (CP) form.
         
         Parameters
         ----------
@@ -1413,7 +1413,7 @@ class TensorCPD(BaseTensorTD):
 
 
 class TensorTKD(BaseTensorTD):
-    """ Representation of a tensor in the Tucker form.
+    """
 
     Attributes
     ----------
@@ -1425,7 +1425,7 @@ class TensorTKD(BaseTensorTD):
         Description of the factor matrix for the corresponding mode
     """
     def __init__(self, fmat, core_values, mode_names=None):
-        """ Create object of ``TensorTKD`` class
+        """ Representation of a tensor in the Tucker form.
         
         Parameters
         ----------
@@ -1837,7 +1837,7 @@ class TensorTT(BaseTensorTD):
         Description of the physical modes
     """
     def __init__(self, core_values, mode_names=None):
-        """ Create object of ``TensorTT`` class
+        """ Representation of a tensor in the Tensor Train (TT) form.
         
         Parameters
         ----------
@@ -2189,5 +2189,3 @@ class TensorTT(BaseTensorTD):
         """
         super(TensorTT, self).reset_mode_index(mode=mode)
         return self
-
-

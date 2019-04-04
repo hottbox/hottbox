@@ -270,6 +270,12 @@ class RandomisedCPD(BaseCPD):
     ----------
     cost : list
         A list of relative approximation errors at each iteration of the algorithm.
+
+    References
+    ----------
+    ..  [1] Battaglino, C., Ballard, G., & Kolda, T. G. (2018). A Practical Randomized CP Tensor
+        Decomposition. SIAM Journal on Matrix Analysis and Applications, 39(2), 876–901.
+        http://doi.org/10.1137/17m1112303
     """
 
     def __init__(self, init='svd', sample_size=None, max_iter=50, epsilon=10e-3, tol=10e-5,

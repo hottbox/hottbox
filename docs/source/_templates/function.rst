@@ -1,7 +1,11 @@
 {{ objname }}
 {{ underline }}
 
-Location: :mod:`{{module}}`
+::
+
+    # Import statement
+
+    from {{module}} import {{objname}}
 
 .. currentmodule:: {{ module }}
 
