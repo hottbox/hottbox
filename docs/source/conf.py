@@ -19,6 +19,7 @@ from datetime import datetime
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, os.path.abspath('_sphinx_ext'))
 
 
 
@@ -61,6 +62,7 @@ extensions = [
     'sphinx.ext.githubpages',
     # 'sphinx.ext.napoleon',  # Support for NumPy and Google style docstrings
     'numpydoc.numpydoc',  # Another support and restructuring of the docstrings
+    'm2r.m2r',  # Converts a MD file to a valid rST format, https://github.com/miyakogi/m2r
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -85,7 +87,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = []
+exclude_patterns = ['_build', '_sphinx_ext','Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
