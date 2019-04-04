@@ -2,12 +2,11 @@
 This module is for EDA through interactive visualisation of the core structures:
 ``TensorCPD``, ``TensorTKD`` etc.
 
-All its functionality should be used inside Jupyter Lab/ Jupyter Notebook.
 
-.. important::
+..  note::
 
-    The API provided by this module is experimental and requires additional
-    dependencies to be installed.
+    All functionality of this module is designed for the Jupyter Lab.
+    Thus, it is not guaranteed to work correctly within Jupyter Notebook.
 """
 
 import numpy as np
