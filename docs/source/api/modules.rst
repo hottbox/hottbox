@@ -7,7 +7,9 @@ HOTTBOX API
     hottbox.core
     hottbox.algorithms
     hottbox.pdtools
-    hottbox.utils
     hottbox.metrics
     hottbox.rank
+    hottbox.datasets
+    hottbox.errors
+    hottbox.utils
     hottbox.contrib

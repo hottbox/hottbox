@@ -1,22 +1,27 @@
+=======
 Metrics
 =======
 
-.. automodule:: hottbox.metrics
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
-.. currentmodule:: hottbox.metrics.base
-.. autosummary:: hottbox.metrics.base
+Approximation scores
+====================
+
+.. automodule:: hottbox.metrics
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: hottbox.metrics
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+    :template: function.rst
+
     mse
     rmse
     mape
     residual_rel_error
 
-.. automodule:: hottbox.metrics.base
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
-
-
+Classification scores
+=====================

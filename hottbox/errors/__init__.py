@@ -2,6 +2,15 @@
 This module includes all custom warnings and errors used across ``hottbox``.
 """
 
+__all__ = [
+    "TensorStateError",
+    "TensorModeError",
+    "TensorShapeError",
+    "TensorTopologyError",
+    "StateError",
+    "ModeError",
+]
+
 
 class TensorStateError(Exception):
     """
