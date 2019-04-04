@@ -59,7 +59,8 @@ extensions = [
     # 'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon',
+    # 'sphinx.ext.napoleon',  # Support for NumPy and Google style docstrings
+    'numpydoc.numpydoc',  # Another support and restructuring of the docstrings
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -92,8 +93,17 @@ pygments_style = 'sphinx'
 ###############################################
 add_function_parentheses = False
 add_module_names = False
-autoclass_content = 'both'
+
+autosummary_generate = True  # generate autosummary even if no references
+
+# Other available options 'class' and 'both'.
+# For more info see http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autoclass_content
+autoclass_content = 'init'
 todo_include_todos = False
+
+# This is needed for some reason with 'numpydoc'
+# see https://github.com/numpy/numpydoc/issues/69
+numpydoc_class_members_toctree = False
 
 
 
