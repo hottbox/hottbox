@@ -4,7 +4,11 @@ Helper functions for generating synthetic tensors
 import itertools
 import numpy as np
 from scipy.linalg import toeplitz as toeplitz_mat
+<<<<<<< HEAD:hottbox/utils/generation/special.py
 from hottbox.utils.generation.basic import dense_tensor
+=======
+from .basic import dense
+>>>>>>> refactor(synthetic, matrix generation): Numerous small changes to synthetic and the generation of ma:hottbox/datasets/utils/special.py
 
 
 def _toeplitz_random(shape, modes, low=None, high=None):

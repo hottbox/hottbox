@@ -2,6 +2,7 @@ import numpy as np
 from ..core.structures import Tensor
 import warnings
 
+<<<<<<< HEAD
 
 def _predefined_distr(distr, shape):
     """
@@ -27,6 +28,8 @@ def _predefined_distr(distr, shape):
     return distrlist[distr]
 
 
+=======
+>>>>>>> refactor(synthetic, matrix generation): Numerous small changes to synthetic and the generation of ma
 def make_clusters(dims, centers=5, n_samples=1000, center_bounds=(-10.0, 10.0), std=0.5, return_centers=False):
     """ Generates a tensor of any dimension with isotropic gaussian blobs as clusters    
     Parameters
