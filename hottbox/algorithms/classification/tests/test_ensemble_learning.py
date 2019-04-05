@@ -1,12 +1,12 @@
 from ..ensemble_learning import TelVI, TelVAC
 
 
-# class TestTelVI:
-#     def test_init(self):
-#         pass
-#
-#     def test_name(self):
-#         pass
+class TestTelVI:
+    def test_init(self):
+        pass
+
+    def test_name(self):
+        pass
 #
 #     def test_set_params(self):
 #         pass

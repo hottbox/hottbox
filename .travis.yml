@@ -21,8 +21,6 @@ branches:
 
 install:
   - source ci_scripts/travis_install.sh
-  - pip install -r requirements.txt
-  - pip install pytest pytest-cov
 
 script:
   - source ci_scripts/travis_test.sh

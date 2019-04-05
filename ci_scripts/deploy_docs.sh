@@ -19,6 +19,9 @@ if [[ $TRAVIS_PULL_REQUEST == false && $TRAVIS_BRANCH == "develop" && $DEPLOY_DO
 	# Install the dependencies for making documentation
 	pip install sphinx sphinx_rtd_theme numpydoc
 
+    # Dependency for the m2r (conversion of *.md to *.rst)
+	pip install mistune
+
 	# cd to the doc folder and build the doc
 	(cd docs && make html)
 
