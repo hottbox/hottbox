@@ -1,11 +1,6 @@
 import numpy as np
-<<<<<<< HEAD:hottbox/utils/validation/tests/test_checks.py
 from ..checks import is_toeplitz_matrix, is_toeplitz_tensor, is_super_symmetric
 from ....core.structures import Tensor
-=======
-from ..checks import is_toep_matrix, is_toep_tensor, is_super_symmetric
-from ...core.structures import Tensor
->>>>>>> refactor(synthetic, matrix generation): Numerous small changes to synthetic and the generation of ma:hottbox/utils/tests/test_checks.py
 from scipy.linalg import toeplitz as toeplitz_mat
 
 
@@ -33,10 +28,8 @@ def test_is_toep_matrix():
     assert is_toeplitz_matrix(mat)
 
 
-
 def test_is_toep_tensor():
     assert is_toeplitz_tensor(_manualtoeptensor())
-
 
 
 def test_is_super_symmetric():
