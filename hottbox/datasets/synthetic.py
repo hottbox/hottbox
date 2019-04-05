@@ -1,5 +1,6 @@
 import numpy as np
 from ..core.structures import Tensor
+import warnings
 
 
 def _predefined_distr(distr, shape):
@@ -26,19 +27,22 @@ def _predefined_distr(distr, shape):
     return distrlist[distr]
 
 
-def make_clusters(dims, centers=3, n_samples=1000, center_bounds=(-10.0, 10.0), std=0.5, return_centers=False):
-    """ Generates a tensor of any dimension with isotropic gaussian blobs as clusters
-
+def make_clusters(dims, centers=5, n_samples=1000, center_bounds=(-10.0, 10.0), std=0.5, return_centers=False):
+    """ Generates a tensor of any dimension with isotropic gaussian blobs as clusters    
     Parameters
     ----------
-    shape : tuple(int)
-        specifies the dimensions of the tensor
+    dims : int
+        specifies the order of the tensor
     n_samples : int or list(int)
         Specifies the size of each clusters
-    centers (optional) : int or list(tuples)
+    centers : int or list(tuples)
         The number of clusters in the dataset and their size (can be a list)
-    center_bounds (optional) : tuple(float, float)
+    center_bounds : tuple(float, float)
         Specifies the bound (min, max) for generating the centers
+    std : float
+        The standard deviation of each of the generated clusters
+    return_centers : bool
+        Returns the positions of the centroids
 
     Returns
     -------
@@ -47,22 +51,26 @@ def make_clusters(dims, centers=3, n_samples=1000, center_bounds=(-10.0, 10.0), 
     """ 
 
     tensor = np.array([]).reshape(0, 1, dims)
-    
+
     if isinstance(centers, int):
         centroids = np.random.uniform(*center_bounds, size=(centers, 1, dims))
     else:
         centroids = centers 
-        
-    n_cent = len(centroids)
+    
+    n_cent = len(centroids) 
     
     if isinstance(n_samples, int):
-        n_samples = [n_samples//n_cent]*n_cent
+        if n_samples % n_cent != 0:
+            warnings.warn("The number of samples is not divisible by the number of centers - Truncating", UserWarning)
+        samples = [n_samples//n_cent]*n_cent
+    else:
+        samples = n_samples
 
-    if len(n_samples) != n_cent:
-        raise ValueError("The number of samples specified do not match the number" +
+    if len(samples) != n_cent:
+        raise ValueError("The number of samples specified do not match the number " +
                          "of centers")
-
-    for s_size, center in zip(n_samples, centroids):
+    
+    for s_size, center in zip(samples, centroids):
         cl = np.random.normal(loc=center, scale=std, size=(s_size, 1, dims))
         tensor = np.concatenate((tensor, cl))
 
