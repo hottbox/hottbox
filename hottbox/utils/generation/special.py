@@ -3,7 +3,7 @@ Helper functions for generating synthetic tensors
 """
 import itertools
 import numpy as np
-from hottbox.utils.generation.matrices import toeplitz_matrix
+from scipy.linalg import toeplitz as toeplitz_mat
 from hottbox.utils.generation.basic import dense_tensor
 
 
@@ -34,10 +34,10 @@ def _toeplitz_random(shape, modes, low=None, high=None):
     toepVals = np.random.randint(low, high, size=(numMats, szMult))
     for i in range(numMats):
         if matSz[0] == matSz[1]:
-            _r, _c = toepVals[i], None
+            _r, _c = toepVals[i], toepVals[i].ravel().conjugate()
         else:
             _c, _r = toepVals[i][:matSz[0]], toepVals[i][matSz[0]:]
-        toepMatrix = toeplitz_matrix(r=_r, c=_c)
+        toepMatrix = toeplitz_mat(r=_r, c=_c)
         matC.append(toepMatrix)
     return matC
 
@@ -73,7 +73,7 @@ def toeplitz_tensor(shape, modes=None, matC=None, random=False, lh=(None, None))
     matC = np.asarray(matC)
 
     if len(shape) == 2:
-        return toeplitz_matrix(matC)
+        return toeplitz_mat(r=matC, c=matC.ravel().conjugate())
     # Fix all axis except modes
     availmodes = np.setdiff1d(np.arange(dim_req), modes)
     availsz = np.asarray(shape)[availmodes]
