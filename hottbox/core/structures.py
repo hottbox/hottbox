@@ -10,9 +10,7 @@ from ..errors import TensorModeError, TensorShapeError, TensorStateError, Tensor
 
 
 class Tensor(object):
-    """ This class describes multidimensional data.
-
-    All its methods implement all common operation on a tensor alone
+    """
 
     Attributes
     ----------
@@ -27,7 +25,9 @@ class Tensor(object):
     """
 
     def __init__(self, array, custom_state=None, mode_names=None) -> None:
-        """ Create object of ``Tensor`` class
+        """ This class describes multidimensional data.
+
+        All its methods implement all common operation on a tensor alone
 
         Parameters
         ----------
@@ -774,6 +774,48 @@ class Tensor(object):
 
         return tensor
 
+    def access(self, inds, mode):
+        """ Equivalent to multidimnesional slicing
+    
+        Parameters
+        ----------
+        inds : int
+            The index of the axis. e.g [:,:,0] will be at mode=2, inds=0
+        mode : int
+            The axis to access
+        overwrite : Tensor
+            Overwrite slice with a subtensor
+        Returns
+        -------
+            Numpy array with the formulated subtensor
+        """
+        tensor = self._data
+        tensl = np.array([slice(None)] * tensor.ndim)
+        tensl[mode] = inds
+        tensl = tensl.tolist()
+        return tensor[tensl]
+   
+    # TODO: add some checks to overwite
+    def write_subtensor(self, inds, mode, overwrite):
+        """ Works in the same way as `access` but permits changing of the tensor data    
+        
+        Parameters
+        ----------
+        inds : int
+            The index of the axis. e.g [:,:,0] will be at mode=2, inds=0
+        mode : int
+            The axis to access
+        overwrite : Tensor
+            Overwrite slice with a subtensor
+        """
+        tensor = self._data
+        tensl = np.array([slice(None)] * tensor.ndim)
+        tensl[mode] = inds
+        tensl = tensl.tolist()
+        tensor[tensl] = overwrite
+        return
+
+
 # TODO: add validation of `mode_names`
 class BaseTensorTD(object):
     """
@@ -983,7 +1025,7 @@ class BaseTensorTD(object):
 
 
 class TensorCPD(BaseTensorTD):
-    """ Representation of a tensor in the Kruskal (CP) form.
+    """
 
     Attributes
     ----------
@@ -995,7 +1037,7 @@ class TensorCPD(BaseTensorTD):
         Description of the factor matrix for the corresponding mode
     """
     def __init__(self, fmat, core_values, mode_names=None):
-        """ Create object of ``TensorCPD`` class
+        """ Representation of a tensor in the Kruskal (CP) form.
         
         Parameters
         ----------
@@ -1071,7 +1113,8 @@ class TensorCPD(BaseTensorTD):
         equal = False
         if isinstance(self, other.__class__):
             if self.ft_shape == other.ft_shape and self.rank == other.rank:
-                fmat_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True) for i, fmat in enumerate(self.fmat)])
+                fmat_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True) 
+                                  for i, fmat in enumerate(self.fmat)])
                 core_equal = self.core == other.core
                 modes_equal = all([mode == other.modes[i] for i, mode in enumerate(self.modes)])
                 equal = fmat_equal and core_equal and modes_equal
@@ -1166,6 +1209,8 @@ class TensorCPD(BaseTensorTD):
         -------
         core_tensor : Tensor
         """
+        from hottbox.utils.generation import super_diag_tensor
+
         core_shape = self.rank * self.order
         core_tensor = super_diag_tensor(core_shape, values=self._core_values)
         return core_tensor
@@ -1257,7 +1302,7 @@ class TensorCPD(BaseTensorTD):
         tensor = self.core
         for mode, fmat in enumerate(self.fmat):
             tensor.mode_n_product(fmat, mode=mode, inplace=True)
-
+        
         if keep_meta == 1:
             mode_names = {i: mode.name for i, mode in enumerate(self.modes)}
             tensor.set_mode_names(mode_names=mode_names)
@@ -1368,7 +1413,7 @@ class TensorCPD(BaseTensorTD):
 
 
 class TensorTKD(BaseTensorTD):
-    """ Representation of a tensor in the Tucker form.
+    """
 
     Attributes
     ----------
@@ -1380,7 +1425,7 @@ class TensorTKD(BaseTensorTD):
         Description of the factor matrix for the corresponding mode
     """
     def __init__(self, fmat, core_values, mode_names=None):
-        """ Create object of ``TensorTKD`` class
+        """ Representation of a tensor in the Tucker form.
         
         Parameters
         ----------
@@ -1457,7 +1502,8 @@ class TensorTKD(BaseTensorTD):
         equal = False
         if isinstance(self, other.__class__):
             if self.ft_shape == other.ft_shape and self.rank == other.rank:
-                fmat_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True) for i, fmat in enumerate(self.fmat)])
+                fmat_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True)
+                                  for i, fmat in enumerate(self.fmat)])
                 core_equal = self.core == other.core
                 modes_equal = all([mode == other.modes[i] for i, mode in enumerate(self.modes)])
                 equal = fmat_equal and core_equal and modes_equal
@@ -1791,7 +1837,7 @@ class TensorTT(BaseTensorTD):
         Description of the physical modes
     """
     def __init__(self, core_values, mode_names=None):
-        """ Create object of ``TensorTT`` class
+        """ Representation of a tensor in the Tensor Train (TT) form.
         
         Parameters
         ----------
@@ -2143,70 +2189,3 @@ class TensorTT(BaseTensorTD):
         """
         super(TensorTT, self).reset_mode_index(mode=mode)
         return self
-
-
-def super_diag_tensor(shape, values=None):
-    """ Super-diagonal tensor of the specified `order`.
-
-    Parameters
-    ----------
-    shape : tuple
-        Desired shape of the tensor.
-        ``len(shape)`` defines the order of the tensor, whereas its values specify sizes of dimensions of the tensor.
-    values : np.ndarray
-        Array of values on the super-diagonal of a tensor. By default contains only ones.
-        Length of this vector defines Kryskal rank which is equal to ``shape[0]``.
-
-    Returns
-    -------
-    tensor : Tensor
-    """
-    order = len(shape)
-    rank = shape[0]
-
-    if not isinstance(shape, tuple):
-        raise TypeError("Parameter `shape` should be passed as a tuple!")
-    if not all(mode_size == shape[0] for mode_size in shape):
-        raise ValueError("All values in `shape` should have the same value!")
-
-    if values is None:
-        values = np.ones(rank)  # set default values
-    elif isinstance(values, np.ndarray):
-        if values.ndim != 1:
-            raise ValueError("The `values` should be 1-dimensional numpy array!")
-        if values.size != rank:
-            raise ValueError("Dimension mismatch! Not enough or too many `values` for the specified `shape`:\n"
-                             "{} != {} (values.size != shape[0])".format(values.size, rank))
-    else:
-        raise TypeError("The `values` should be passed as a numpy array!")
-
-    core = np.zeros(shape)
-    core[np.diag_indices(rank, ndim=order)] = values
-    tensor = Tensor(core)
-    return tensor
-
-
-def residual_tensor(tensor_orig, tensor_approx):
-    """ Residual tensor
-
-    Parameters
-    ----------
-    tensor_orig : Tensor
-    tensor_approx : {Tensor, TensorCPD, TensorTKD, TensorTT}
-
-    Returns
-    -------
-    residual : Tensor
-    """
-    if not isinstance(tensor_orig, Tensor):
-        raise TypeError("Unknown data type of original tensor.\n"
-                        "The available type for `tensor_A` is `Tensor`")
-    # TODO: make use of direct subtraction of tensors
-    if isinstance(tensor_approx, Tensor):
-        residual = Tensor(tensor_orig.data - tensor_approx.data)
-    elif isinstance(tensor_approx, BaseTensorTD):
-        residual = Tensor(tensor_orig.data - tensor_approx.reconstruct().data)
-    else:
-        raise TypeError("Unknown data type of the approximation tensor!\n"
-                        "The available types for `tensor_B` are `Tensor`,  `TensorCPD`,  `TensorTKD`,  `TensorTT`")
-    return residual

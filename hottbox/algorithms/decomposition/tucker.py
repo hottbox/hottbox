@@ -1,8 +1,9 @@
 import warnings
 import numpy as np
+from hottbox.core.structures import Tensor, TensorTKD
+from hottbox.core.operations import unfold
+from hottbox.utils.generation.basic import residual_tensor
 from .base import Decomposition, svd
-from ...core.structures import Tensor, TensorTKD, residual_tensor
-from ...core.operations import unfold
 
 
 class BaseTucker(Decomposition):

@@ -1,7 +1,7 @@
 HOTTBOX: Higher Order Tensors ToolBOX
 =====================================
 
-|Travis|_ |Appveyor|_ |Coveralls|_ |PyPi|_ |Binder|_
+|Travis|_ |Appveyor|_ |Coveralls|_ |PyPi|_ |Binder|_ |GitHubStars|_
 
 .. |Travis| image:: https://img.shields.io/travis/hottbox/hottbox/master.svg?label=TravisCI
 .. _Travis: https://travis-ci.org/hottbox/hottbox/
@@ -18,12 +18,15 @@ HOTTBOX: Higher Order Tensors ToolBOX
 .. |Binder| image:: https://mybinder.org/badge.svg
 .. _Binder: https://mybinder.org/v2/gh/hottbox/hottbox-tutorials/master?urlpath=lab/
 
+.. |GitHubStars| image:: https://img.shields.io/github/stars/hottbox/hottbox.svg?style=social&label=Star&maxAge=2592000
+.. _GitHubStars: https://github.com/hottbox/hottbox/stargazers/
+
 Welcome to the toolbox for tensor decompositions, statistical analysis, visualisation, feature extraction,
 regression and non-linear classification of multi-dimensional data. Not sure you need this toolbox? Give it
 a try on `mybinder.org <https://mybinder.org/v2/gh/hottbox/hottbox-tutorials/master?urlpath=lab/>`_ without installation.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    installation

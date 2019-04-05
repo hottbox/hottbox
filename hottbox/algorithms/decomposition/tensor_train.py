@@ -1,8 +1,9 @@
 import warnings
 import scipy
 import numpy as np
+from hottbox.core.structures import Tensor, TensorTT
+from hottbox.utils.generation.basic import residual_tensor
 from .base import Decomposition
-from ...core.structures import Tensor, TensorTT, residual_tensor
 
 
 class BaseTensorTrain(Decomposition):

@@ -4,12 +4,12 @@ from ..algorithms.decomposition.cpd import CPD
 
 
 def rankest(tensor, rank_range, epsilon=10e-3, verbose=False):
-    """ Estimate the optimal Kryskal rank of a tensor
+    """ Estimate the optimal Kruskal rank of a tensor
 
     Parameters
     ----------
     tensor : Tensor
-        Multidimensional data which Kryskal rank is to be estimated
+        Multi-dimensional data which Kruskal rank is to be estimated
     rank_range : list[int]
         List of rank values to be tested
     epsilon : float
@@ -20,7 +20,7 @@ def rankest(tensor, rank_range, epsilon=10e-3, verbose=False):
     Returns
     -------
     optimal_rank : tuple
-        Optimal kryskal rank. For consistency, the type of the returned value is tuple
+        Optimal Kruskal rank. For consistency, the type of the returned value is tuple
     """
     if not isinstance(rank_range, list):
         raise TypeError("The `rank_range` should be passed as a list of integers")
@@ -44,17 +44,17 @@ def rankest(tensor, rank_range, epsilon=10e-3, verbose=False):
 
 
 def mlrank(tensor):
-    """ Calculate the multilinear rank of a tensor
+    """ Calculate the multi-linear rank of a tensor
 
     Parameters
     ----------
     tensor : Tensor
-        Multidimensional data which multilinear rank is to be computed
+        Multidimensional data which multi-linear rank is to be computed
 
     Returns
     -------
     ml_rank : tuple
-        Multilinear rank
+        Multi-linear rank
     """
     # TODO: implement setting a threshold for singular values
     order = tensor.order

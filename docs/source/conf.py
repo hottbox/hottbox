@@ -19,6 +19,7 @@ from datetime import datetime
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, os.path.abspath('_sphinx_ext'))
 
 
 
@@ -59,7 +60,9 @@ extensions = [
     # 'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon',
+    # 'sphinx.ext.napoleon',  # Support for NumPy and Google style docstrings
+    'numpydoc.numpydoc',  # Another support and restructuring of the docstrings
+    'm2r.m2r',  # Converts a MD file to a valid rST format, https://github.com/miyakogi/m2r
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -84,7 +87,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = []
+exclude_patterns = ['_build', '_sphinx_ext','Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -92,8 +95,17 @@ pygments_style = 'sphinx'
 ###############################################
 add_function_parentheses = False
 add_module_names = False
-autoclass_content = 'both'
+
+autosummary_generate = True  # generate autosummary even if no references
+
+# Other available options 'class' and 'both'.
+# For more info see http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autoclass_content
+autoclass_content = 'init'
 todo_include_todos = False
+
+# This is needed for some reason with 'numpydoc'
+# see https://github.com/numpy/numpydoc/issues/69
+numpydoc_class_members_toctree = False
 
 
 
@@ -109,6 +121,7 @@ html_theme_options = {
 }
 html_static_path = ['_static']
 html_logo = '_static/hottbox_logo_2.png'
+html_favicon = '_static/hottbox_favicon-48x48.ico'
 
 # The name for this set of Sphinx documents. "<project> v<release> documentation" by default.
 html_title = 'HOTTBOX: Higher Order Tensors ToolBox'
