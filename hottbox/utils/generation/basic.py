@@ -85,7 +85,7 @@ def sparse_tensor(shape, distr='uniform', distr_type=0, fxdind=None, pct=0.05):
 
     return Tensor(array=data)
 
-def super_diagonal_tensor(shape, distr='ones', values=[None]):
+def super_diagonal_tensor(shape, distr='ones', values=None):
     """ Generates a tensor of any dimension with random or specified numbers across the super-diagonal and zeros elsewhere
     
     Parameters
@@ -111,7 +111,7 @@ def super_diagonal_tensor(shape, distr='ones', values=[None]):
     inds = shape[0]
     data = np.zeros(shape)
     
-    if values == [None]:
+    if values is None:
         values = _predefined_distr(distr, inds)
     if len(values) != inds:
         raise ValueError("Dimension mismatch! The specified values do not match "
