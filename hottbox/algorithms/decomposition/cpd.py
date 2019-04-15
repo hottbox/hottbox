@@ -1,9 +1,11 @@
 import functools
 import warnings
 import numpy as np
+from scipy.stats import unitary_group
 from hottbox.utils.generation.basic import residual_tensor
 from hottbox.core.structures import Tensor, TensorCPD
 from hottbox.core.operations import khatri_rao, hadamard, sampled_khatri_rao
+from hottbox.utils.generation.basic import super_diagonal_tensor
 from .base import Decomposition, svd
 
 
@@ -246,7 +248,7 @@ class CPD(BaseCPD):
         print('At the moment, `plot()` is not implemented for the {}'.format(self.name))
 
 
-#TODO: Fix efficiency issues with this
+# TODO: Fix efficiency issues with this
 class RandomisedCPD(BaseCPD):
     """ Randomised Canonical Polyadic Decomposition.
 
@@ -402,6 +404,168 @@ class RandomisedCPD(BaseCPD):
     def _init_fmat(self, tensor, rank):
         fmat = super(RandomisedCPD, self)._init_fmat(tensor=tensor,
                                                      rank=rank)
+        return fmat
+
+    def plot(self):
+        print('At the moment, `plot()` is not implemented for the {}'.format(self.name))
+
+
+class Parafac2(BaseCPD):
+    """ Computes PARAFAC2 for ``tensors`` of order three with respect to a specified ``rank``.
+
+    Computed via alternating least squares (ALS)
+
+    Parameters
+    ----------
+    init : str
+        Type of factor matrix initialisation. Available options are `svd` and `random`
+    max_iter : int
+        Maximum number of iteration
+    epsilon : float
+        Threshold for the relative error of approximation.
+    tol : float
+        Threshold for convergence of factor matrices
+    random_state : int
+    verbose : bool
+        If True, enable verbose output
+
+    Attributes
+    ----------
+    cost : list
+        A list of relative approximation errors at each iteration of the algorithm.
+        
+    References
+    ----------
+    
+    ..  [1] Kiers, H., ten Berge, J. and Bro, R. (1999). PARAFAC2 - Part I. 
+        A direct fitting algorithm for the PARAFAC2 model. Journal of Chemometrics, 
+        13(3-4), pp.275-294.
+    """
+
+    def __init__(self, init='random', max_iter=50, epsilon=10e-3, tol=10e-5,
+                 random_state=None, verbose=False) -> None:
+        super(Parafac2, self).__init__(init=init,
+                                  max_iter=max_iter,
+                                  epsilon=epsilon,
+                                  tol=tol,
+                                  random_state=random_state,
+                                  verbose=verbose)
+        self.cost = []
+
+    def copy(self):
+        """ Copy of the CPD algorithm as a new object """
+        new_object = super(parafac2, self).copy()
+        new_object.cost = []
+        return new_object
+
+    @property
+    def name(self):
+        """ Name of the decomposition
+
+        Returns
+        -------
+        decomposition_name : str
+        """
+        decomposition_name = super(Parafac2, self).name
+        return decomposition_name
+
+    def decompose(self, tensor, rank, keep_meta=0, kr_reverse=False):
+        """ Performs CPD-ALS on the ``tensor`` with respect to the specified ``rank``
+
+        Parameters
+        ----------
+        tensor : Tensor
+            Multi-dimensional data to be decomposed
+        rank : tuple
+            Desired Kruskal rank for the given ``tensor``. Should contain only one value.
+            If it is greater then any of dimensions then random initialisation is used
+        keep_meta : int
+            Keep meta information about modes of the given ``tensor``.
+            0 - the output will have default values for the meta data
+            1 - keep only mode names
+            2 - keep mode names and indices
+        kr_reverse : bool
+
+        Returns
+        -------
+        tensor_cpd : TensorCPD
+            CP representation of the ``tensor``
+
+        Notes
+        -----
+        khatri-rao product should be of matrices in reversed order. But this will duplicate original data (e.g. images)
+        Probably this has something to do with data ordering in Python and how it relates to kr product
+        """
+        if not isinstance(tensor, Tensor):
+            raise TypeError("Parameter `tensor` should be an object of `Tensor` class!")
+        if not isinstance(rank, tuple):
+            raise TypeError("Parameter `rank` should be passed as a tuple!")
+        if len(rank) != 1:
+            raise ValueError("Parameter `rank` should be tuple with only one value!")
+
+        fmat = self._init_fmat(tensor, rank)
+        tensor_cpd = tensor.data.copy()
+
+        for n_iter in range(self.max_iter):
+            for i, vk in enumerate(fmat):
+                tensor_cpd[:,:,i] = np.dot(tensor.data[:,:,i], vk.T)
+
+            t_tensor_cpd = Tensor(tensor_cpd)
+            norm = t_tensor_cpd.frob_norm
+            decomposed_cpd = CPD(max_iter=40).decompose(t_tensor_cpd, rank=rank)
+            _, _f = decomposed_cpd.core, decomposed_cpd.fmat
+            A, F, C = _f
+
+            for k, vk in enumerate(fmat):
+                dk = super_diagonal_tensor((rank[0],rank[0]), values=C[k]).data
+                T = np.dot(np.dot(A, dk), F.T)
+                u, s, vh = np.linalg.svd(np.dot(T.T, tensor.data[:,:,k]))
+                vk = np.dot(u, vh)
+                tensor_cpd[:,:,k] = np.dot(np.dot(np.dot(A, dk), F.T), vk)
+
+            t_tensor_cpd = Tensor(tensor_cpd)
+            residual = residual_tensor(tensor, t_tensor_cpd)
+            self.cost.append(abs(residual.frob_norm / norm))
+
+            if self.verbose:
+                    print('Iter {}: relative error of approximation = {}'.format(n_iter, self.cost[-1]))
+
+            # Check termination conditions
+            if self.cost[-1] <= self.epsilon:
+                if self.verbose:
+                    print('Relative error of approximation has reached the acceptable level: {}'.format(self.cost[-1]))
+                break
+            if self.converged:
+                if self.verbose:
+                    print('Converged in {} iteration(s)'.format(len(self.cost)))
+                break
+
+        if self.verbose and not self.converged and self.cost[-1] > self.epsilon:
+            print('Maximum number of iterations ({}) has been reached. '
+                  'Variation = {}'.format(self.max_iter, abs(self.cost[-2] - self.cost[-1])))
+
+        if keep_meta == 1:
+            mode_names = {i: mode.name for i, mode in enumerate(tensor.modes)}
+            t_tensor_cpd.set_mode_names(mode_names=mode_names)
+        elif keep_meta == 2:
+            t_tensor_cpd.copy_modes(tensor)
+        else:
+            pass
+        return t_tensor_cpd
+
+    @property
+    def converged(self):
+        """ Checks convergence of the CPD-ALS algorithm.
+
+        Returns
+        -------
+        bool
+        """
+        is_converged = super(Parafac2, self).converged
+        return is_converged
+
+    def _init_fmat(self, tensor, rank):
+        fmat = [unitary_group.rvs(rank[0]) for _ in range(tensor.data.shape[2])]
         return fmat
 
     def plot(self):
