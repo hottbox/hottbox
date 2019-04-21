@@ -24,7 +24,8 @@ def extras_require():
         'docs': [
             'sphinx',
             'sphinx_rtd_theme',
-            'numpydoc'
+            'numpydoc',
+            'm2r'
         ]
     }
     all_requires = [item for sublist in extra_requirements.values() for item in sublist]
