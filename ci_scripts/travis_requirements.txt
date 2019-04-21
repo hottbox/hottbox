@@ -2,7 +2,6 @@
 -r ../requirements.txt
 
 # testing dependencies
-wheel
 pytest
 pytest-cov
 sklearn

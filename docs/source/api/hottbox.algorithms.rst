@@ -39,3 +39,5 @@ Multi-linear Classification Algorithms
     :template: class.rst
 
     LSSTM
+    TelVI
+    TelVAC
