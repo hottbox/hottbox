@@ -7,5 +7,7 @@ from .stm import LSSTM
 
 
 __all__ = [
-    "LSSTM"
+    "LSSTM",
+    "TelVI",
+    "TelVAC",
 ]

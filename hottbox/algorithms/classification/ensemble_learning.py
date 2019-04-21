@@ -364,7 +364,7 @@ class TelVI(BaseTensorEnsembleClassifier):
     """ Tensor Ensemble Learning: Vectors Independently (TelVI)
 
     Parameters
-    -------
+    ----------
     base_clf : list[SklearnClassifier]
         List of classifiers that will be used for the corresponding collection of the factor vectors of the tensor
         decomposition. This list does not have to be heterogeneous. However, all classifiers should support sklearn API.
@@ -377,9 +377,9 @@ class TelVI(BaseTensorEnsembleClassifier):
     verbose : bool
         Enable verbose output.
 
-    Notes
-    -----
-    [1] Ilia Kisil, Ahmad Moniri, Danilo P. Mandic. "Tensor Ensemble Learning for Multidimensional Data."
+    References
+    ----------
+    ..  [1] Ilia Kisil, Ahmad Moniri, Danilo P. Mandic. "Tensor Ensemble Learning for Multidimensional Data."
         In 2018 IEEE Global Conference on Signal and Information Processing (GlobalSIP), pp. 1358-1362. IEEE, 2018.
     """
     def __init__(self, base_clf, probability=False, verbose=False):
@@ -422,7 +422,7 @@ class TelVI(BaseTensorEnsembleClassifier):
 
         Parameters
         ----------
-        X : list[HOSVD]
+        X : {list[TensorCPD], list[TensorTKD]}
             List of training samples each of which is represented through a tensor factorisation
         y : np.ndarray
             Target relative to X for classification
@@ -440,7 +440,7 @@ class TelVI(BaseTensorEnsembleClassifier):
 
         Parameters
         ----------
-        X : list[HOSVD]
+        X : {list[TensorCPD], list[TensorTKD]}
             List of training samples each of which is represented through a tensor factorisation
 
         Returns
@@ -456,7 +456,7 @@ class TelVI(BaseTensorEnsembleClassifier):
 
         Parameters
         ----------
-        X : list[HOSVD]
+        X : {list[TensorCPD], list[TensorTKD]}
             List of training samples each of which is represented through a tensor factorisation
 
         Returns
@@ -479,7 +479,7 @@ class TelVI(BaseTensorEnsembleClassifier):
 
         Parameters
         ----------
-        X : list[Decomposition]
+        X : {list[TensorCPD], list[TensorTKD]}
             List of training samples each of which is represented through a tensor factorisation
         y : np.ndarray
             Target relative to X for classification
@@ -541,22 +541,22 @@ class TelVI(BaseTensorEnsembleClassifier):
         sample_decomp = decomp_list[0]
         row = np.array([])
         for fmat in sample_decomp.fmat:
-            row = np.append(row, fmat.T.flatten())  # Traspose is crusial
+            row = np.append(row, fmat.T.flatten())  # Transpose is crucial
         data = row
 
         for sample in range(1, len(decomp_list)):
             sample_decomp = decomp_list[sample]
             row = np.array([])
             for fmat in sample_decomp.fmat:
-                row = np.append(row, fmat.T.flatten())  # Traspose is crusial
+                row = np.append(row, fmat.T.flatten())  # Transpose is crucial
             data = np.vstack((data, row))
 
-        # Create list of column indecies for splitting different factor vectors
+        # Create list of column indices for splitting different factor vectors
         split_idx = [0]  # this is the offset for the first split index
         for fmat in sample_decomp.fmat:
             i, j = fmat.shape
             split_idx = split_idx + [split_idx[-1] + i*x for x in range(1, j+1)]
-        # Don't need the last index inorder to avoid an empty element when np.hsplit is called
+        # Don't need the last index in order to avoid an empty element when np.hsplit is called
         split_idx = split_idx[1:-1]
         data_list = np.hsplit(data, split_idx)
 
