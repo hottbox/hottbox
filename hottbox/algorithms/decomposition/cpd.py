@@ -1,7 +1,7 @@
 import functools
 import warnings
 import numpy as np
-from scipy.stats import unitary_group
+from scipy.stats import ortho_group
 from hottbox.utils.generation.basic import residual_tensor
 from hottbox.core.structures import Tensor, TensorCPD
 from hottbox.core.operations import khatri_rao, hadamard, sampled_khatri_rao
@@ -417,8 +417,6 @@ class Parafac2(BaseCPD):
 
     Parameters
     ----------
-    init : str
-        Type of factor matrix initialisation. Available options are `svd` and `random`
     max_iter : int
         Maximum number of iteration
     epsilon : float
@@ -441,10 +439,10 @@ class Parafac2(BaseCPD):
         A direct fitting algorithm for the PARAFAC2 model. Journal of Chemometrics, 
         13(3-4), pp.275-294.
     """
-
-    def __init__(self, init='random', max_iter=50, epsilon=10e-3, tol=10e-5,
+    # TODO: change init use requiring a change in TensorCPD
+    def __init__(self, max_iter=50, epsilon=10e-3, tol=10e-5,
                  random_state=None, verbose=False) -> None:
-        super(Parafac2, self).__init__(init=init,
+        super(Parafac2, self).__init__(init='random',
                                   max_iter=max_iter,
                                   epsilon=epsilon,
                                   tol=tol,
@@ -454,7 +452,7 @@ class Parafac2(BaseCPD):
 
     def copy(self):
         """ Copy of the CPD algorithm as a new object """
-        new_object = super(parafac2, self).copy()
+        new_object = super(Parafac2, self).copy()
         new_object.cost = []
         return new_object
 
@@ -526,7 +524,7 @@ class Parafac2(BaseCPD):
             t_tensor_cpd = Tensor(tensor_cpd)
             residual = residual_tensor(tensor, t_tensor_cpd)
             self.cost.append(abs(residual.frob_norm / norm))
-
+            fmat = np.asarray(fmat)
             if self.verbose:
                     print('Iter {}: relative error of approximation = {}'.format(n_iter, self.cost[-1]))
 
@@ -551,7 +549,8 @@ class Parafac2(BaseCPD):
             t_tensor_cpd.copy_modes(tensor)
         else:
             pass
-        return t_tensor_cpd
+        # TODO: possibly make another structure
+        return A,C,F,fmat#, t_tensor_cpd
 
     @property
     def converged(self):
@@ -565,7 +564,28 @@ class Parafac2(BaseCPD):
         return is_converged
 
     def _init_fmat(self, tensor, rank):
-        fmat = [unitary_group.rvs(rank[0]) for _ in range(tensor.data.shape[2])]
+        """ Initialisation of factor matrices
+
+        Parameters
+        ----------
+        tensor : Tensor
+            Multidimensional data to be decomposed
+        rank : tuple
+            Should be of shape (R,1), where R is the desired tensor rank. It should be passed as tuple for consistency.
+
+        Returns
+        -------
+        fmat : list[np.ndarray]
+            List of factor matrices
+        """
+        self.cost = []  # Reset cost every time when method decompose is called
+        # Generate n orthogonal matrices (real unitary)
+        fmat = [ortho_group.rvs(tensor.shape[1]) for _ in range(tensor.shape[2])]
+        if rank[0] != tensor.data.shape[1]:
+            warnings.warn(
+                "Parafac2 is intended to have the same rank as the second dimension of a tensor ({} > {}).\n"
+                "Factor matrices have been initialized using random orthogonal matrices."
+                .format(rank, tensor.shape[1]), RuntimeWarning)
         return fmat
 
     def plot(self):
