@@ -442,7 +442,7 @@ class Parafac2(BaseCPD):
         13(3-4), pp.275-294.
     """
     # TODO: change init use requiring a change in TensorCPD
-    def __init__(self, max_iter=100, epsilon=10e-3, tol=10e-5,
+    def __init__(self, max_iter=50, epsilon=10e-3, tol=10e-5,
                  random_state=None, verbose=False) -> None:
         super(Parafac2, self).__init__(init='random',
                                   max_iter=max_iter,
@@ -508,7 +508,7 @@ class Parafac2(BaseCPD):
 
         # Initialisations
         cpd = CPD(max_iter=1)
-        H, V, S, U = self._init_fmat(K, rank[0], J, sz[:,0], tenL)
+        H, V, S, U = self._init_fmat(K, rank, J, sz[:,0], tenL)
         W = None
         
         for n_iter in range(self.max_iter):
@@ -529,8 +529,8 @@ class Parafac2(BaseCPD):
             for k in range(K):
                 S[:,:,k] = np.diag(W[k,:])
 
-            err = np.sum([np.sum((tenL[k] - 
-                                  (U[k].dot(H).dot(S[:,:,k])).dot(V.T)) ** 2) 
+            reconstructed = [(U[k].dot(H).dot(S[:,:,k])).dot(V.T) for k in range(K)]
+            err = np.sum([np.sum((tenL[k] - reconstructed[k]) ** 2) 
                           for k in range(K)])
 
             self.cost.append(err)
@@ -553,7 +553,7 @@ class Parafac2(BaseCPD):
                   'Variation = {}'.format(self.max_iter, abs(self.cost[-2] - self.cost[-1])))
 
         # TODO: possibly make another structure
-        return U,S,V
+        return U,S,V, reconstructed
 
     @property
     def converged(self):
@@ -584,17 +584,19 @@ class Parafac2(BaseCPD):
         (H,V,S,U) : Tuple[np.ndarray]
             Matrices used in Parafac2
         """
-        self.cost = []  # Reset cost every time when method decompose is called
-        # Generate n orthogonal matrices (real unitary)
-        H = np.identity(rank)
-        V = np.random.randn(s_mode, rank)
-        S = np.random.randn(rank, rank, modeSz)
+        self.cost = []  # Reset cost every time when method decompose is called 
+        H = np.identity(rank[0])
+        V = np.random.randn(s_mode, rank[0])
+        S = np.random.randn(rank[0], rank[0], modeSz)
         temp = 0
         for k in range(modeSz):
-            S[:, :, k] = np.identity(rank)
-            temp += tenL[k].T.dot(tenL[k])
-        [eigval, eigvec] = np.linalg.eig(temp)
-        U = [np.random.randn(modes[i], rank) for i in range(modeSz)]
+            S[:, :, k] = np.identity(rank[0])
+        U = [np.random.randn(modes[i], rank[0]) for i in range(modeSz)]
+        if (np.array(modes) < rank[0]).sum() != 0:
+            warnings.warn(
+                "Specified rank value is greater then one of the dimensions of a tensor ({} > {}).\n"
+                "Factor matrices have been initialized randomly.".format(rank, modes), RuntimeWarning
+            )
         return H,V,S,U
 
     def plot(self):
