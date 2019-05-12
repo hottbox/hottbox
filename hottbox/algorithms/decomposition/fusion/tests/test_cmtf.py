@@ -1,5 +1,5 @@
 """
-Tests for the cpd module
+Tests for the cmtf module
 """
 import pytest
 import sys
@@ -10,566 +10,202 @@ from functools import reduce
 from itertools import product
 from hottbox.core.structures import Tensor, TensorCPD
 from hottbox.pdtools import pd_to_tensor
-from ..cpd import BaseCPD, CPD, RandomisedCPD
+from hottbox.algorithms.decomposition.fusion.cmtf import CMTF
 
-
-class TestBaseCPD:
-    """ Tests for BaseCPD class """
-
-    def test_init(self):
-        """ Tests for constructor of BaseCPD class """
-        # Even though we can create such object we shouldn't do that
-        default_params = dict(init='svd',
-                              max_iter=50,
-                              epsilon=10e-3,
-                              tol=10e-5,
-                              random_state=None,
-                              verbose=False
-                              )
-
-        # basically for coverage tests object of
-        with pytest.raises(NotImplementedError):
-            tensor = Tensor(np.arange(2))
-            rank = 5
-            keep_meta = 0
-            base_cpd = BaseCPD(**default_params)
-            base_cpd.decompose(tensor, rank, keep_meta)
-        with pytest.raises(NotImplementedError):
-            base_cpd = BaseCPD(**default_params)
-            base_cpd.plot()
-
-
-class TestCPD:
-    """ Tests for CPD class """
-
-    def test_init(self):
-        """ Tests for the constructor of CPD algorithm """
-        init = 'svd'
-        max_iter = 50
-        epsilon = 10e-3
-        tol = 10e-5
-        verbose = False
-        cpd = CPD(init=init,
-                  max_iter=max_iter,
-                  epsilon=epsilon,
-                  tol=tol,
-                  verbose=verbose)
-        assert not cpd.cost         # check that this list is empty
-        assert cpd.name == CPD.__name__
-        assert cpd.init == init
-        assert cpd.max_iter == max_iter
-        assert cpd.epsilon == epsilon
-        assert cpd.tol == tol
-        assert cpd.verbose == verbose
-
-    def test_copy(self):
-        """ Tests for copy method """
-        cpd = CPD()
-        cpd.cost = [1, 2]
-        cpd_copy = cpd.copy()
-
-        assert cpd_copy is not cpd
-        assert cpd_copy.name == cpd.name
-        assert cpd_copy.init == cpd.init
-        assert cpd_copy.max_iter == cpd.max_iter
-        assert cpd_copy.epsilon == cpd.epsilon
-        assert cpd_copy.tol == cpd.tol
-        assert cpd_copy.verbose == cpd.verbose
-        assert cpd_copy.cost != cpd.cost
-
-        cpd.init = 'qwerty'
-        cpd.max_iter += 1
-        cpd.epsilon += 1
-        cpd.tol += 1
-        cpd.verbose = not cpd.verbose
-        cpd.cost = [3, 4]
-        assert cpd_copy.init != cpd.init
-        assert cpd_copy.max_iter != cpd.max_iter
-        assert cpd_copy.epsilon != cpd.epsilon
-        assert cpd_copy.tol != cpd.tol
-        assert cpd_copy.verbose != cpd.verbose
-        assert cpd.cost != cpd_copy.cost
-
-    def test_init_fmat(self):
-        """ Tests for _init_fmat method """
-        np.random.seed(0)
-        shape = (4, 5, 6)
-        size = reduce(lambda x, y: x * y, shape)
-        tensor = Tensor(np.random.randn(size).reshape(shape))
-        cpd = CPD()
-
-        # ------ tests that cpd.cost is reset each time _init_fmat is called
-        cpd.cost = [1, 2, 3]
-        rank = (min(tensor.shape)-1,)
-        cpd._init_fmat(tensor=tensor, rank=rank)
-        assert not cpd.cost
-
-        # ------ tests on getting factor matrices of the correct shape
-        for rank_value in range(min(tensor.shape)-1, max(tensor.shape)+2):
-            rank = (rank_value,)
-            fmat = cpd._init_fmat(tensor=tensor, rank=rank)
-            for mode, mat in enumerate(fmat):
-                assert mat.shape == (tensor.shape[mode], rank_value)
-
-        # ------ tests for the type of initialisation
-        # svd type initialisation should produce factor matrices with orthogonal columns
-        rank = (min(tensor.shape)-1,)
-        cpd = CPD(init='svd')
-        fmat = cpd._init_fmat(tensor=tensor, rank=rank)
-        for mat in fmat:
-            result = np.dot(mat.T, mat)
-            true_result = np.eye(rank[0])
-            np.testing.assert_almost_equal(result, true_result)
-
-        # svd type initialisation but the `rank` is greater then one of the dimensions then you get random fmat
-        # and there would be a runtime warning
-        rank = (min(tensor.shape)+1,)
-        cpd = CPD(init='svd', verbose=True)
-        with pytest.warns(RuntimeWarning):
-            fmat = cpd._init_fmat(tensor=tensor, rank=rank)
-        for mat in fmat:
-            result_1 = np.dot(mat.T, mat)
-            result_2 = np.eye(rank[0])
-            # since each mat is randomly initialized it is not orthonormal
-            with pytest.raises(AssertionError):
-                np.testing.assert_almost_equal(result_1, result_2)
-
-        # random type initialisation should produce factor matrices each of which is not orthonormal
-        rank = (3,)
-        cpd = CPD(init='random')
-        fmat = cpd._init_fmat(tensor=tensor, rank=rank)
-        for mat in fmat:
-            result_1 = np.dot(mat.T, mat)
-            result_2 = np.eye(rank[0])
-            # since each mat is randomly initialized it is not orthonormal
-            with pytest.raises(AssertionError):
-                np.testing.assert_almost_equal(result_1, result_2)
-
-        # unknown type of initialisation
-        with pytest.raises(NotImplementedError):
-            rank = (min(tensor.shape)-1,)
-            cpd = CPD(init='qwerty')
-            cpd._init_fmat(tensor=tensor, rank=rank)
-
-    def test_decompose(self):
-        """ Tests for decompose method """
-        # ------ tests for termination conditions
-        captured_output = io.StringIO()     # Create StringIO object for testing verbosity
-        sys.stdout = captured_output        # and redirect stdout.
-        np.random.seed(0)
-        shape = (6, 7, 8)
-        size = reduce(lambda x, y: x * y, shape)
-        array_3d = np.random.randn(size).reshape(shape)
-        tensor = Tensor(array_3d)
-        rank = (2,)
-        cpd = CPD(verbose=True)
-
-        # check for termination at max iter
-        cpd.max_iter = 10
-        cpd.epsilon = 0.01
-        cpd.tol = 0.0001
-        cpd.decompose(tensor=tensor, rank=rank)
-        assert not cpd.converged
-        assert len(cpd.cost) == cpd.max_iter
-        assert cpd.cost[-1] > cpd.epsilon
-
-        # check for termination when acceptable level of approximation is achieved
-        cpd.max_iter = 20
-        cpd.epsilon = 0.91492
-        cpd.tol = 0.0001
-        cpd.decompose(tensor=tensor, rank=rank)
-        assert not cpd.converged
-        assert len(cpd.cost) < cpd.max_iter
-        assert cpd.cost[-1] <= cpd.epsilon
-
-        # check for termination at convergence
-        cpd.max_iter = 20
-        cpd.epsilon = 0.01
-        cpd.tol = 0.0001
-        cpd.decompose(tensor=tensor, rank=rank)
-        assert cpd.converged
-        assert len(cpd.cost) < cpd.max_iter
-        assert cpd.cost[-1] > cpd.epsilon
-
-        assert captured_output.getvalue() != ''  # to check that something was actually printed
-
-        # ------ tests for correct output type and values
-
-        shape = (4, 5, 6)
-        size = reduce(lambda x, y: x * y, shape)
-        array_3d = np.arange(size, dtype='float32').reshape(shape)
-        tensor = Tensor(array_3d)
-        rank = (7,)
-
-        cpd = CPD(init='random', max_iter=50, epsilon=10e-3, tol=10e-5)
-
-        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank)
-        assert isinstance(tensor_cpd, TensorCPD)
-        assert tensor_cpd.order == tensor.order
-        assert tensor_cpd.rank == rank
-        # check dimensionality of computed factor matrices
-        for mode, fmat in enumerate(tensor_cpd.fmat):
-            assert fmat.shape == (tensor.shape[mode], rank[0])
-
-        tensor_rec = tensor_cpd.reconstruct()
-        np.testing.assert_almost_equal(tensor_rec.data, tensor.data)
-
-        # ------ tests that should FAIL due to wrong input type
-        cpd = CPD()
-        # tensor should be Tensor class
-        with pytest.raises(TypeError):
-            shape = (5, 5, 5)
-            size = reduce(lambda x, y: x * y, shape)
-            incorrect_tensor = np.arange(size).reshape(shape)
-            correct_rank = (2,)
-            cpd.decompose(tensor=incorrect_tensor, rank=correct_rank)
-        # rank should be a tuple
-        with pytest.raises(TypeError):
-            shape = (5, 5, 5)
-            size = reduce(lambda x, y: x * y, shape)
-            correct_tensor = Tensor(np.arange(size).reshape(shape))
-            incorrect_rank = [2]
-            cpd.decompose(tensor=correct_tensor, rank=incorrect_rank)
-        # incorrect length of rank
-        with pytest.raises(ValueError):
-            shape = (5, 5, 5)
-            size = reduce(lambda x, y: x * y, shape)
-            correct_tensor = Tensor(np.arange(size).reshape(shape))
-            incorrect_rank = (2, 3)
-            cpd.decompose(tensor=correct_tensor, rank=incorrect_rank)
-
-    def test_decompose_with_meta(self):
-        """ Tests for keeping meta data about modes """
-        content = dict(
-            country=['UK', 'RUS'],
-            year=[2005, 2015, 2010],
-            month=['Jan', 'Feb', 'Mar', 'Apr']
-        )
-        data = list(product(*content.values()))
-        columns = list(content.keys())
-        df = pd.DataFrame(data=data, columns=columns)
-        df['population'] = np.arange(df.shape[0], dtype='float32')
-        df_mi = df.set_index(columns)
-        tensor = pd_to_tensor(df=df_mi, keep_index=True)
-        rank = (2,)
-        cpd = CPD()
-
-        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=2)
-        assert tensor_cpd.modes == tensor.modes
-
-        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=1)
-        assert all([tensor_cpd.modes[i].name == tensor.modes[i].name for i in range(tensor_cpd.order)])
-        assert all([tensor_cpd.modes[i].index is None for i in range(tensor_cpd.order)])
-
-        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=0)
-        tensor.reset_meta()
-        assert tensor_cpd.modes == tensor.modes
-
-    def test_converged(self):
-        """ Tests for converged method """
-        tol = 0.01
-        cpd = CPD(tol=tol)
-
-        # when it is empty, which is the case at the object creation
-        assert not cpd.converged
-
-        # requires at least two values
-        cpd.cost = [0.001]
-        assert not cpd.converged
-
-        # difference greater then `tol`
-        cpd.cost = [0.1, 0.2]
-        assert not cpd.converged
-
-        # checks only the last two values
-        cpd.cost = [0.0001, 0.0002, 0.1, 0.2]
-        assert not cpd.converged
-
-        cpd.cost = [0.001, 0.0001]
-        assert cpd.converged
-
-        cpd.cost = [0.1, 0.2, 0.001, 0.0001]
-        assert cpd.converged
-
-    def test_plot(self):
-        """ Tests for plot method """
-        # This is only for coverage at the moment
-        captured_output = io.StringIO()     # Create StringIO object for testing verbosity
-        sys.stdout = captured_output        # and redirect stdout.
-        cpd = CPD()
-        cpd.plot()
-        assert captured_output.getvalue() != ''  # to check that something was actually printed
-
-
-
-
-class TestCpRand:
+# TODO: make a base Testcmtf class to inherent from
+class TestCMTF:
     """ Tests for CpRand class """
-
     def test_init(self):
-        """ Tests for the constructor of CPD algorithm """
-        init = 'svd'
+        """ Tests for the constructor of cmtf algorithm """
         max_iter = 50
         epsilon = 10e-3
         tol = 10e-5
         verbose = False
         sample_size = None
-        cpd = RandomisedCPD(init=init,
-                            max_iter=max_iter,
-                            epsilon=epsilon,
-                            tol=tol,
-                            verbose=verbose,
-                            sample_size=sample_size)
-        assert not cpd.cost         # check that this list is empty
-        assert cpd.name == RandomisedCPD.__name__
-        assert cpd.init == init
-        assert cpd.max_iter == max_iter
-        assert cpd.epsilon == epsilon
-        assert cpd.tol == tol
-        assert cpd.verbose == verbose
+        cmtf = CMTF(max_iter=max_iter,
+                       epsilon=epsilon,
+                       tol=tol,
+                       verbose=verbose)
+        assert not cmtf.cost         # check that this list is empty
+        assert cmtf.name == CMTF.__name__
+        assert cmtf.max_iter == max_iter
+        assert cmtf.epsilon == epsilon
+        assert cmtf.tol == tol
+        assert cmtf.verbose == verbose
 
     def test_copy(self):
         """ Tests for copy method """
-        cpd = RandomisedCPD()
-        cpd.cost = [1, 2]
-        cpd_copy = cpd.copy()
+        cmtf = CMTF()
+        cmtf.cost = [1, 2]
+        cmtf_copy = cmtf.copy()
 
-        assert cpd_copy is not cpd
-        assert cpd_copy.name == cpd.name
-        assert cpd_copy.init == cpd.init
-        assert cpd_copy.max_iter == cpd.max_iter
-        assert cpd_copy.epsilon == cpd.epsilon
-        assert cpd_copy.tol == cpd.tol
-        assert cpd_copy.verbose == cpd.verbose
-        assert cpd_copy.cost != cpd.cost
+        assert cmtf_copy is not cmtf
+        assert cmtf_copy.name == cmtf.name
+        assert cmtf_copy.init == cmtf.init
+        assert cmtf_copy.max_iter == cmtf.max_iter
+        assert cmtf_copy.epsilon == cmtf.epsilon
+        assert cmtf_copy.tol == cmtf.tol
+        assert cmtf_copy.verbose == cmtf.verbose
+        assert cmtf_copy.cost != cmtf.cost
 
-        cpd.init = 'qwerty'
-        cpd.max_iter += 1
-        cpd.epsilon += 1
-        cpd.tol += 1
-        cpd.verbose = not cpd.verbose
-        cpd.cost = [3, 4]
-        assert cpd_copy.init != cpd.init
-        assert cpd_copy.max_iter != cpd.max_iter
-        assert cpd_copy.epsilon != cpd.epsilon
-        assert cpd_copy.tol != cpd.tol
-        assert cpd_copy.verbose != cpd.verbose
-        assert cpd.cost != cpd_copy.cost
+        cmtf.max_iter += 1
+        cmtf.epsilon += 1
+        cmtf.tol += 1
+        cmtf.verbose = not cmtf.verbose
+        cmtf.cost = [3, 4]
+        assert cmtf_copy.max_iter != cmtf.max_iter
+        assert cmtf_copy.epsilon != cmtf.epsilon
+        assert cmtf_copy.tol != cmtf.tol
+        assert cmtf_copy.verbose != cmtf.verbose
+        assert cmtf.cost != cmtf_copy.cost
 
     def test_init_fmat(self):
         """ Tests for _init_fmat method """
         np.random.seed(0)
-        shape = (4, 5, 6)
-        size = reduce(lambda x, y: x * y, shape)
-        tensor = Tensor(np.random.randn(size).reshape(shape))
-        cpd = RandomisedCPD()
+        K = 3
+        I_k = np.random.randint(4,15,K)
+        J_k = np.random.randint(4,15,K)
+        rank = (min(I_k + [J_k])-1,)
+        cmtf = CMTF()
 
-        # ------ tests that cpd.cost is reset each time _init_fmat is called
-        cpd.cost = [1, 2, 3]
-        rank = (min(tensor.shape)-1,)
-        cpd._init_fmat(tensor=tensor, rank=rank)
-        assert not cpd.cost
+        # ------ tests that cmtf.cost is reset each time _init_fmat is called
+        cmtf.cost = [1, 2, 3]
+        cmtf._init_fmat(I_k, J_k, rank)
+        assert not cmtf.cost
 
-        # ------ tests on getting factor matrices of the correct shape
-        for rank_value in range(min(tensor.shape)-1, max(tensor.shape)+2):
-            rank = (rank_value,)
-            fmat = cpd._init_fmat(tensor=tensor, rank=rank)
-            for mode, mat in enumerate(fmat):
-                assert mat.shape == (tensor.shape[mode], rank_value)
-
-        # ------ tests for the type of initialisation
+        # ------ correct shape and type for factor matrices
         # svd type initialisation should produce factor matrices with orthogonal columns
-        rank = (min(tensor.shape)-1,)
-        cpd = RandomisedCPD(init='svd')
-        fmat = cpd._init_fmat(tensor=tensor, rank=rank)
-        for mat in fmat:
-            result = np.dot(mat.T, mat)
-            true_result = np.eye(rank[0])
-            np.testing.assert_almost_equal(result, true_result)
+        r = rank[0]
+        A, B = cmtf._init_fmat(I_k, J_k, rank)
+        for i, (a, b) in enumerate(zip(A,B)):
+            assert a.shape == (I_k[i], r)
+            assert b.shape == (J_k[i], r)
 
-        # svd type initialisation but the `rank` is greater then one of the dimensions then you get random fmat
-        # and there would be a runtime warning
-        rank = (min(tensor.shape)+1,)
-        cpd = RandomisedCPD(init='svd', verbose=True)
+        t_k = np.random.randn(K) 
+        #  ------ test for incorrect list
+        with pytest.raises(TypeError):
+            cmtf._init_fmat(t_k, J_k, rank)
+       
+       # ------ test for rank: expected to warn
+        # Rank specified should be the match the specified shape
+        rank = I[0]+1
         with pytest.warns(RuntimeWarning):
-            fmat = cpd._init_fmat(tensor=tensor, rank=rank)
-        for mat in fmat:
-            result_1 = np.dot(mat.T, mat)
-            result_2 = np.eye(rank[0])
-            # since each mat is randomly initialized it is not orthonormal
-            with pytest.raises(AssertionError):
-                np.testing.assert_almost_equal(result_1, result_2)
+            cmtf._init_fmat(I_k, J_k, (rank,))
 
-        # random type initialisation should produce factor matrices each of which is not orthonormal
-        rank = (3,)
-        cpd = RandomisedCPD(init='random')
-        fmat = cpd._init_fmat(tensor=tensor, rank=rank)
-        for mat in fmat:
-            result_1 = np.dot(mat.T, mat)
-            result_2 = np.eye(rank[0])
-            # since each mat is randomly initialized it is not orthonormal
-            with pytest.raises(AssertionError):
-                np.testing.assert_almost_equal(result_1, result_2)
-
-        # unknown type of initialisation
-        with pytest.raises(NotImplementedError):
-            rank = (min(tensor.shape)-1,)
-            cpd = RandomisedCPD(init='qwerty')
-            cpd._init_fmat(tensor=tensor, rank=rank)
-
+        #  ------ test for incorrect rank type 
+        rank = I[0]
+        with pytest.raises(IndexError):
+            cmtf._init_fmat(I_k, J_k, rank)
+    
     def test_decompose(self):
         """ Tests for decompose method """
         # ------ tests for termination conditions
         captured_output = io.StringIO()     # Create StringIO object for testing verbosity
         sys.stdout = captured_output        # and redirect stdout.
         np.random.seed(0)
-        shape = (6, 7, 8)
-        size = reduce(lambda x, y: x * y, shape)
-        array_3d = np.random.randn(size).reshape(shape)
-        tensor = Tensor(array_3d)
-        rank = (2,)
-        cpd = RandomisedCPD(verbose=True)
+        K = 3
+        I_k = tuple(np.random.randint(4,15,K))
+        rank = (min(I_k)-1,)
+        size = [(_a,rank[0]) for _a in I_k]
+        y = [Tensor(np.random.randn(*sz)) for sz in size]
+        tt = Tensor(np.random.randn(*I_k))
+        cmtf = CMTF(verbose=True)
 
         # check for termination at max iter
-        cpd.max_iter = 10
-        cpd.epsilon = 0.01
-        cpd.tol = 0.0001
-        cpd.decompose(tensor=tensor, rank=rank)
-        assert not cpd.converged
-        assert len(cpd.cost) == cpd.max_iter
-        assert cpd.cost[-1] > cpd.epsilon
+        cmtf.max_iter = 10
+        cmtf.epsilon = 0.01
+        cmtf.tol = 0.0001
+        cmtf.decompose(tt, y, rank)
+        assert not cmtf.converged
+        assert len(cmtf.cost) == cmtf.max_iter
+        assert cmtf.cost[-1] > cmtf.epsilon
 
         # check for termination when acceptable level of approximation is achieved
-        cpd.max_iter = 20
-        cpd.epsilon = 0.98
-        cpd.tol = 0.0001
-        cpd.decompose(tensor=tensor, rank=rank)
-        assert not cpd.converged
-        assert len(cpd.cost) < cpd.max_iter
-        assert cpd.cost[-1] <= cpd.epsilon
+        cmtf.max_iter = 10
+        cmtf.epsilon = 0.98
+        cmtf.tol = 10e-5
+        cmtf.decompose(tt, y, rank)
+        assert not cmtf.converged
+        assert len(cmtf.cost) < cmtf.max_iter
+        assert cmtf.cost[-1] <= cmtf.epsilon
 
         # check for termination at convergence
-        cpd.max_iter = 20
-        cpd.epsilon = 0.01
-        cpd.tol = 0.03
-        cpd.decompose(tensor=tensor, rank=rank)
-        assert cpd.converged
-        assert len(cpd.cost) < cpd.max_iter
-        assert cpd.cost[-1] > cpd.epsilon
+        cmtf.max_iter = 20
+        cmtf.epsilon = 0.01
+        cmtf.tol = 0.03
+        cmtf.decompose(tt, y, rank)
+        assert cmtf.converged
+        assert len(cmtf.cost) < cmtf.max_iter
+        assert cmtf.cost[-1] > cmtf.epsilon
 
         assert captured_output.getvalue() != ''  # to check that something was actually printed
 
         # ------ tests for correct output type and values
+        cmtf = CMTF(max_iter=50, epsilon=10e-3, tol=10e-5)
 
-        shape = (4, 5, 6)
-        size = reduce(lambda x, y: x * y, shape)
-        array_3d = np.arange(size, dtype='float32').reshape(shape)
-        tensor = Tensor(array_3d)
-        rank = (7,)
-
-        cpd = RandomisedCPD(init='random', max_iter=50, epsilon=10e-3, tol=10e-5)
-
-        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank)
-        assert isinstance(tensor_cpd, TensorCPD)
-        assert tensor_cpd.order == tensor.order
-        assert tensor_cpd.rank == rank
-        # check dimensionality of computed factor matrices
-        for mode, fmat in enumerate(tensor_cpd.fmat):
-            assert fmat.shape == (tensor.shape[mode], rank[0])
-
-        tensor_rec = tensor_cpd.reconstruct()
-        np.testing.assert_almost_equal(tensor_rec.data, tensor.data)
-
+        A, B, t_recon, m_recon = cmtf.decompose(tt, y, rank)
+        # types
+        assert isinstance(A, list)
+        assert isinstance(B, list)
+        assert isinstance(t_recon, Tensor)
+        assert isinstance(m_recon, list)
+        assert (all(isinstance(m, Tensor) for m in m_recon))
+        
         # ------ tests that should FAIL due to wrong input type
-        cpd = RandomisedCPD()
+        cmtf = CMTF()
         # tensor should be Tensor class
         with pytest.raises(TypeError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
             incorrect_tensor = np.arange(size).reshape(shape)
+            y = [Tensor(np.random.randn(i,r)) for i in shape]
             correct_rank = (2,)
-            cpd.decompose(tensor=incorrect_tensor, rank=correct_rank)
+            cmtf.decompose(tt, y, rank)
         # rank should be a tuple
         with pytest.raises(TypeError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
             correct_tensor = Tensor(np.arange(size).reshape(shape))
+            y = [Tensor(np.random.randn(i,r)) for i in shape]
             incorrect_rank = [2]
-            cpd.decompose(tensor=correct_tensor, rank=incorrect_rank)
+            cmtf.decompose(correct_tensor, y, incorrect_rank)
         # incorrect length of rank
         with pytest.raises(ValueError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
             correct_tensor = Tensor(np.arange(size).reshape(shape))
+            y = [Tensor(np.random.randn(i,r)) for i in shape]
             incorrect_rank = (2, 3)
-            cpd.decompose(tensor=correct_tensor, rank=incorrect_rank)
-        # invalid sample size
-        with pytest.raises(ValueError):
-            cpd = RandomisedCPD(sample_size=0)
-            shape = (5, 5, 5)
-            size = reduce(lambda x, y: x * y, shape)
-            correct_tensor = Tensor(np.arange(size).reshape(shape))
-            incorrect_rank = (2,)
-            cpd.decompose(tensor=correct_tensor, rank=incorrect_rank)
-
-    def test_decompose_with_meta(self):
-        """ Tests for keeping meta data about modes """
-        content = dict(
-            country=['UK', 'RUS'],
-            year=[2005, 2015, 2010],
-            month=['Jan', 'Feb', 'Mar', 'Apr']
-        )
-        data = list(product(*content.values()))
-        columns = list(content.keys())
-        df = pd.DataFrame(data=data, columns=columns)
-        df['population'] = np.arange(df.shape[0], dtype='float32')
-        df_mi = df.set_index(columns)
-        tensor = pd_to_tensor(df=df_mi, keep_index=True)
-        rank = (2,)
-        cpd = RandomisedCPD()
-
-        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=2)
-        assert tensor_cpd.modes == tensor.modes
-
-        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=1)
-        assert all([tensor_cpd.modes[i].name == tensor.modes[i].name for i in range(tensor_cpd.order)])
-        assert all([tensor_cpd.modes[i].index is None for i in range(tensor_cpd.order)])
-
-        tensor_cpd = cpd.decompose(tensor=tensor, rank=rank, keep_meta=0)
-        tensor.reset_meta()
-        assert tensor_cpd.modes == tensor.modes
+            cmtf.decompose(correct_tensor, y, incorrect_rank)
 
     def test_converged(self):
         """ Tests for converged method """
         tol = 0.01
-        cpd = RandomisedCPD(tol=tol)
+        cmtf = CMTF(tol=tol)
 
         # when it is empty, which is the case at the object creation
-        assert not cpd.converged
+        assert not cmtf.converged
 
         # requires at least two values
-        cpd.cost = [0.001]
-        assert not cpd.converged
+        cmtf.cost = [0.001]
+        assert not cmtf.converged
 
         # difference greater then `tol`
-        cpd.cost = [0.1, 0.2]
-        assert not cpd.converged
+        cmtf.cost = [0.1, 0.2]
+        assert not cmtf.converged
 
         # checks only the last two values
-        cpd.cost = [0.0001, 0.0002, 0.1, 0.2]
-        assert not cpd.converged
+        cmtf.cost = [0.0001, 0.0002, 0.1, 0.2]
+        assert not cmtf.converged
 
-        cpd.cost = [0.001, 0.0001]
-        assert cpd.converged
-
-        cpd.cost = [0.1, 0.2, 0.001, 0.0001]
-        assert cpd.converged
+        cmtf.cost = [0.1, 0.100001]
+        assert cmtf.converged
 
     def test_plot(self):
         """ Tests for plot method """
         # This is only for coverage at the moment
         captured_output = io.StringIO()     # Create StringIO object for testing verbosity
         sys.stdout = captured_output        # and redirect stdout.
-        cpd = RandomisedCPD()
-        cpd.plot()
+        cmtf = CMTF()
+        cmtf.plot()
         assert captured_output.getvalue() != ''  # to check that something was actually printed

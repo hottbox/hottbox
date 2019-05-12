@@ -8,7 +8,7 @@ from hottbox.core.operations import khatri_rao, hadamard, sampled_khatri_rao
 from ..base import Decomposition, svd
 from hottbox.utils.generation.basic import super_diag_tensor
 
-# TODO: Organise this better - inheritence
+# TODO: Organise this better - lazy work around used
 class CMTF(BaseCPD):
     """ Coupled Matrix and Tensor factorization for two ``tensors`` of order n and 2 with respect to a specified ``rank``.
     Computed via alternating least squares (ALS)
@@ -157,17 +157,24 @@ class CMTF(BaseCPD):
         """ Initialisation of matrices used in CMTF
         Parameters
         ----------
-        tensor : Tensor
-            Multidimensional data to be decomposed
-        rank : tuple
-            Should be of shape (R,1), where R is the desired tensor rank. It should be passed as tuple for consistency.
+        I : np.ndarray(int)
+            Shape[0] of all matrices
+        J : np.ndarray(int)
+            Shape[1] of all matrices
+        rank : int
+            The rank specified for factorisation
         Returns
         -------
-        (H,V,S,U) : Tuple[np.ndarray]
-            Matrices used in CMTF
+        (A,B) : List[np.ndarray]
+            Two lists of the factor matrices
         """
-        self.cost = []  # Reset cost every time when method decompose is called
+        self.cost = []  # Reset cost every time when method decompose is called 
         R = rank[0]
+        if (np.array(I) < R).sum() != 0:
+            warnings.warn(
+                "Specified rank value is greater then one of the dimensions of a tensor ({} > {}).\n"
+                "Factor matrices have been initialized randomly.".format(R, I), RuntimeWarning
+            )
         A = [np.random.randn(i_n, R) for i_n in I]
         B = [np.random.randn(j_n, R) for j_n in J]
         return A, B
