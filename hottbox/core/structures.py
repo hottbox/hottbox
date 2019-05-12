@@ -3,6 +3,7 @@ Classes for different tensor representations
 """
 import itertools
 import numpy as np
+import warnings
 from functools import reduce
 from .operations import unfold, kolda_unfold, fold, kolda_fold, mode_n_product
 from ._meta import Mode, State
@@ -564,6 +565,40 @@ class Tensor(object):
     def describe(self):
         """ Expose some metrics """
         print("In the future this call will print out some statistics about the tensor")
+
+    # TODO: preserve metadata
+    def transpose(self, inplace=False, *axis):
+        """ Wrapper for numpy transpose
+        
+        Returns
+        ---------
+        New instance of Tensor or NoneType
+        """
+        # Numpy copy
+        ndata = self.data.transpose(*axis)
+        if inplace:
+            self.data =  ndata
+        else:
+            warnings.warn("The copy returned does not preserve metdata")
+            return Tensor(ndata)
+        return
+            
+
+    # TODO: preserve metadata
+    def dot(self, ten, inplace=False):
+        """ Wrapper for numpy dot
+
+        Returns
+        ---------
+        New instance of Tensor
+        """
+        ndata = np.dot(self.data, ten.data) 
+        if inplace:
+            self.data = ndata
+        else:
+            warnings.warn("The copy returned does not preserve metdata")
+            return Tensor(ndata)
+        return
 
     def unfold(self, mode, rtype="T", inplace=True):
         """ Perform mode-n unfolding to a matrix
