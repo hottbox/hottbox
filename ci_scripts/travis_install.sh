@@ -1,7 +1,8 @@
 #!/bin/bash
 
 set -e
-
+echo 'Start time'
+date '+%Y-%m-%Y %H:%M:%S'
 echo 'List files from cached directories'
 echo 'pip:'
 ls $HOME/.cache/pip
@@ -32,6 +33,11 @@ if [[ "$DISTRIB" == "conda" ]]; then
     conda create -n testenv --yes python=$PYTHON_VERSION pip
     source activate testenv
 fi
+
+
+# Install all required packages ('hottbox' and testing dependencies)
+REQUIREMENTS_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+pip install -r $REQUIREMENTS_HOME/travis_requirements.txt
 
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
