@@ -210,7 +210,7 @@ class CMTF(BaseCPD):
         else:
             pass
 
-        lrecon = [A[i].dot(B[i].T) for i in range(N)]
+        lrecon = [Tensor(A[i].dot(B[i].T)) for i in range(N)]
     
         return core_tensor, lrecon
     

@@ -65,7 +65,7 @@ class TestCMTF:
         K = 3
         I_k = np.random.randint(4,15,K)
         J_k = np.random.randint(4,15,K)
-        rank = (min(I_k + [J_k])-1,)
+        rank = (min(I_k)-1,)
         cmtf = CMTF()
 
         # ------ tests that cmtf.cost is reset each time _init_fmat is called
@@ -88,12 +88,12 @@ class TestCMTF:
        
        # ------ test for rank: expected to warn
         # Rank specified should be the match the specified shape
-        rank = I[0]+1
+        rank = I_k[0]+1
         with pytest.warns(RuntimeWarning):
             cmtf._init_fmat(I_k, J_k, (rank,))
 
         #  ------ test for incorrect rank type 
-        rank = I[0]
+        rank = I_k[0]
         with pytest.raises(IndexError):
             cmtf._init_fmat(I_k, J_k, rank)
     
@@ -105,7 +105,7 @@ class TestCMTF:
         np.random.seed(0)
         K = 3
         I_k = tuple(np.random.randint(4,15,K))
-        rank = (min(I_k)-1,)
+        rank = (min(I_k),)
         size = [(_a,rank[0]) for _a in I_k]
         y = [Tensor(np.random.randn(*sz)) for sz in size]
         tt = Tensor(np.random.randn(*I_k))
@@ -122,7 +122,7 @@ class TestCMTF:
 
         # check for termination when acceptable level of approximation is achieved
         cmtf.max_iter = 10
-        cmtf.epsilon = 0.98
+        cmtf.epsilon = 1.6
         cmtf.tol = 10e-5
         cmtf.decompose(tt, y, rank)
         assert not cmtf.converged
@@ -158,24 +158,24 @@ class TestCMTF:
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
             incorrect_tensor = np.arange(size).reshape(shape)
-            y = [Tensor(np.random.randn(i,r)) for i in shape]
             correct_rank = (2,)
-            cmtf.decompose(tt, y, rank)
+            y = [Tensor(np.random.randn(i,correct_rank[0])) for i in shape]
+            cmtf.decompose(incorrect_tensor, y, correct_rank)
         # rank should be a tuple
         with pytest.raises(TypeError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
             correct_tensor = Tensor(np.arange(size).reshape(shape))
-            y = [Tensor(np.random.randn(i,r)) for i in shape]
             incorrect_rank = [2]
+            y = [Tensor(np.random.randn(i,incorrect_rank[0])) for i in shape]
             cmtf.decompose(correct_tensor, y, incorrect_rank)
         # incorrect length of rank
         with pytest.raises(ValueError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
             correct_tensor = Tensor(np.arange(size).reshape(shape))
-            y = [Tensor(np.random.randn(i,r)) for i in shape]
             incorrect_rank = (2, 3)
+            y = [Tensor(np.random.randn(i,incorrect_rank[0])) for i in shape]
             cmtf.decompose(correct_tensor, y, incorrect_rank)
 
     def test_converged(self):
