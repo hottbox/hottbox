@@ -633,13 +633,13 @@ class TestParafac2:
 
         # ------ tests that cpd.cost is reset each time _init_fmat is called
         cpd.cost = [1, 2, 3]
-        cpd._init_fmat(K, rank, J, I_k, tenL)
+        cpd._init_fmat(rank, size)
         assert not cpd.cost
 
         # ------ correct shape and type for factor matrices
         # svd type initialisation should produce factor matrices with orthogonal columns
         r = rank[0]
-        H, V, S, U = cpd._init_fmat(K, rank, J, I_k, tenL)
+        H, V, S, U = cpd._init_fmat(rank, size)
         assert H.shape == (r, r)
         assert V.shape == (J, r)
         assert S.shape == (r, r, K)
@@ -650,12 +650,12 @@ class TestParafac2:
         # Rank specified should be the match the specified shape
         rank = I_k[0]+1
         with pytest.warns(RuntimeWarning):
-            cpd._init_fmat(K, (rank,), J, I_k, tenL)
+            cpd._init_fmat((rank,), size)
 
         #  ------ test for incorrect rank type 
         rank = I_k[0]
         with pytest.raises(IndexError):
-            cpd._init_fmat(K, rank, J, I_k, tenL)
+            cpd._init_fmat(rank, size)
 
     def test_decompose(self):
         """ Tests for decompose method """
@@ -664,10 +664,10 @@ class TestParafac2:
         sys.stdout = captured_output        # and redirect stdout.
         np.random.seed(0)
         K = 3
-        J = np.random.randint(15)
-        I_k = np.random.randint(4,15,K)
+        J = 3
+        I_k = (4,5,6)
         size = np.array([(_a,J) for _a in I_k])
-        rank = (min(I_k)-1,)
+        rank = (3,)
         tenL = [np.random.randn(*sz) for sz in size]
         cpd = Parafac2(verbose=True)
 
@@ -701,7 +701,7 @@ class TestParafac2:
         assert captured_output.getvalue() != ''  # to check that something was actually printed
 
         # ------ tests for correct output type and values
-        cpd = Parafac2(max_iter=50, epsilon=10e-3, tol=10e-5)
+        cpd = Parafac2(max_iter=100, epsilon=10e-3, tol=10e-5)
 
         U, S, V, tensor_rec = cpd.decompose(tenL, rank)
         # types
@@ -710,13 +710,14 @@ class TestParafac2:
         assert isinstance(V, np.ndarray)
         # dimensions
 
-        assert S.shape == (r, r, k)
-        assert V.shape == (J, r)
+        assert S.shape == (rank[0], rank[0], K)
+        assert V.shape == (J, rank[0])
         # check dimensionality of computed factor matrices
         for i, mat in enumerate(U):
-            assert mat.shape == (I_k[i], r)
+            assert mat.shape == (I_k[i], rank[0])
 
-        np.testing.assert_almost_equal(tensor_rec.data, tensor.data)
+        for i in range(len(tenL)):
+            np.testing.assert_almost_equal(tensor_rec[i], tenL[i], decimal=1)
 
         # ------ tests that should FAIL due to wrong input type
         cpd = Parafac2()
@@ -726,29 +727,19 @@ class TestParafac2:
             size = reduce(lambda x, y: x * y, shape)
             incorrect_tensor = np.arange(size).reshape(shape)
             correct_rank = (2,)
-            cpd.decompose(tenL, rank)
+            cpd.decompose(incorrect_tensor, correct_rank)
         # rank should be a tuple
         with pytest.raises(TypeError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
-            correct_tensor = Tensor(np.arange(size).reshape(shape))
             incorrect_rank = [2]
-            cpd.decompose(tenL, rank)
+            cpd.decompose(tenL, incorrect_rank)
         # incorrect length of rank
         with pytest.raises(ValueError):
             shape = (5, 5, 5)
             size = reduce(lambda x, y: x * y, shape)
-            correct_tensor = Tensor(np.arange(size).reshape(shape))
             incorrect_rank = (2, 3)
-            cpd.decompose(tenL, rank)
-        # invalid sample size
-        with pytest.raises(ValueError):
-            cpd = Parafac2(sample_size=0)
-            shape = (5, 5, 5)
-            size = reduce(lambda x, y: x * y, shape)
-            correct_tensor = Tensor(np.arange(size).reshape(shape))
-            incorrect_rank = (2,)
-            cpd.decompose(tenL, rank)
+            cpd.decompose(tenL, incorrect_rank)
 
     def test_converged(self):
         """ Tests for converged method """
