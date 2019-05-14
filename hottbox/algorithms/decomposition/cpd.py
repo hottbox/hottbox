@@ -1,12 +1,9 @@
 import functools
 import warnings
 import numpy as np
-from sklearn.utils.extmath import randomized_svd
-from scipy.stats import ortho_group
 from hottbox.utils.generation.basic import residual_tensor
 from hottbox.core.structures import Tensor, TensorCPD
 from hottbox.core.operations import khatri_rao, hadamard, sampled_khatri_rao
-from hottbox.utils.generation.basic import super_diagonal_tensor
 from .base import Decomposition, svd
 
 
@@ -369,7 +366,7 @@ class RandomisedCPD(BaseCPD):
             for mode in lm:
                 kr_result, idxlist = sampled_khatri_rao(fmat, sample_size=self.sample_size, skip_matrix=mode)
                 lmodes = lm[:mode] + lm[mode+1:]
-                Xs = np.array([tensor.access(m,lmodes) for m in np.array(idxlist).T.tolist()])
+                Xs = np.array([tensor.access(m, lmodes) for m in np.array(idxlist).T.tolist()])
 
                 # Solve kr_result^-1 * Xs
                 pos_def = np.dot(kr_result.T, kr_result)
@@ -447,12 +444,12 @@ class Parafac2(BaseCPD):
     ----------
     cost : list
         A list of relative approximation errors at each iteration of the algorithm.
-    
+
     References
     ----------
-    
-    ..  [1] Kiers, H., ten Berge, J. and Bro, R. (1999). PARAFAC2 - Part I. 
-        A direct fitting algorithm for the PARAFAC2 model. Journal of Chemometrics, 
+
+    ..  [1] Kiers, H., ten Berge, J. and Bro, R. (1999). PARAFAC2 - Part I.
+        A direct fitting algorithm for the PARAFAC2 model. Journal of Chemometrics,
         13(3-4), pp.275-294.
     """
     # TODO: change init use requiring a change in TensorCPD
@@ -497,9 +494,9 @@ class Parafac2(BaseCPD):
 
         Returns
         -------
-        U, S, V, reconstructed : Tuple(np.ndarray)
-            U,S,V are PARAFAC2 representation of list of tensors
-            reconstructed is the reconstruction of the original tensor directly using U, S, V
+        fmat_u, fmat_s, fmat_V, reconstructed : Tuple(np.ndarray)
+            fmat_u,fmat_s,fmat_V are PARAFAC2 representation of list of tensors
+            reconstructed is the reconstruction of the original tensor directly using fmat_u, fmat_s, fmat_V
 
         Notes
         -----
@@ -514,39 +511,38 @@ class Parafac2(BaseCPD):
             raise TypeError("Parameter `rank` should be passed as a tuple!")
         if len(rank) != 1:
             raise ValueError("Parameter `rank` should be tuple with only one value!")
-            
+
         sz = np.array([t.shape for t in tenL])
         _m = list(sz[:, 1])
         if _m[1:] != _m[:-1]:
             raise ValueError("Tensors must be of shape I[k] x J")
-        K = len(sz)
-        J = _m[0]
+        num_t = len(sz)
+        mode_b = _m[0]
 
         # Initialisations
         cpd = CPD(max_iter=1)
-        H, V, S, U = self._init_fmat(rank, sz)
-        W = None
+        fmat_h, fmat_V, fmat_s, fmat_u = self._init_fmat(rank, sz)
+        cpd_fmat = None
         for n_iter in range(self.max_iter):
-            for k in range(K):
-                p, _, q = svd(H.dot(S[:, :, k]).dot(V.T).dot(tenL[k].T)
-                                        , rank=rank[0])
-                U[k] = q.T.dot(p.T)
+            for k in range(num_t):
+                p, _, q = svd(fmat_h.dot(fmat_s[:, :, k]).dot(fmat_V.T).dot(tenL[k].T), rank=rank[0])
+                fmat_u[k] = q.T.dot(p.T)
 
-            Y = np.zeros((rank[0], J, K))
-            for k in range(K):
-                Y[:, :, k] = U[k].T.dot(tenL[k])
-            fmat = [H, V, W]
+            Y = np.zeros((rank[0], mode_b, num_t))
+            for k in range(num_t):
+                Y[:, :, k] = fmat_u[k].T.dot(tenL[k])
+            fmat = [fmat_h, fmat_V, cpd_fmat]
             if n_iter == 0:
                 fmat = None
             decomposed_cpd = cpd.decompose(Tensor(Y), rank, factor_mat=fmat)
-            H, V, W = decomposed_cpd.fmat
-            W = W.dot(np.diag(decomposed_cpd._core_values))
-            for k in range(K):
-                S[:, :, k] = np.diag(W[k, :])
+            fmat_h, fmat_V, cpd_fmat = decomposed_cpd.fmat
+            cpd_fmat = cpd_fmat.dot(np.diag(decomposed_cpd._core_values))
+            for k in range(num_t):
+                fmat_s[:, :, k] = np.diag(cpd_fmat[k, :])
 
-            reconstructed = [(U[k].dot(H).dot(S[:, :, k])).dot(V.T) for k in range(K)]
+            reconstructed = [(fmat_u[k].dot(fmat_h).dot(fmat_s[:, :, k])).dot(fmat_V.T) for k in range(num_t)]
             err = np.sum([np.sum((tenL[k] - reconstructed[k]) ** 2)
-                          for k in range(K)])
+                          for k in range(num_t)])
             self.cost.append(err)
 
             if self.verbose:
@@ -565,7 +561,7 @@ class Parafac2(BaseCPD):
                   'Variation = {}'.format(self.max_iter, abs(self.cost[-2] - self.cost[-1])))
 
         # TODO: possibly make another structure
-        return U,S,V, reconstructed
+        return fmat_u, fmat_s, fmat_V, reconstructed
 
     @property
     def converged(self):
@@ -589,29 +585,29 @@ class Parafac2(BaseCPD):
         rank : tuple
             Should be of shape (R,1), where R is the desired tensor rank. It should be passed as tuple for consistency.
         modes : tuple
-            np.ndarray of the shapes of matrices 
+            np.ndarray of the shapes of matrices
         Returns
         -------
-        (H,V,S,U) : Tuple[np.ndarray]
+        (fmat_h,fmat_V,fmat_s,fmat_u) : Tuple[np.ndarray]
             Factor matrices used in Parafac2
         """
-        self.cost = []  # Reset cost every time when method decompose is called 
+        self.cost = []  # Reset cost every time when method decompose is called
         modeSz = len(modes)
         s_mode = modes[0, 1]
         modes = modes[:, 0]
-        H = np.identity(rank[0])
-        V = np.random.randn(s_mode, rank[0])
-        S = np.random.randn(rank[0], rank[0], modeSz)
-        
+        fmat_h = np.identity(rank[0])
+        fmat_V = np.random.randn(s_mode, rank[0])
+        fmat_s = np.random.randn(rank[0], rank[0], modeSz)
+
         for k in range(modeSz):
-            S[:, :, k] = np.identity(rank[0])
-        U = np.array([np.random.randn(modes[i], rank[0]) for i in range(modeSz)])
+            fmat_s[:, :, k] = np.identity(rank[0])
+        fmat_u = np.array([np.random.randn(modes[i], rank[0]) for i in range(modeSz)])
         if (np.array(modes) < rank[0]).sum() != 0:
             warnings.warn(
                 "Specified rank value is greater then one of the dimensions of a tensor ({} > {}).\n"
                 "Factor matrices have been initialized randomly.".format(rank, modes), RuntimeWarning
             )
-        return H, V, S, U
+        return fmat_h, fmat_V, fmat_s, fmat_u
 
     def plot(self):
         print('At the moment, `plot()` is not implemented for the {}'.format(self.name))
