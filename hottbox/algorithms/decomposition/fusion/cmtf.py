@@ -8,8 +8,8 @@ from hottbox.utils.generation.basic import super_diag_tensor
 
 # TODO: Organise this better - lazy work around used
 class CMTF(BaseCPD):
-    """ Coupled Matrix and Tensor factorization for two ``tensors`` of order n and 2 with respect to a specified ``rank``.
-    Computed via alternating least squares (ALS)
+    """ Coupled Matrix and Tensor factorization for two ``tensors`` of order n and 2
+        with respect to a specified ``rank``. Computed via alternating least squares (ALS)
     Parameters
     ----------
     max_iter : int
@@ -99,26 +99,25 @@ class CMTF(BaseCPD):
             raise ValueError("All elements of `mlst` should be of order 2. It is a list of matrices!")
 
         modes = np.array([list(m.shape) for m in mlst])
-        N = len(modes)
-        I, J = modes[:, 0], modes[:, 1]
-        A, B = self._init_fmat(I, J, rank)
+        num_modes = len(modes)
+        fmat_a, fmat_b = self._init_fmat(modes[:, 0], modes[:, 1], rank)
         norm = tensor.frob_norm
         for n_iter in range(self.max_iter):
             # Update tensor factors
-            for i in range(N):
-                V = hadamard([np.dot(a_i.T, a_i) for k, a_i in enumerate(A) if k != i])
-                V += B[i].T.dot(B[i])
-                kr_result = khatri_rao(A, skip_matrix=i, reverse=True)
-                prod_a = np.concatenate([tensor.unfold(i, inplace=False).data, mlst[i].data], axis=1)
-                prod_b = np.concatenate([kr_result.T, B[i].T], axis=1).T
-                A[i] = prod_a.dot(prod_b).dot(np.linalg.pinv(V))
-            for i in range(N):
-                B[i] = mlst[i].data.T.dot(np.linalg.pinv(A[i]).T)
+            for i in range(num_modes):
+                _v = hadamard([np.dot(a_i.T, a_i) for k, a_i in enumerate(fmat_a) if k != i])
+                _v += fmat_b[i].T.dot(fmat_b[i])
+                kr_result = khatri_rao(fmat_a, skip_matrix=i, reverse=True)
+                _prod_a = np.concatenate([tensor.unfold(i, inplace=False).data, mlst[i].data], axis=1)
+                _prod_b = np.concatenate([kr_result.T, fmat_b[i].T], axis=1).T
+                fmat_a[i] = _prod_a.dot(_prod_b).dot(np.linalg.pinv(_v))
+            for i in range(num_modes):
+                fmat_b[i] = mlst[i].data.T.dot(np.linalg.pinv(fmat_a[i]).T)
 
-            t_recon, m_recon = self.reconstruct(A, B, N)
+            t_recon, m_recon = self._reconstruct(fmat_a, fmat_b, num_modes)
 
             residual = np.linalg.norm(tensor.data-t_recon.data)
-            for i in range(N):
+            for i in range(num_modes):
                 residual += np.linalg.norm(mlst[i].data-m_recon[i].data)
             self.cost.append(abs(residual)/norm)
 
@@ -141,7 +140,7 @@ class CMTF(BaseCPD):
                   'Variation = {}'.format(self.max_iter, abs(self.cost[-2] - self.cost[-1])))
 
         # TODO: possibly make another structure
-        return A, B, t_recon, m_recon
+        return fmat_a, fmat_b, t_recon, m_recon
 
     @property
     def converged(self):
@@ -150,7 +149,8 @@ class CMTF(BaseCPD):
         -------
         bool
         """
-        try:  # This insures that the cost has been computed at least twice without checking number of iterations
+        # This insures that the cost has been computed at least twice without checking iterations
+        try:
             is_converged = abs(self.cost[-2] - self.cost[-1]) <= self.tol
         except IndexError:
             is_converged = False
@@ -172,17 +172,17 @@ class CMTF(BaseCPD):
             Two lists of the factor matrices
         """
         self.cost = []  # Reset cost every time when method decompose is called
-        R = rank[0]
-        if (np.array(I) < R).sum() != 0:
+        _r = rank[0]
+        if (np.array(I) < _r).sum() != 0:
             warnings.warn(
-                "Specified rank value is greater then one of the dimensions of a tensor ({} > {}).\n"
-                "Factor matrices have been initialized randomly.".format(R, I), RuntimeWarning
+                "Specified rank is greater then one of the dimensions of a tensor ({} > {}).\n"
+                "Factor matrices have been initialized randomly.".format(_r, I), RuntimeWarning
             )
-        A = [np.random.randn(i_n, R) for i_n in I]
-        B = [np.random.randn(j_n, R) for j_n in J]
-        return A, B
+        fmat_a = [np.random.randn(i_n, _r) for i_n in I]
+        fmat_b = [np.random.randn(j_n, _r) for j_n in J]
+        return fmat_a, fmat_b
 
-    def reconstruct(self, A, B, N):
+    def _reconstruct(self, fmat_a, fmat_b, n_mat):
         """ Reconstruct the tensor and matrix after the coupled factorisation
         Parameters
         ----------
@@ -197,13 +197,13 @@ class CMTF(BaseCPD):
         (H,V,S,U) : Tuple[np.ndarray]
             Matrices used in CMTF
         """
-        core_values = np.repeat(np.array([1]), A[0].shape[1])
-        r = (A[0].shape[1], )
-        core_shape = r * len(A)
+        core_values = np.repeat(np.array([1]), fmat_a[0].shape[1])
+        _r = (fmat_a[0].shape[1], )
+        core_shape = _r * len(fmat_a)
         core_tensor = super_diag_tensor(core_shape, values=core_values)
-        for mode, fmat in enumerate(A):
+        for mode, fmat in enumerate(fmat_a):
             core_tensor.mode_n_product(fmat, mode=mode, inplace=True)
-        lrecon = [Tensor(A[i].dot(B[i].T)) for i in range(N)]
+        lrecon = [Tensor(fmat_a[i].dot(fmat_b[i].T)) for i in range(n_mat)]
         return core_tensor, lrecon
 
     def plot(self):

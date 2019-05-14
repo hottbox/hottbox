@@ -566,40 +566,6 @@ class Tensor(object):
         """ Expose some metrics """
         print("In the future this call will print out some statistics about the tensor")
 
-    # TODO: preserve metadata
-    def transpose(self, inplace=False, *axis):
-        """ Wrapper for numpy transpose
-        
-        Returns
-        ---------
-        New instance of Tensor or NoneType
-        """
-        # Numpy copy
-        ndata = self.data.transpose(*axis)
-        if inplace:
-            self.data =  ndata
-        else:
-            warnings.warn("The copy returned does not preserve metdata")
-            return Tensor(ndata)
-        return
-            
-
-    # TODO: preserve metadata
-    def dot(self, ten, inplace=False):
-        """ Wrapper for numpy dot
-
-        Returns
-        ---------
-        New instance of Tensor
-        """
-        ndata = np.dot(self.data, ten.data) 
-        if inplace:
-            self.data = ndata
-        else:
-            warnings.warn("The copy returned does not preserve metdata")
-            return Tensor(ndata)
-        return
-
     def unfold(self, mode, rtype="T", inplace=True):
         """ Perform mode-n unfolding to a matrix
 
