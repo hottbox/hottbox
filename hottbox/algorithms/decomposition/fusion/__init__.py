@@ -1,5 +1,5 @@
 """
-This module contains various models for classification
+This module contains methods for data fusion
 """
 
 from .cmtf import CMTF

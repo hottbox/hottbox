@@ -78,8 +78,9 @@ class CMTF(BaseCPD):
             If it is greater then any of dimensions then random initialisation is used
         Returns
         -------
-        tensor_cpd : TensorCPD
-            CP representation of the ``tensor``
+        (fmat_a, fmat_b, t_recon, m_recon) : List(np.ndarray) or np.ndarray
+            fmat_a, fmat_b are the list of components obtained by applying CMTF
+            t_recon, m_recon : The reconstructed tensor and list of matrices
         Notes
         -----
         khatri-rao product should be of matrices in reversed order. But this will duplicate original data (e.g. images)
@@ -156,46 +157,47 @@ class CMTF(BaseCPD):
             is_converged = False
         return is_converged
 
-    def _init_fmat(self, I, J, rank):
+    def _init_fmat(self, shape_i, shape_j, rank):
         """ Initialisation of matrices used in CMTF
         Parameters
         ----------
-        I : np.ndarray(int)
+        shape_i : np.ndarray(int)
             Shape[0] of all matrices
-        J : np.ndarray(int)
+        shape_j : np.ndarray(int)
             Shape[1] of all matrices
         rank : int
             The rank specified for factorisation
         Returns
         -------
-        (A,B) : List[np.ndarray]
+        (fmat_a, fmat_b) : List(np.ndarray)
             Two lists of the factor matrices
         """
         self.cost = []  # Reset cost every time when method decompose is called
         _r = rank[0]
-        if (np.array(I) < _r).sum() != 0:
+        if (np.array(shape_i) < _r).sum() != 0:
             warnings.warn(
                 "Specified rank is greater then one of the dimensions of a tensor ({} > {}).\n"
-                "Factor matrices have been initialized randomly.".format(_r, I), RuntimeWarning
+                "Factor matrices have been initialized randomly.".format(_r, shape_i), RuntimeWarning
             )
-        fmat_a = [np.random.randn(i_n, _r) for i_n in I]
-        fmat_b = [np.random.randn(j_n, _r) for j_n in J]
+        fmat_a = [np.random.randn(i_n, _r) for i_n in shape_i]
+        fmat_b = [np.random.randn(j_n, _r) for j_n in shape_j]
         return fmat_a, fmat_b
 
-    def _reconstruct(self, fmat_a, fmat_b, n_mat):
+    @staticmethod
+    def _reconstruct(fmat_a, fmat_b, n_mat):
         """ Reconstruct the tensor and matrix after the coupled factorisation
         Parameters
         ----------
-        A : np.ndarray
+        fmat_a : List(np.ndarray)
             Multidimensional data obtained from the factorisation
-        B : np.ndarray
+        fmat_b : List(np.ndarray)
             Multidimensional data obtained from the factorisation
-        N : int
+        n_mat : int
             Number of matrices provided to fuse
         Returns
         -------
-        (H,V,S,U) : Tuple[np.ndarray]
-            Matrices used in CMTF
+        (core_tensor, lrecon) : np.ndarray or List(np.ndarray)
+            Reconstructed tensor and list of matrices obtained from the factorisation
         """
         core_values = np.repeat(np.array([1]), fmat_a[0].shape[1])
         _r = (fmat_a[0].shape[1], )
