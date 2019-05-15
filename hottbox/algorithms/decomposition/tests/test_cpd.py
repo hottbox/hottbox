@@ -10,7 +10,7 @@ from functools import reduce
 from itertools import product
 from hottbox.core.structures import Tensor, TensorCPD
 from hottbox.pdtools import pd_to_tensor
-from ..cpd import BaseCPD, CPD, RandomisedCPD
+from ..cpd import BaseCPD, CPD, RandomisedCPD, Parafac2
 
 
 class TestBaseCPD:
@@ -98,12 +98,6 @@ class TestCPD:
         tensor = Tensor(np.random.randn(size).reshape(shape))
         cpd = CPD()
 
-        # ------ tests that cpd.cost is reset each time _init_fmat is called
-        cpd.cost = [1, 2, 3]
-        rank = (min(tensor.shape)-1,)
-        cpd._init_fmat(tensor=tensor, rank=rank)
-        assert not cpd.cost
-
         # ------ tests on getting factor matrices of the correct shape
         for rank_value in range(min(tensor.shape)-1, max(tensor.shape)+2):
             rank = (rank_value,)
@@ -172,7 +166,11 @@ class TestCPD:
         assert not cpd.converged
         assert len(cpd.cost) == cpd.max_iter
         assert cpd.cost[-1] > cpd.epsilon
-
+        
+        # Repeat cpd, test is self.cost is reset
+        cpd.decompose(tensor=tensor, rank=rank)
+        assert len(cpd.cost) == cpd.max_iter
+        
         # check for termination when acceptable level of approximation is achieved
         cpd.max_iter = 20
         cpd.epsilon = 0.91492
@@ -301,9 +299,7 @@ class TestCPD:
         assert captured_output.getvalue() != ''  # to check that something was actually printed
 
 
-
-
-class TestCpRand:
+class TestRandomisedCPD:
     """ Tests for CpRand class """
 
     def test_init(self):
@@ -363,12 +359,6 @@ class TestCpRand:
         size = reduce(lambda x, y: x * y, shape)
         tensor = Tensor(np.random.randn(size).reshape(shape))
         cpd = RandomisedCPD()
-
-        # ------ tests that cpd.cost is reset each time _init_fmat is called
-        cpd.cost = [1, 2, 3]
-        rank = (min(tensor.shape)-1,)
-        cpd._init_fmat(tensor=tensor, rank=rank)
-        assert not cpd.cost
 
         # ------ tests on getting factor matrices of the correct shape
         for rank_value in range(min(tensor.shape)-1, max(tensor.shape)+2):
@@ -438,7 +428,11 @@ class TestCpRand:
         assert not cpd.converged
         assert len(cpd.cost) == cpd.max_iter
         assert cpd.cost[-1] > cpd.epsilon
-
+        
+        # Repeat cpd, test is self.cost is reset
+        cpd.decompose(tensor=tensor, rank=rank)
+        assert len(cpd.cost) == cpd.max_iter
+        
         # check for termination when acceptable level of approximation is achieved
         cpd.max_iter = 20
         cpd.epsilon = 0.98
@@ -573,3 +567,204 @@ class TestCpRand:
         cpd = RandomisedCPD()
         cpd.plot()
         assert captured_output.getvalue() != ''  # to check that something was actually printed
+
+
+class TestParafac2:
+    """ Tests for CpRand class """
+
+    def test_init(self):
+        """ Tests for the constructor of CPD algorithm """
+        max_iter = 50
+        epsilon = 10e-3
+        tol = 10e-5
+        verbose = False
+        sample_size = None
+        cpd = Parafac2(max_iter=max_iter,
+                       epsilon=epsilon,
+                       tol=tol,
+                       verbose=verbose)
+        assert not cpd.cost         # check that this list is empty
+        assert cpd.name == Parafac2.__name__
+        assert cpd.max_iter == max_iter
+        assert cpd.epsilon == epsilon
+        assert cpd.tol == tol
+        assert cpd.verbose == verbose
+
+    def test_copy(self):
+        """ Tests for copy method """
+        cpd = Parafac2()
+        cpd.cost = [1, 2]
+        cpd_copy = cpd.copy()
+
+        assert cpd_copy is not cpd
+        assert cpd_copy.name == cpd.name
+        assert cpd_copy.init == cpd.init
+        assert cpd_copy.max_iter == cpd.max_iter
+        assert cpd_copy.epsilon == cpd.epsilon
+        assert cpd_copy.tol == cpd.tol
+        assert cpd_copy.verbose == cpd.verbose
+        assert cpd_copy.cost != cpd.cost
+
+        cpd.max_iter += 1
+        cpd.epsilon += 1
+        cpd.tol += 1
+        cpd.verbose = not cpd.verbose
+        cpd.cost = [3, 4]
+        assert cpd_copy.max_iter != cpd.max_iter
+        assert cpd_copy.epsilon != cpd.epsilon
+        assert cpd_copy.tol != cpd.tol
+        assert cpd_copy.verbose != cpd.verbose
+        assert cpd.cost != cpd_copy.cost
+
+    def test_init_fmat(self):
+        """ Tests for _init_fmat method """
+        np.random.seed(0)
+        K = 5
+        J = np.random.randint(15)
+        I_k = np.random.randint(3,15,K)
+        size = np.array([(_a,J) for _a in I_k])
+        rank = (min(I_k + [J])-1,)
+        tenL = [np.random.randn(*sz) for sz in size]
+        cpd = Parafac2()
+
+        # ------ correct shape and type for factor matrices
+        # svd type initialisation should produce factor matrices with orthogonal columns
+        r = rank[0]
+        H, V, S, U = cpd._init_fmat(rank, size)
+        assert H.shape == (r, r)
+        assert V.shape == (J, r)
+        assert S.shape == (r, r, K)
+        for i, mat in enumerate(U):
+            assert mat.shape == (I_k[i], r) 
+
+        # ------ test for rank: expected to warn
+        # Rank specified should be the match the specified shape
+        rank = I_k[0]+1
+        with pytest.warns(RuntimeWarning):
+            cpd._init_fmat((rank,), size)
+
+        #  ------ test for incorrect rank type 
+        rank = I_k[0]
+        with pytest.raises(IndexError):
+            cpd._init_fmat(rank, size)
+
+    def test_decompose(self):
+        """ Tests for decompose method """
+        # ------ tests for termination conditions
+        captured_output = io.StringIO()     # Create StringIO object for testing verbosity
+        sys.stdout = captured_output        # and redirect stdout.
+        np.random.seed(0)
+        K = 3
+        J = 3
+        I_k = (4,5,6)
+        size = np.array([(_a,J) for _a in I_k])
+        rank = (3,)
+        tenL = [np.random.randn(*sz) for sz in size]
+        cpd = Parafac2(verbose=True)
+
+        # check for termination at max iter
+        cpd.max_iter = 10
+        cpd.epsilon = 0.01
+        cpd.tol = 0.0001
+        cpd.decompose(tenL, rank)
+        assert not cpd.converged
+        assert len(cpd.cost) == cpd.max_iter
+        assert cpd.cost[-1] > cpd.epsilon
+
+        # Repeat cpd, test is self.cost is reset
+        cpd.decompose(tenL, rank)
+        assert len(cpd.cost) == cpd.max_iter
+        
+        # check for termination when acceptable level of approximation is achieved
+        cpd.max_iter = 10
+        cpd.epsilon = 0.98
+        cpd.tol = 10e-5
+        cpd.decompose(tenL, rank)
+        assert not cpd.converged
+        assert len(cpd.cost) < cpd.max_iter
+        assert cpd.cost[-1] <= cpd.epsilon
+
+        # check for termination at convergence
+        cpd.max_iter = 20
+        cpd.epsilon = 0.01
+        cpd.tol = 0.1
+        cpd.decompose(tenL, rank)
+        assert cpd.converged
+        assert len(cpd.cost) < cpd.max_iter
+        assert cpd.cost[-1] > cpd.epsilon
+
+        assert captured_output.getvalue() != ''  # to check that something was actually printed
+
+        # ------ tests for correct output type and values
+        cpd = Parafac2(max_iter=100, epsilon=10e-3, tol=10e-5)
+
+        U, S, V, tensor_rec = cpd.decompose(tenL, rank)
+        # types
+        assert isinstance(U, np.ndarray)
+        assert isinstance(S, np.ndarray)
+        assert isinstance(V, np.ndarray)
+        # dimensions
+
+        assert S.shape == (rank[0], rank[0], K)
+        assert V.shape == (J, rank[0])
+        # check dimensionality of computed factor matrices
+        for i, mat in enumerate(U):
+            assert mat.shape == (I_k[i], rank[0])
+
+        for i in range(len(tenL)):
+            np.testing.assert_almost_equal(tensor_rec[i], tenL[i], decimal=1)
+
+        # ------ tests that should FAIL due to wrong input type
+        cpd = Parafac2()
+        # tensor should be Tensor class
+        with pytest.raises(TypeError):
+            shape = (5, 5, 5)
+            size = reduce(lambda x, y: x * y, shape)
+            incorrect_tensor = np.arange(size).reshape(shape)
+            correct_rank = (2,)
+            cpd.decompose(incorrect_tensor, correct_rank)
+        # rank should be a tuple
+        with pytest.raises(TypeError):
+            shape = (5, 5, 5)
+            size = reduce(lambda x, y: x * y, shape)
+            incorrect_rank = [2]
+            cpd.decompose(tenL, incorrect_rank)
+        # incorrect length of rank
+        with pytest.raises(ValueError):
+            shape = (5, 5, 5)
+            size = reduce(lambda x, y: x * y, shape)
+            incorrect_rank = (2, 3)
+            cpd.decompose(tenL, incorrect_rank)
+
+    def test_converged(self):
+        """ Tests for converged method """
+        tol = 0.01
+        cpd = Parafac2(tol=tol)
+
+        # when it is empty, which is the case at the object creation
+        assert not cpd.converged
+
+        # requires at least two values
+        cpd.cost = [0.001]
+        assert not cpd.converged
+
+        # difference greater then `tol`
+        cpd.cost = [0.1, 0.2]
+        assert not cpd.converged
+
+        # checks only the last two values
+        cpd.cost = [0.0001, 0.0002, 0.1, 0.2]
+        assert not cpd.converged
+
+        cpd.cost = [0.1, 0.100001]
+        assert cpd.converged
+
+    def test_plot(self):
+        """ Tests for plot method """
+        # This is only for coverage at the moment
+        captured_output = io.StringIO()     # Create StringIO object for testing verbosity
+        sys.stdout = captured_output        # and redirect stdout.
+        cpd = Parafac2()
+        cpd.plot()
+        assert captured_output.getvalue() != ''  # to check that something was actually printed
+
