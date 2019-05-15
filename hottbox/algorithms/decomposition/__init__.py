@@ -2,7 +2,7 @@
 Module for various algorithms of tensor decompositions
 """
 
-from .cpd import CPD, RandomisedCPD
+from .cpd import CPD, RandomisedCPD, Parafac2
 from .tucker import HOSVD, HOOI
 from .tensor_train import TTSVD
 
