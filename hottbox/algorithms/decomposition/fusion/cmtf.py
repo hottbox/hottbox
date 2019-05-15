@@ -8,8 +8,10 @@ from hottbox.utils.generation.basic import super_diag_tensor
 
 # TODO: Organise this better - lazy work around used
 class CMTF(BaseCPD):
-    """ Coupled Matrix and Tensor factorization for two ``tensors`` of order n and 2
-        with respect to a specified ``rank``. Computed via alternating least squares (ALS)
+    """ Coupled Matrix and Tensor factorization for two ``Tensors`` of order n and 2 with respect to a specified `rank`.
+
+    Computed via alternating least squares (ALS)
+
     Parameters
     ----------
     max_iter : int
@@ -21,6 +23,7 @@ class CMTF(BaseCPD):
     random_state : int
     verbose : bool
         If True, enable verbose output
+    
     Attributes
     ----------
     cost : list
@@ -56,6 +59,7 @@ class CMTF(BaseCPD):
     @property
     def name(self):
         """ Name of the decomposition
+
         Returns
         -------
         decomposition_name : str
@@ -76,15 +80,13 @@ class CMTF(BaseCPD):
         rank : tuple
             Desired Kruskal rank for the given ``tensor``. Should contain only one value.
             If it is greater then any of dimensions then random initialisation is used
+        
         Returns
         -------
         (fmat_a, fmat_b, t_recon, m_recon) : List(np.ndarray) or np.ndarray
             fmat_a, fmat_b are the list of components obtained by applying CMTF
             t_recon, m_recon : The reconstructed tensor and list of matrices
-        Notes
-        -----
-        khatri-rao product should be of matrices in reversed order. But this will duplicate original data (e.g. images)
-        Probably this has something to do with data ordering in Python and how it relates to kr product
+
         """
         if not isinstance(tensor, Tensor):
             raise TypeError("Parameter `tensor` should be `Tensor`!")
