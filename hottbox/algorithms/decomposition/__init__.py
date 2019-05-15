@@ -10,5 +10,5 @@ from .tensor_train import TTSVD
 __all__ = [
     "CPD", "RandomisedCPD",
     "HOSVD", "HOOI",
-    "TTSVD"
+    "TTSVD", "Parafac2"
 ]

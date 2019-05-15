@@ -483,12 +483,12 @@ class Parafac2(BaseCPD):
 
     # TODO: Parameters differ to base class decomposed - fix
     def decompose(self, tenl, rank):
-        """ Performs Direct fitting using ALS on a list of tensors of order 2 (Matrices) with respect to the specified ``rank``.
+        """ Performs Direct fitting using ALS on a list of tensors of order 2 with respect to the specified ``rank``.
 
         Parameters
         ----------
         tenl : List(np.ndarray)
-            List of ``Tensor`` data to be decomposed
+            List of np.ndarray of dimension 2 to be decomposed
         rank : tuple
             Desired Kruskal rank for the given ``tensor``. Should contain only one value.
             If it is greater then any of dimensions then random initialisation is used
