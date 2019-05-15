@@ -98,12 +98,6 @@ class TestCPD:
         tensor = Tensor(np.random.randn(size).reshape(shape))
         cpd = CPD()
 
-        # ------ tests that cpd.cost is reset each time _init_fmat is called
-        cpd.cost = [1, 2, 3]
-        rank = (min(tensor.shape)-1,)
-        cpd._init_fmat(tensor=tensor, rank=rank)
-        assert not cpd.cost
-
         # ------ tests on getting factor matrices of the correct shape
         for rank_value in range(min(tensor.shape)-1, max(tensor.shape)+2):
             rank = (rank_value,)
@@ -172,7 +166,11 @@ class TestCPD:
         assert not cpd.converged
         assert len(cpd.cost) == cpd.max_iter
         assert cpd.cost[-1] > cpd.epsilon
-
+        
+        # Repeat cpd, test is self.cost is reset
+        cpd.decompose(tensor=tensor, rank=rank)
+        assert len(cpd.cost) == cpd.max_iter
+        
         # check for termination when acceptable level of approximation is achieved
         cpd.max_iter = 20
         cpd.epsilon = 0.91492
@@ -362,12 +360,6 @@ class TestRandomisedCPD:
         tensor = Tensor(np.random.randn(size).reshape(shape))
         cpd = RandomisedCPD()
 
-        # ------ tests that cpd.cost is reset each time _init_fmat is called
-        cpd.cost = [1, 2, 3]
-        rank = (min(tensor.shape)-1,)
-        cpd._init_fmat(tensor=tensor, rank=rank)
-        assert not cpd.cost
-
         # ------ tests on getting factor matrices of the correct shape
         for rank_value in range(min(tensor.shape)-1, max(tensor.shape)+2):
             rank = (rank_value,)
@@ -436,7 +428,11 @@ class TestRandomisedCPD:
         assert not cpd.converged
         assert len(cpd.cost) == cpd.max_iter
         assert cpd.cost[-1] > cpd.epsilon
-
+        
+        # Repeat cpd, test is self.cost is reset
+        cpd.decompose(tensor=tensor, rank=rank)
+        assert len(cpd.cost) == cpd.max_iter
+        
         # check for termination when acceptable level of approximation is achieved
         cpd.max_iter = 20
         cpd.epsilon = 0.98
@@ -631,11 +627,6 @@ class TestParafac2:
         tenL = [np.random.randn(*sz) for sz in size]
         cpd = Parafac2()
 
-        # ------ tests that cpd.cost is reset each time _init_fmat is called
-        cpd.cost = [1, 2, 3]
-        cpd._init_fmat(rank, size)
-        assert not cpd.cost
-
         # ------ correct shape and type for factor matrices
         # svd type initialisation should produce factor matrices with orthogonal columns
         r = rank[0]
@@ -680,6 +671,10 @@ class TestParafac2:
         assert len(cpd.cost) == cpd.max_iter
         assert cpd.cost[-1] > cpd.epsilon
 
+        # Repeat cpd, test is self.cost is reset
+        cpd.decompose(tenL, rank)
+        assert len(cpd.cost) == cpd.max_iter
+        
         # check for termination when acceptable level of approximation is achieved
         cpd.max_iter = 10
         cpd.epsilon = 0.98
@@ -692,7 +687,7 @@ class TestParafac2:
         # check for termination at convergence
         cpd.max_iter = 20
         cpd.epsilon = 0.01
-        cpd.tol = 0.03
+        cpd.tol = 0.1
         cpd.decompose(tenL, rank)
         assert cpd.converged
         assert len(cpd.cost) < cpd.max_iter

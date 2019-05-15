@@ -67,7 +67,6 @@ class BaseCPD(Decomposition):
         fmat : list[np.ndarray]
             List of factor matrices
         """
-        self.cost = []  # Reset cost every time when method decompose is called
         t_rank = rank[0]
         fmat = [np.array([])] * tensor.order
         # Check if all dimensions are greater then kryskal rank
@@ -196,8 +195,8 @@ class CPD(BaseCPD):
             if not all(m.shape == (mode, rank[0]) for m, mode in zip(factor_mat, tensor.shape)):
                 raise ValueError("Parameter `factor_mat` should have the shape [mode_n x r]. Incorrect shapes!")
             fmat = factor_mat.copy()
-            self.cost = []
 
+        self.cost = []  # Reset cost every time when method decompose is called
         tensor_cpd = None
         core_values = np.repeat(np.array([1]), rank)
         norm = tensor.frob_norm
@@ -356,6 +355,7 @@ class RandomisedCPD(BaseCPD):
         if len(rank) != 1:
             raise ValueError("Parameter `rank` should be tuple with only one value!")
 
+        self.cost = []  # Reset cost every time when method decompose is called
         tensor_cpd = None
         fmat = self._init_fmat(tensor, rank)
         core_values = np.repeat(np.array([1]), rank)
@@ -453,6 +453,7 @@ class Parafac2(BaseCPD):
         A direct fitting algorithm for the PARAFAC2 model. Journal of Chemometrics,
         13(3-4), pp.275-294.
     """
+
     # TODO: change init use requiring a change in TensorCPD
     def __init__(self, max_iter=50, epsilon=10e-3, tol=10e-5,
                  random_state=None, verbose=False) -> None:
@@ -513,6 +514,7 @@ class Parafac2(BaseCPD):
         if len(rank) != 1:
             raise ValueError("Parameter `rank` should be tuple with only one value!")
 
+        self.cost = []  # Reset cost every time when method decompose is called
         sz = np.array([t.shape for t in tenl])
         _m = list(sz[:, 1])
         if _m[1:] != _m[:-1]:
@@ -592,7 +594,6 @@ class Parafac2(BaseCPD):
         (fmat_h,fmat_v,fmat_s,fmat_u) : Tuple[np.ndarray]
             Factor matrices used in Parafac2
         """
-        self.cost = []  # Reset cost every time when method decompose is called
         mode_sz = len(modes)
         s_mode = modes[0, 1]
         modes = modes[:, 0]
