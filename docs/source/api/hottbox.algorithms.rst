@@ -25,6 +25,23 @@ Tensor Decomposition Algorithms
     TTSVD
 
 
+Data Fusion Algorithms
+======================    
+    
+.. automodule:: hottbox.algorithms.decomposition.fusion
+    :no-members:
+    :no-inherited-members:
+
+.. currentmodule:: hottbox.algorithms.decomposition.fusion
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+    :template: class.rst
+
+    CMTF
+
+
 Multi-linear Classification Algorithms
 ======================================
 

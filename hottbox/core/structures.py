@@ -3,6 +3,7 @@ Classes for different tensor representations
 """
 import itertools
 import numpy as np
+import warnings
 from functools import reduce
 from .operations import unfold, kolda_unfold, fold, kolda_fold, mode_n_product
 from ._meta import Mode, State
