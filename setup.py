@@ -1,8 +1,15 @@
+import os
+import re
 from setuptools import setup, find_packages
 
 
-__version__ = None
-exec(open('hottbox/version.py').read())
+ROOT = os.path.dirname(__file__)
+VERSION_RE = re.compile(r'''__version__ = ['"]([0-9.]+)['"]''')
+
+
+def get_version():
+    init = open(os.path.join(ROOT, 'hottbox', '__init__.py')).read()
+    return VERSION_RE.search(init).group(1)
 
 
 def readme():
@@ -23,7 +30,7 @@ def extras_require():
         ],
         'docs': [
             'sphinx',
-            'sphinx_rtd_theme',
+            'guzzle_sphinx_theme',
             'numpydoc',
             'm2r'
         ]
@@ -35,7 +42,7 @@ def extras_require():
 
 config = dict(
     name='hottbox',
-    version=__version__,
+    version=get_version(),
     packages=find_packages(exclude=['docs']),
     url='https://github.com/hottbox/hottbox',
     license='Apache License 2.0',

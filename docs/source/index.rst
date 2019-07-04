@@ -26,8 +26,7 @@ regression and non-linear classification of multi-dimensional data. Not sure you
 a try on `mybinder.org <https://mybinder.org/v2/gh/hottbox/hottbox-tutorials/master?urlpath=lab/>`_ without installation.
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Contents:
+   :maxdepth: 2
 
    installation
    api/modules

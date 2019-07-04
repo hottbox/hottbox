@@ -1,0 +1,21 @@
+.toggle {
+    position: relative;
+    width: 100%;
+}
+
+.toggle .header {
+    display: block;
+    clear: both;
+    cursor: pointer;
+    font-family: monospace;
+}
+
+.toggle .header:after {
+    content: " ▶";
+}
+
+.toggle .header.open:after {
+    content: " ▼";
+}
+
+
