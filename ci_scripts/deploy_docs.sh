@@ -17,7 +17,8 @@ if [[ $TRAVIS_PULL_REQUEST == false && $TRAVIS_BRANCH == "develop" && $DEPLOY_DO
     git config --global user.name "Travis Bot"
 
 	# Install the dependencies for making documentation
-	pip install sphinx guzzle_sphinx_theme numpydoc m2r
+	# pip install sphinx guzzle_sphinx_theme numpydoc m2r
+	pip install '.[docs]'
 
 	# cd to the doc folder and build the doc
 	(cd docs && make html)
