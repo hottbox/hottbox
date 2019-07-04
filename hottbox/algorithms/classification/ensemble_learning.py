@@ -379,7 +379,7 @@ class TelVI(BaseTensorEnsembleClassifier):
 
     References
     ----------
-    ..  [1] Ilia Kisil, Ahmad Moniri, Danilo P. Mandic. "Tensor Ensemble Learning for Multidimensional Data."
+    -   Ilia Kisil, Ahmad Moniri, Danilo P. Mandic. "Tensor Ensemble Learning for Multidimensional Data."
         In 2018 IEEE Global Conference on Signal and Information Processing (GlobalSIP), pp. 1358-1362. IEEE, 2018.
     """
     def __init__(self, base_clf, probability=False, verbose=False):

@@ -288,7 +288,7 @@ class RandomisedCPD(BaseCPD):
 
     References
     ----------
-    ..  [1] Battaglino, C., Ballard, G., & Kolda, T. G. (2018). A Practical Randomized CP Tensor
+    -   Battaglino, C., Ballard, G., & Kolda, T. G. (2018). A Practical Randomized CP Tensor
         Decomposition. SIAM Journal on Matrix Analysis and Applications, 39(2), 876–901.
         http://doi.org/10.1137/17m1112303
     """
@@ -448,8 +448,7 @@ class Parafac2(BaseCPD):
 
     References
     ----------
-
-    ..  [1] Kiers, H., ten Berge, J. and Bro, R. (1999). PARAFAC2 - Part I.
+    -   Kiers, H., ten Berge, J. and Bro, R. (1999). PARAFAC2 - Part I.
         A direct fitting algorithm for the PARAFAC2 model. Journal of Chemometrics,
         13(3-4), pp.275-294.
     """

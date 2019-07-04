@@ -31,13 +31,12 @@ class CMTF(BaseCPD):
 
     References
     ----------
-
-    ..  [1] Acar, Evrim, Evangelos E. Papalexakis, Gozde Gurdeniz, Morten A. Rasmussen,
-            Anders J. Lawaetz, Mathias Nilsson and Rasmus Bro.
-            “Structure-revealing data fusion.” BMC Bioinformatics (2013).
-    ..  [2] Jeon, Byungsoo & Jeon, Inah & Sael, Lee & Kang, U. (2016).
-            SCouT: Scalable coupled matrix-tensor factorization—Algorithm and discoveries.
-            Int. Conf. Data Eng.. 811-822. 10.1109/ICDE.2016.7498292.
+    -   Acar, Evrim, Evangelos E. Papalexakis, Gozde Gurdeniz, Morten A. Rasmussen,
+        Anders J. Lawaetz, Mathias Nilsson and Rasmus Bro.
+        “Structure-revealing data fusion.” BMC Bioinformatics (2013).
+    -   Jeon, Byungsoo & Jeon, Inah & Sael, Lee & Kang, U. (2016).
+        SCouT: Scalable coupled matrix-tensor factorization—Algorithm and discoveries.
+        Int. Conf. Data Eng.. 811-822. 10.1109/ICDE.2016.7498292.
     """
     # TODO: change init use requiring a change in TensorCPD
     def __init__(self, max_iter=50, epsilon=10e-3, tol=10e-5,

@@ -268,7 +268,7 @@ def sampled_khatri_rao(matrices, sample_size=None, skip_matrix=None):
 
     References
     ----------
-    ..  [1] Battaglino, C., Ballard, G., & Kolda, T. G. (2018). A Practical Randomized CP Tensor
+    -   Battaglino, C., Ballard, G., & Kolda, T. G. (2018). A Practical Randomized CP Tensor
         Decomposition. SIAM Journal on Matrix Analysis and Applications, 39(2), 876–901.
         http://doi.org/10.1137/17m1112303
     """
