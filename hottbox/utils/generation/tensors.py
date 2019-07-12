@@ -4,18 +4,15 @@ and data type conversions
 """
 import numpy as np
 from functools import reduce
-from .core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
-
+from ...core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
 
 def _select_base_function(base):
     """ Utility for creating arrays
-
     Parameters
     ----------
     base : str
         Id of base function.
         If not one from ``{"arange", "randn", "rand", "ones"}`` then `np.arange` will be used.
-
     Returns
     -------
         Numpy function for creating arrays
@@ -43,7 +40,7 @@ def quick_tensor(shape, base="arange"):
 
     Examples
     --------
-        >>> from hottbox.utils import quick_tensor
+        >>> from hottbox.utils.generation import quick_tensor
         >>> tensor = quick_tensor(shape=(2, 3, 4))
         >>> print(tensor)
             This tensor is of order 3 and consists of 24 elements.
@@ -95,7 +92,7 @@ def quick_tensorcpd(full_shape, rank, base="arange"):
 
     Examples
     --------
-        >>> from hottbox.utils import quick_tensorcpd
+        >>> from hottbox.utils.generation import quick_tensorcpd
         >>> tensor_cpd = quick_tensorcpd(full_shape=(3, 4, 5), rank=(2,), base="ones")
         >>> print(tensor_cpd)
             Kruskal representation of a tensor with rank=(2,).
@@ -138,7 +135,7 @@ def quick_tensortkd(full_shape, rank, base="arange"):
 
     Examples
     --------
-        >>> from hottbox.utils import quick_tensortkd
+        >>> from hottbox.utils.generation import quick_tensortkd
         >>> tensor_tkd = quick_tensortkd(full_shape=(5, 6, 7), rank=(2, 3, 4), base="ones")
         >>> print(tensor_tkd)
             Tucker representation of a tensor with multi-linear rank=(2,).
@@ -179,7 +176,7 @@ def quick_tensortt(full_shape, rank, base="arange"):
 
     Examples
     --------
-        >>> from hottbox.utils import quick_tensortt
+        >>> from hottbox.utils.generation import quick_tensortt
         >>> tensor_tt = quick_tensortt(full_shape=(3, 4, 5), rank=(2, 3), base="ones")
         >>> print(tensor_tt)
             Tensor train representation of a tensor with tt-rank=(2, 3).

@@ -244,3 +244,55 @@ def _kolda_reorder(ndim, mode):
     indices = list(range(ndim))
     element = indices.pop(mode)
     return ([element] + indices[::-1])
+
+
+
+def sampled_khatri_rao(matrices, sample_size=None, skip_matrix=None):
+    """ Sampled Khatri-Rao product of a list of matrices.
+
+    Parameters
+    ----------
+    matrices : list[np.ndarray]
+        List of matrices. Each matrix should have the same number of columns
+    skip_matrix : int
+        Index of a matrix (from the `matrices`) to be skipped. By default none are skipped
+    reverse : bool
+        If True, perform khatri-rao product on the list of matrices in the reversed order
+
+    Returns
+    -------
+    result : np.ndarray
+        The result of the Khatri-Rao product of the sampled matrices
+    indices : tuple list
+        list of indices for all modes
+
+    References
+    ----------
+    -   Battaglino, C., Ballard, G., & Kolda, T. G. (2018). A Practical Randomized CP Tensor
+        Decomposition. SIAM Journal on Matrix Analysis and Applications, 39(2), 876–901.
+        http://doi.org/10.1137/17m1112303
+    """
+    np.random.seed(0)
+    if len(matrices) < 2:
+        raise ValueError('khatri_roa product requires a list of at least 2 matrices, '
+                         'but {} given.'.format(len(matrices)))
+
+    n_cols = matrices[0].shape[1]
+
+    if skip_matrix is not None:
+        matrices = [matrices[i] for i in range(len(matrices)) if i != skip_matrix]
+
+    if sample_size is None:
+        sample_size = int(10*n_cols*np.log(n_cols))
+
+    result = np.ones((sample_size, n_cols))
+    idxlist = [np.random.randint(0, m.shape[0], size=sample_size, dtype=int) for m in matrices]
+
+    for i, (idx, mat) in enumerate(zip(idxlist, matrices)):
+        if mat.shape[1] != n_cols:
+            raise ValueError('All matrices must have the same number of columns.'+\
+                    'Got {} and {}'.format(mat.shape, n_cols))
+
+        result = hadamard([result, mat[idx, :]])
+
+    return result, idxlist

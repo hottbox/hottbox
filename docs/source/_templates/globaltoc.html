@@ -1,0 +1,21 @@
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>
+      <a href="https://github.com/hottbox/hottbox"><i class="fab fa-github fa-lg"></i> Fork me on GitHub</a>
+    </h2>
+  </div>
+</div>
+<div class="sidebar-block">
+  <div class="sidebar-wrapper">
+    <h2>{{ _('Table Of Contents') }}</h2>
+  </div>
+  <div class="sidebar-toc">
+    {% set toctree = toctree(includehidden=True) %}
+    {% if toctree %}
+      {{ toctree }}
+    {% else %}
+      {{ toc }}
+    {% endif %}
+  </div>
+</div>

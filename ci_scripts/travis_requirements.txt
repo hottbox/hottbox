@@ -1,0 +1,8 @@
+# hottbox dependencies
+-r ../requirements.txt
+
+# testing dependencies
+pytest
+pytest-cov
+sklearn
+

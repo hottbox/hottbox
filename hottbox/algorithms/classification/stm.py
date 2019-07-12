@@ -30,7 +30,7 @@ class LSSTM(Classifier):
 
     References
     ----------
-    1)  Cichocki, Andrzej, et al. "Tensor networks for dimensionality reduction and large-scale optimization:
+    -   Cichocki, Andrzej, et al. "Tensor networks for dimensionality reduction and large-scale optimization:
         Part 2 applications and future perspectives." Foundations and Trends in Machine Learning 9.6 (2017): 431-673.
     """
     def __init__(self, C=1, tol=1e-3, max_iter=100, probability=False, verbose=False):

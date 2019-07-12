@@ -1,12 +1,6 @@
-from ..version import __version__
-from ..utils import *
-from ..core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
-from ..core._meta import State
-
-
-def test_version():
-    assert isinstance(__version__, str)
-
+from ..tensors import *
+from ....core.structures import Tensor, TensorCPD, TensorTKD, TensorTT
+from ....core._meta import State
 
 def test_quick_tensorcpd():
     """ Tests for `quick_tensorcpd` function """

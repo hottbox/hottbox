@@ -15,3 +15,5 @@ Our Team
 - Giuseppe G. Calvi,
     ggc115@ic.ac.uk
 
+- Divyansh Manocha,
+    dm2515@ic.ac.uk

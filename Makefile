@@ -16,6 +16,7 @@ check-all: test-cov code-check
 
 .PHONY: html
 html:
+	rm -rf docs/source/api/generated
 	$(MAKE) -C docs html
 
 

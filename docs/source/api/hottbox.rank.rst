@@ -1,17 +1,21 @@
+======================
+Multi-dimensional Rank
+======================
+
+
 Rank Estimation
 ===============
 
 .. automodule:: hottbox.rank
-    :members:
-    :undoc-members:
-    :show-inheritance:
+    :no-members:
+    :no-inherited-members:
 
-.. currentmodule:: hottbox.rank.rank_estimation
-.. autosummary:: hottbox.rank.rank_estimation
-    mlrank
+.. currentmodule:: hottbox.rank
+
+.. autosummary::
+    :nosignatures:
+    :toctree: generated/
+    :template: function.rst
+
     rankest
-
-.. automodule:: hottbox.rank.rank_estimation
-    :members:
-    :undoc-members:
-    :show-inheritance:
+    mlrank

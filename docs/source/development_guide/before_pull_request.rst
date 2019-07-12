@@ -44,7 +44,7 @@ from the docs/ directory::
 
 
 .. important::
-   Building the documentation requires the ``sphinx``, ``numpydoc`` and ``sphinx_rtd_theme``::
+   Building the documentation requires additional packages, e.g. ``sphinx``, ``guzzle_sphinx_theme``, ``m2r``, so you can use extra option during installation ::
 
       $ pip install -e '.[docs]'
 
