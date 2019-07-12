@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 
 
-## [HOTTBOX v0.2.2 Unreleased]
+## [HOTTBOX v0.3.2 Unreleased]
 
 ### Package status on branch `develop`
 [![Travis status](https://img.shields.io/travis/hottbox/hottbox/develop.svg?label=TravisCI)](https://travis-ci.org/hottbox/hottbox/)
@@ -24,6 +24,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - [ ] 
+
+
+
+## HOTTBOX v0.3.1 (2019-07-12)
+
+### Added
+- [x] `CMTF` - An algorithm for Coupled Matrix and Tensor factorization for two `Tensors` of order n and 2 with respect to a specified `rank`
+- [x] `RandomisedCPD` - An algorithm for Randomised Canonical Polyadic Decomposition.
+- [x] `Parafac2` - An algorithm for PARAFAC2 model computed via ALS
+- [x] `TelVI` and `TelVAC` - Algorithms under Tensor Ensemble Learning (TEL) framework
+- [x] Various utils for generations and validation of multi-dimensional arrays
+- [x] Toggle button into code examples in API documentation. It hides python prompts and output, making copying samples much easier.
+
+### Changed
+- [x] New look of our documentation page which is now based on [`guzzle_sphinx_theme`](https://github.com/guzzle/guzzle_sphinx_theme)
+- [x] New structure of documentation, each method or class resides in a separate webpage (thanks to sphinx templating).
 
 
 
