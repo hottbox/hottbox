@@ -13,26 +13,26 @@ def get_version():
 
 
 def readme():
-    with open('README.rst') as f:
+    with open(os.path.join(ROOT, 'README.rst')) as f:
         return f.read()
 
 
 def install_requires():
-    with open('requirements.txt') as f:
+    with open(os.path.join(ROOT, 'requirements.txt')) as f:
         return list(f.read().strip().split('\n'))
 
 
 def extras_require():
     extra_requirements = {
         'tests': [
-            'pytest',
-            'pytest-cov'
+            'pytest>=5.0.0',
+            'pytest-cov>=2.7.1',
         ],
         'docs': [
-            'sphinx',
-            'guzzle_sphinx_theme',
-            'numpydoc',
-            'm2r'
+            'sphinx>=2.1.2',
+            'guzzle_sphinx_theme==0.7.11',
+            'numpydoc==0.9.1',
+            'm2r>=0.2.1'
         ]
     }
     all_requires = [item for sublist in extra_requirements.values() for item in sublist]
@@ -40,33 +40,38 @@ def extras_require():
     return extra_requirements
 
 
-config = dict(
-    name='hottbox',
-    version=get_version(),
-    packages=find_packages(exclude=['docs']),
-    url='https://github.com/hottbox/hottbox',
-    license='Apache License 2.0',
-    author='Ilya Kisil',
-    author_email='ilyakisil@gmail.com',
-    description='Higher Order Tensors ToolBOX',
-    long_description=readme(),
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Topic :: Scientific/Engineering',
-        'Intended Audience :: Developers',
-        'Intended Audience :: Education',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 3'
-    ],
-    keywords=['tensor decompositions', 'machine learning'],
-    install_requires=install_requires(),
-    extras_require=extras_require(),
-    include_package_data=True,
-    zip_safe=False
-)
+def do_setup():
+    config = dict(
+        name='hottbox',
+        version=get_version(),
+        packages=find_packages(exclude=['docs']),
+        url='https://github.com/hottbox/hottbox',
+        license='Apache License 2.0',
+        author='Ilya Kisil',
+        author_email='ilyakisil@gmail.com',
+        description='Higher Order Tensors ToolBOX',
+        long_description=readme(),
+        classifiers=[
+            'Development Status :: 3 - Alpha',
+            'Topic :: Scientific/Engineering',
+            'Intended Audience :: Developers',
+            'Intended Audience :: Education',
+            'Intended Audience :: Science/Research',
+            'License :: OSI Approved :: Apache Software License',
+            'Programming Language :: Python :: 3'
+        ],
+        keywords=['tensor decompositions', 'machine learning'],
+        install_requires=install_requires(),
+        extras_require=extras_require(),
+        include_package_data=True,
+        zip_safe=False
+    )
 
-setup(**config)
+    setup(**config)
 
-print("\nWelcome to HOTTBOX!")
-print("If any questions please visit documentation page https://hottbox.github.io")
+    print("\nWelcome to HOTTBOX!")
+    print("If any questions please visit documentation page https://hottbox.github.io")
+
+
+if __name__ == "__main__":
+    do_setup()
