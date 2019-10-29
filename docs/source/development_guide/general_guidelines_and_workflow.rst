@@ -1,6 +1,9 @@
 General guidelines and advices
 ==============================
 
+.. contents:: Table of Contents
+    :local:
+    :depth: 2
 
 Coding guidelines
 -----------------

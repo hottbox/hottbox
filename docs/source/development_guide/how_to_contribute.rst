@@ -1,50 +1,60 @@
 How to contribute
 =================
 
+.. contents:: Table of Contents
+    :local:
+    :depth: 2
+
+
 Initial setup for your development
 ----------------------------------
 
 The preferred way to contribute to ``hottbox`` is to fork the main repository on GitHub,
 work on your feature and then submit a PR. The outline of this process should be as follows:
 
-1. Fork the `project repository <https://github.com/hottbox/hottbox>`_ by clicking on the **Fork** button near the top of the page.
-   This creates a copy of the code under your account on the GitHub server.
-   For more details on how to fork a repository see `this guide <https://help.github.com/articles/fork-a-repo/>`_.
+1.  Fork the `project repository <https://github.com/hottbox/hottbox>`_ by clicking on the **Fork** button near the top of the page.
+    This creates a copy of the code under your account on the GitHub server.
+    For more details on how to fork a repository see `this guide <https://help.github.com/articles/fork-a-repo/>`_.
 
-2. Clone this copy to your local disk
-   ::
+2.  Clone this copy to your local disk
 
-      $ git clone git@github.com:__YourGitHubLogin__/hottbox.git
-      $ cd hottbox
+    .. code-block:: bash
 
-3. Install ``hottbox`` package (in editable mode) and additional development tools
-   ::
+        git clone git@github.com:__YourGitHubLogin__/hottbox.git
+        cd hottbox
 
-      $ pip install -e '.[tests, docs]'
+3.  Install ``hottbox`` package (in editable mode) and additional development tools
 
-   This basically builds the extension in place and creates a link to the development directory
+    .. code-block:: bash
 
-4. It is a good practice not to work on the ``master`` branch as it should contain only production
-   ready state of the code. In case of ``hottbox``, this corresponds to the version available on
-   `pypi.org <https://pypi.org/project/hottbox/>`_. Therefore, all development is taking place on
-   ``develop`` branch and for each new feature we advise to create a new branch that stems from ``develop``.
-   ::
+        pip install -e '.[tests, docs]'
 
-      $ git checkout develop
-      $ git checkout -b my-feature
+    This basically builds the extension in place and creates a link to the development directory
 
-5. Work on this copy, on your computer, using Git to do the version control. In order to record your changes in Git, do
-   ::
+4.  It is a good practice not to work on the ``master`` branch as it should contain only production
+    ready state of the code. In case of ``hottbox``, this corresponds to the version available on
+    `pypi.org <https://pypi.org/project/hottbox/>`_. Therefore, all development is taking place on
+    ``develop`` branch and for each new feature we advise to create a new branch that stems from ``develop``.
 
-      $ git add modified_files
-      $ git commit -m "**Concise but meaningful description**"
+    .. code-block:: bash
 
-   When you’re done with changes, then push them to GitHub with
-   ::
+        git checkout develop
+        git checkout -b my-feature
 
-      $ git push -u origin my-feature
+5.  Work on this copy, on your computer, using Git to do the version control. In order to record your changes in Git, do
 
-6. Finally, follow `these <https://help.github.com/articles/creating-a-pull-request-from-a-fork/>`_ instructions to create a pull request from your fork.
+    .. code-block:: bash
+
+        git add modified_files
+        git commit -m "**Concise but meaningful description**"
+
+    When you’re done with changes, then push them to GitHub with
+
+    .. code-block:: bash
+
+        git push -u origin my-feature
+
+6.  Finally, follow `these <https://help.github.com/articles/creating-a-pull-request-from-a-fork/>`_ instructions to create a pull request from your fork.
 
 .. note::
    When you decide which branch you'd like to merge your changes into (step 4 of PR guide above),
@@ -55,38 +65,45 @@ work on your feature and then submit a PR. The outline of this process should be
 Getting up to date with the main project
 ----------------------------------------
 
-1. Add a remote that points to the the Git repo (`main hottbox repo <https://github.com/hottbox/hottbox>`_) from which you want to get the latest changes.
-   Conventionally it is referred to as **upstream**: ::
+1.  Add a remote that points to the the Git repo (`main hottbox repo <https://github.com/hottbox/hottbox>`_) from which you want to get the latest changes. Conventionally it is referred to as **upstream**:
 
-      $ git remote add upstream https://github.com/hottbox/hottbox.git
+    .. code-block:: bash
 
-   Verify new remote by executing this command: ::
+        git remote add upstream https://github.com/hottbox/hottbox.git
 
-      $ git remote -v
+    Verify new remote by executing this command:
 
-      ...
-      upstream  https://github.com/hottbox/hottbox.git (fetch)  # <--- should see this
-      upstream  https://github.com/hottbox/hottbox.git (push)   # <--- should see this
-      ...
+    .. code-block:: bash
 
-2. Next, you need to bring the latest commits from this upstream and merge them
-   in order to be in sync with the upstream: ::
+        git remote -v
 
-      # bring the latest commits
-      $ git fetch upstream
+        ...
+        upstream  https://github.com/hottbox/hottbox.git (fetch)  # <--- should see this
+        upstream  https://github.com/hottbox/hottbox.git (push)   # <--- should see this
+        ...
 
-      # sync your master and develop branches
-      $ git checkout master
+2.  Next, you need to bring the latest commits from this upstream and merge them
+    in order to be in sync with the upstream:
 
-      $ git merge upstream/master
+    .. code-block:: bash
 
-      $ git checkout develop
+        # bring the latest commits
+        git fetch upstream
 
-      $ git merge upstream/develop
+        # sync your master and develop branches
+        git checkout master
 
-3. Finally, your can update your own GitHub repo: ::
+        git merge upstream/master
 
-      $ git push
+        git checkout develop
+
+        git merge upstream/develop
+
+3.  Finally, your can update your own GitHub repo:
+
+    .. code-block:: bash
+
+        git push
 
 More details can be found in GitHub's official document on `syncing a fork <https://help.github.com/articles/syncing-a-fork/>`_
 and in relevant `discussion <https://stackoverflow.com/questions/7244321/how-do-i-update-a-github-forked-repository>`_
