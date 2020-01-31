@@ -1,0 +1,91 @@
+/* Toggle content of rST containers */
+.toggle-rst-container {
+    position: relative;
+    width: auto;
+}
+
+.toggle-rst-container .header {
+    display: block;
+    width: auto;
+    clear: both;
+    cursor: pointer;
+    font-family: monospace;
+}
+
+.toggle-rst-container .header:after {
+    content: " ▶";
+}
+
+.toggle-rst-container .header.open:after {
+    content: " ▼";
+}
+
+
+/* Copy buttons in code examples */
+div.highlight {
+    position: relative;
+}
+button.copy-to-clipboard-btn {
+  webkit-transition: opacity .3s ease-in-out;
+  -o-transition: opacity .3s ease-in-out;
+  transition: opacity .3s ease-in-out;
+  opacity: .3;
+  padding: 2px 6px;
+  position: absolute;
+  right: 4px;
+  top: 4px;
+}
+div.highlight:hover .copy-to-clipboard-btn, div.highlight .copy-to-clipboard-btn:focus {
+    opacity: .6;
+}
+div.highlight .copy-to-clipboard-btn:hover {
+    opacity: 1;
+}
+div.highlight {
+    position: relative;
+}
+
+
+/* Highlight background/border of a code example so it would stand out */
+div.highlight pre{
+    background-color: #eff0f1;
+    border-color: #eff0f1;
+}
+
+
+/* ===================== */
+/* Numpydoc style tweaks */
+/* ===================== */
+
+/* Fix styling for type of parameters, e.g str, int, bool etc */
+.field-list .classifier{
+    font-weight: normal;
+}
+.field-list .classifier::before{
+    content: " (";
+}
+.field-list .classifier::after{
+    content: ")";
+}
+
+/* Fix styling of autosummary tables */
+table.docutils tbody tr td:nth-child(1) p{
+    /*
+        Don't show text (arguments) for class methods in methods summary table
+        which are normally present in the first cell of each table row.
+        Note: This doesn't affect other HTML elements inside this path
+    */
+    font-size: 0;
+}
+table.docutils tbody tr td:nth-child(2) p{
+    /* Spacing between columns */
+    padding-left: 10px;
+}
+table.docutils tbody tr td{
+    vertical-align: top;
+}
+
+.class p.rubric{
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+}
