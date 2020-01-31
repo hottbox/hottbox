@@ -52,9 +52,9 @@ Last Update: 2020-01-31
 [![Coveralls status](https://coveralls.io/repos/github/hottbox/hottbox/badge.svg?branch=develop)](https://coveralls.io/github/hottbox/hottbox?branch=develop)
 
 ### Changed
-- [ ] Copy button in docs puts content into clipboard
-- [ ] `Makefile` utilises `pipenv`
-- [ ] Better structure of `Makefile`
+- [x] Copy button in docs puts content into clipboard
+- [x] `Makefile` utilises `pipenv`
+- [x] Better structure of `Makefile`
 
 ### Fixed
 - [x] Compatibility with `pandas==1.0.0`. Deprecation of `as_matrix()` in favour of `values`
