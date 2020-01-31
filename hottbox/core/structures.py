@@ -293,7 +293,7 @@ class Tensor(object):
     @property
     def data(self):
         """ N-dimensional array with data values
-        
+
         Returns
         -------
         array : np.ndarray
@@ -453,7 +453,7 @@ class Tensor(object):
 
     def set_mode_names(self, mode_names):
         """ Rename modes of a tensor
-        
+
         Parameters
         ----------
         mode_names : dict
@@ -782,7 +782,7 @@ class Tensor(object):
 
     def access(self, inds, mode):
         """ Equivalent to multidimnesional slicing
-    
+
         Parameters
         ----------
         inds : int
@@ -798,13 +798,13 @@ class Tensor(object):
         tensor = self._data
         tensl = np.array([slice(None)] * tensor.ndim)
         tensl[mode] = inds
-        tensl = tensl.tolist()
+        tensl = tuple(tensl.tolist())
         return tensor[tensl]
-   
+
     # TODO: add some checks to overwite
     def write_subtensor(self, inds, mode, overwrite):
-        """ Works in the same way as `access` but permits changing of the tensor data    
-        
+        """ Works in the same way as `access` but permits changing of the tensor data
+
         Parameters
         ----------
         inds : int
@@ -817,7 +817,7 @@ class Tensor(object):
         tensor = self._data
         tensl = np.array([slice(None)] * tensor.ndim)
         tensl[mode] = inds
-        tensl = tensl.tolist()
+        tensl = tuple(tensl.tolist())
         tensor[tensl] = overwrite
         return
 
@@ -1118,7 +1118,7 @@ class TensorCPD(BaseTensorTD):
         equal = False
         if isinstance(self, other.__class__):
             if self.ft_shape == other.ft_shape and self.rank == other.rank:
-                fmat_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True) 
+                fmat_equal = all([np.allclose(fmat, other.fmat[i],  rtol=1e-05, atol=1e-08, equal_nan=True)
                                   for i, fmat in enumerate(self.fmat)])
                 core_equal = self.core == other.core
                 modes_equal = all([mode == other.modes[i] for i, mode in enumerate(self.modes)])
@@ -1223,7 +1223,7 @@ class TensorCPD(BaseTensorTD):
     @property
     def fmat(self):
         """ List of factor matrices for the CP representation of a tensor
-        
+
         Returns
         -------
         factor_matrices : list[np.ndarray]
@@ -1307,7 +1307,7 @@ class TensorCPD(BaseTensorTD):
         tensor = self.core
         for mode, fmat in enumerate(self.fmat):
             tensor.mode_n_product(fmat, mode=mode, inplace=True)
-        
+
         if keep_meta == 1:
             mode_names = {i: mode.name for i, mode in enumerate(self.modes)}
             tensor.set_mode_names(mode_names=mode_names)
@@ -1636,7 +1636,7 @@ class TensorTKD(BaseTensorTD):
     @property
     def fmat(self):
         """ List of factor matrices for the Tucker representation of a tensor
-        
+
         Returns
         -------
         factor_matrices : list[np.ndarray]
