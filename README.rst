@@ -23,6 +23,10 @@ regression and non-linear classification of multi-dimensional data. Not sure you
 a try on `mybinder.org <https://mybinder.org/v2/gh/hottbox/hottbox-tutorials/master?urlpath=lab/>`_ without installation.
 
 
+.. contents:: **Table of Contents**
+    :local:
+    :depth: 1
+
 
 Installing HOTTBOX
 ------------------
@@ -30,19 +34,30 @@ Installing HOTTBOX
 There are two options available:
 
 1.  Install ``hottbox`` as it is from `pypi.org <https://pypi.org/project/hottbox/>`_
-    by executing: ::
+    by executing:
 
-        $ pip install hottbox
+    .. code-block:: bash
+
+        # Create virtual environment based on python 3.7
+        pipenv --python 3.7
+
+        # Install hottbox from pypi
+        pipenv install hottbox
 
 2.  Alternatively, you can clone the source code which you can find on our `GitHub repository <https://github.com/hottbox/hottbox>`_
     and install ``hottbox`` in editable mode:
-    ::
 
-        $ git clone https://github.com/hottbox/hottbox.git
+    .. code-block:: bash
 
-        $ cd hottbox
+        # Clone source code and cd into it
+        git clone https://github.com/hottbox/hottbox.git
+        cd hottbox
 
-        $ pip install -e .
+        # Create virtual environment based on python 3.7
+        pipenv --python 3.7
+
+        # Install hottbox from source
+        pipenv install -e .
 
     This will allow you to modify the source code in the way it will suit your needs. Additionally, you will be
     on top of the latest changes and will be able to start using new stable features which are located on
@@ -51,19 +66,29 @@ There are two options available:
     in `CHANGELOG <https://github.com/hottbox/hottbox/blob/develop/CHANGELOG.md>`_ file.
 
 
+        **NOTE:** To manage working environment, we use `pipenv <https://pipenv.kennethreitz.org/en/latest/>`_. This tools is thought of as a successor of ``pip`` and essentially uses ``pip`` and ``virtualenv`` under the hood. If you haven't made a switch yet (or don't want to) then:
+
+        * Instead of ``pipenv install`` simply use ``pip install``
+        * Instead of ``pipenv run ...`` make sure that you are in correct virtual environment
+
 
 Running tests
 -------------
 
 ``hottbox`` is under active development, therefore, if you have chosen the second installation
 option, it is advisable to run tests in order to make sure that your
-current version of ``hottbox`` is stable. First, you will need to install ``pytest`` and ``pytest-cov`` packages: ::
+current version of ``hottbox`` is stable. First, you will need to install ``pytest`` and ``pytest-cov`` packages:
 
-    $ pip install -e '[.tests]'
+.. code-block:: bash
 
-To run tests, simply execute inside the main directory: ::
+    pipenv install -e '[.tests]'
 
-    $ pytest -v --cov hottbox
+To run tests, simply execute inside the main directory:
+
+.. code-block:: bash
+
+    # Runs pytest within a virtual environment
+    pipenv run pytest -v --cov hottbox
 
 
 

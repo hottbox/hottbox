@@ -27,7 +27,8 @@ work on your feature and then submit a PR. The outline of this process should be
 
     .. code-block:: bash
 
-        pip install -e '.[tests, docs]'
+        pipenv --python 3.7
+        pipenv install -e '.[tests, docs]'
 
     This basically builds the extension in place and creates a link to the development directory
 
