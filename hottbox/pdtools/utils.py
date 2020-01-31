@@ -64,7 +64,7 @@ def pd_to_tensor(df, keep_index=True):
 
     # Reshape values into multi-dimensional array
     dims = tuple([len(level) for level in df.index.levels])
-    data = df.as_matrix().reshape(dims)
+    data = df.values.reshape(dims)
 
     # Get mode names
     mode_names = df.index.names
@@ -77,7 +77,7 @@ def pd_to_tensor(df, keep_index=True):
         multi_index = df.index
         for i in range(len(dims)):
             level_index = multi_index.get_level_values(i)
-            level_index_names = level_index.get_values()
+            level_index_names = level_index.values
             idx = np.unique(level_index_names, return_index=True)[1]
             index = [level_index_names[j] for j in sorted(idx)]
             mode_index = {i: index}
