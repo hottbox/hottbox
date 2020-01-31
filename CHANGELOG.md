@@ -4,9 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+## Table of Contents
+Generated with [DocToc](https://github.com/thlorenz/doctoc)
+
+Last Update: 2020-01-31
+
+- [[HOTTBOX v0.3.3 Unreleased]](#hottbox-v033-unreleased)
+- [HOTTBOX v0.3.2 (2020-01-31)](#hottbox-v032-2020-01-31)
+- [HOTTBOX v0.3.1 (2019-07-12)](#hottbox-v031-2019-07-12)
+- [HOTTBOX v0.2.1 (2019-03-22)](#hottbox-v021-2019-03-22)
+- [HOTTBOX v0.1.3](#hottbox-v013)
+- [HOTTBOX v0.1.2](#hottbox-v012)
+- [HOTTBOX v0.1.1](#hottbox-v011)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 
-## [HOTTBOX v0.3.2 Unreleased]
+## [HOTTBOX v0.3.3 Unreleased]
 
 ### Package status on branch `develop`
 [![Travis status](https://img.shields.io/travis/hottbox/hottbox/develop.svg?label=TravisCI)](https://travis-ci.org/hottbox/hottbox/)
@@ -24,6 +41,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 - [ ] 
+
+
+
+## HOTTBOX v0.3.2 (2020-01-31)
+
+### Package status on branch `develop`
+[![Travis status](https://img.shields.io/travis/hottbox/hottbox/develop.svg?label=TravisCI)](https://travis-ci.org/hottbox/hottbox/)
+[![Appveyor status](https://ci.appveyor.com/api/projects/status/2ct6ku31v351s3d3/branch/develop?svg=true)](https://ci.appveyor.com/project/IlyaKisil/hottbox-6jq6a/branch/develop)
+[![Coveralls status](https://coveralls.io/repos/github/hottbox/hottbox/badge.svg?branch=develop)](https://coveralls.io/github/hottbox/hottbox?branch=develop)
+
+### Changed
+- [x] Copy button in docs puts content into clipboard
+- [x] `Makefile` utilises `pipenv`
+- [x] Better structure of `Makefile`
+
+### Fixed
+- [x] Compatibility with `pandas==1.0.0`. Deprecation of `as_matrix()` in favour of `values`
+- [x] Compatibility with future versions of `numpy`. Deprecation of non-tuple sequence for multidimensional indexing.
 
 
 

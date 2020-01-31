@@ -131,7 +131,7 @@ autoclass_content = 'both'
 
 # -- Configuration for parsing docstrings
 
-_docstring_formatting = "napoleon"
+_docstring_formatting = "numpydoc"
 if _docstring_formatting == "napoleon":
     # Reference: https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html and https://sphinxcontrib-napoleon.readthedocs.io/en/latest/
     extensions.append('sphinx.ext.napoleon')
@@ -139,6 +139,8 @@ if _docstring_formatting == "napoleon":
 elif _docstring_formatting == "numpydoc":
     extensions.append('numpydoc.numpydoc')
     numpydoc_class_members_toctree = False  # This is needed for some reason with 'numpydoc' see https://github.com/numpy/numpydoc/issues/69
+    numpydoc_show_inherited_class_members = False
+    numpydoc_attributes_as_param_list = False
 
 
 # -- Configuration for converting markdown files to rST and including them in docs
@@ -169,7 +171,9 @@ html_translator_class = 'guzzle_sphinx_theme.HTMLTranslator'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = [
+    '_static'
+]
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
@@ -178,7 +182,7 @@ html_static_path = ['_static']
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = '_static/hottbox_favicon-48x48.ico'
+html_favicon = '_static/imgs/hottbox_favicon-48x48.ico'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -325,6 +329,68 @@ epub_exclude_files = ['search.html']
 intersphinx_mapping = {'https://docs.python.org/': None}
 
 
+def rst_to_jinja(app, docname, source):
+    """ Render our pages as a jinja template for fancy templating goodness.
+
+    References
+    ----------
+    1.  https://www.ericholscher.com/blog/2016/jul/25/integrating-jinja-rst-sphinx/
+    """
+    # Make sure we're outputting HTML
+    if app.builder.format != 'html':
+        return
+    src = source[0]
+    rendered = app.builder.templates.render_string(
+        src, app.config.html_context
+    )
+    source[0] = rendered
+
+
+def add_static_files(sphinx_app, dirs):
+    """
+
+    Parameters
+    ----------
+    sphinx_app
+    dirs : list[str]
+        List of directories to look for static files.
+
+    Notes
+    -----
+    Order of directories in ``dirs`` matters and defines order
+    in which files from those directories will be imported to
+    ``html`` files.
+    """
+    # We use `abspath` instead of `realpath` because this file is a target
+    # for symbolic link. But we need to search for files where symbolic link
+    # is located
+    here = os.path.dirname(os.path.abspath(__file__))
+
+    static_files = []
+    for static_dir in dirs:
+        # We do this, since CWD might vary at execution time
+        # depending where this function is called
+        static_dir_path = os.path.join(here, static_dir)
+
+        for dir_item in os.listdir(static_dir_path):
+            if os.path.isfile(f'{static_dir_path}/{dir_item}'):
+                static_files.insert(0, dir_item)
+            else:
+                files = [f'{dir_item}/{file}' for file in os.listdir(f'{static_dir_path}/{dir_item}')]
+                static_files.extend(files)
+
+    for file in static_files:
+        if file.endswith('.js'):
+            print(f'==> Registering javascript file: [{file}]')
+            sphinx_app.add_javascript(file)
+        elif file.endswith('.css'):
+            print(f'==> Registering stylesheet file: [{file}]')
+            sphinx_app.add_stylesheet(file)
+
+
 def setup(app):
-    app.add_javascript('copybutton.js')
-    app.add_stylesheet('custom.css')
+    add_static_files(
+        sphinx_app=app,
+        dirs=html_static_path
+    )
+    app.connect("source-read", rst_to_jinja)

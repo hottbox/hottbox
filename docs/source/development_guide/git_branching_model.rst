@@ -1,3 +1,11 @@
+===================
+Git branching model
+===================
+
+.. contents:: Table of Contents
+    :local:
+    :depth: 2
+
 Master branch
 =============
 We consider ``origin/master`` to be the main branch where the source code of HEAD
@@ -21,7 +29,9 @@ Feature branches
 ----------------
 
 Used to develop new features for the upcoming or a distant future release. Therefore you should branch off from
-``develop`` (or its child) and merge back to the same branch which you have branched off::
+``develop`` (or its child) and merge back to the same branch which you have branched off
+
+.. code-block:: bash
 
     git checkout -b myfeature develop   # Create and switch to a new branch
 
@@ -42,7 +52,9 @@ Release branches
 Used for preparation of a new production release. This includes minor bug fixes and shaping up the documentation.
 The key moment to branch off a new release branch from ``develop`` is when develop (almost) reflects the desired
 state of the new release. This means that only targeted features for the upcomming release had been merged to
-the ``develop`` branch::
+the ``develop`` branch
+
+.. code-block:: bash
 
     git checkout -b release-1.2 develop
 
